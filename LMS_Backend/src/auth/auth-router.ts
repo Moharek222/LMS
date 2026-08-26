@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { handleValidationErrors } from "../middlewares/handleValidationErrors";
-import { loginHandler, loginValidation } from "./login";
+import { teacherLogin, loginValidation } from "./teacher-login";
 import { logout } from "./logout";
 // import { forgotPassword } from "./forget-password";
 
@@ -8,10 +8,10 @@ import { logout } from "./logout";
 const router = Router();
 
 
-router.post('/login',
+router.post('/teacher-login',
     loginValidation,
     handleValidationErrors,
-    loginHandler);
+    teacherLogin);
 
 router.post("/logout",logout);
 

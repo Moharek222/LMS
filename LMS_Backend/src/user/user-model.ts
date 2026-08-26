@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 export enum Role {
     Admin= "admin",
-    Teacher= "teacher"
+    Teacher= "teacher",
+    Student= "student"
 }
 
 export interface IUser extends mongoose.Document{

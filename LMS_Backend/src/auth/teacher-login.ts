@@ -20,7 +20,7 @@ export const COOKIE_OPTIONS = {
         path: "/",
 };
 
-export const loginHandler: RequestHandler = async (req, res, next) => {
+export const teacherLogin: RequestHandler = async (req, res, next) => {
         try {
                 const { email, password } = req.body;
 

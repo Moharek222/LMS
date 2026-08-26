@@ -2,9 +2,10 @@ import mongoose from "mongoose";
 
 
 interface IStudent extends mongoose.Document {
-    groupId: mongoose.Schema.Types.ObjectId;
+    groupID: mongoose.Types.ObjectId;
     name: string;
     phone: string;
+    password:string;
     parentPhone?: string;
     isActive: boolean;
     activeToken?: string;
@@ -13,7 +14,7 @@ interface IStudent extends mongoose.Document {
 }
 
 const studentSchema = new mongoose.Schema<IStudent>({
-    groupId: {
+    groupID: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Group",
         required: true
@@ -29,6 +30,13 @@ const studentSchema = new mongoose.Schema<IStudent>({
         required: true,
         unique: true,
         trim: true
+    },
+    password: {
+        type: String,
+        required: true,
+        trim: true,
+        select: false,
+        minlength: 4
     },
     parentPhone: {
         type: String,

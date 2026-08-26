@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addUser, validator  } from "./user-controllers/add-user";
+import { addUser, validator  } from "./user-controllers/add-teacher";
 import { handleValidationErrors } from "../middlewares/handleValidationErrors";
 import { getAllUsers } from "./user-controllers/get-all-users";
 import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
