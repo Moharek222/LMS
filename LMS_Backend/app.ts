@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 
-import userRouter from "./src/user/user-router";
+// import userRouter from "./src/user/user-router";
 
 dotenv.config();
 
@@ -69,7 +69,7 @@ app.use(cookieParser());
 app.use(express.static("public"));
 app.use(express.json());
 
-app.use("/api/user", userRouter);
+// app.use("/api/user", userRouter);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

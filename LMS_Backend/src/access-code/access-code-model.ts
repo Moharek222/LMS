@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 
 
-enum Status {
+export enum Status {
     Active = "active",
     Expired = "expired",
     Revoked = "revoked"
 }
 
 interface IAccessCode extends mongoose.Document {
-    studentId: mongoose.Schema.Types.ObjectId,
+    studentID: mongoose.Types.ObjectId,
     code: string,
     startAt:Date,
     expiresAt: Date,
@@ -20,7 +20,7 @@ interface IAccessCode extends mongoose.Document {
 
 
 const accessCodeSchema = new mongoose.Schema<IAccessCode>({
-    studentId: {
+    studentID: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Student",
         required: true

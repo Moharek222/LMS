@@ -6,6 +6,7 @@ import jwtService from "../services/jwt-service";
 import { COOKIE_OPTIONS } from "./teacher-login";
 import crypto from "crypto";
 import { Role } from "../user/user-model";
+import { AccessCode, Status } from "../access-code/access-code-model";
 
 interface IRequest {
     phone: string;
@@ -44,7 +45,7 @@ export const studentLogin: RequestHandler<{}, IResponse, IRequest> = async (req,
             return res.status(401).json({ message: "Invalid phone number or password" });
         }
 
-        const sessionToken = crypto.randomUUID(); 
+        const sessionToken = crypto.randomUUID();
         student.activeToken = sessionToken;
         await student.save();
 
@@ -71,9 +72,27 @@ export const studentLogin: RequestHandler<{}, IResponse, IRequest> = async (req,
         const studentObj = student.toObject();
         const { password: _, activeToken: __, ...studentWithoutPassword } = studentObj;
 
+        const activeCode = await AccessCode.findOne({
+            studentId: student._id,
+            status: Status.Active
+        });
+
+        let hasActiveSubscription = false;
+
+        if (activeCode) {
+            if (activeCode.expiresAt <= new Date()) {
+                activeCode.status = Status.Expired;
+                await activeCode.save();
+            } else {
+                hasActiveSubscription = true;
+            }
+        }
         return res.status(200).json({
             message: "Logged in successfully",
-            data: studentWithoutPassword
+            data: {
+                ...studentWithoutPassword,
+                hasActiveSubscription
+            }
         });
     } catch (err) {
         next(err);
