@@ -23,3 +23,11 @@ export interface StudentLoginCredentials {
   code?: string;
   password?: string;
 }
+
+export interface StudentRegisterCredentials {
+  name: string;
+  phone: string;
+  parentPhone?: string;
+  groupId: string;
+  password?: string;
+}

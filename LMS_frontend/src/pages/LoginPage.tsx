@@ -42,8 +42,11 @@ const studentSchema = z.object({
 type TeacherInputs = z.infer<typeof teacherSchema>;
 type StudentInputs = z.infer<typeof studentSchema>;
 
-export const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  onNavigateToRegister?: () => void;
+}
 
+export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) => {
   const [accountType, setAccountType] = useState<'teacher' | 'student'>('teacher');
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -447,8 +450,24 @@ export const LoginPage: React.FC = () => {
                 <Headphones size={18} />
               </button>
 
+              
+              {onNavigateToRegister && (
+                <div className="text-center mt-4 pt-2">
+                  <p className="text-xs text-slate-600 font-medium">
+                    ليس لديك حساب طالب؟{' '}
+                    <button
+                      type="button"
+                      onClick={onNavigateToRegister}
+                      className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
+                    >
+                      إنشاء حساب جديد
+                    </button>
+                  </p>
+                </div>
+              )}
+
              
-              <div className="flex items-center justify-center gap-2 mt-6 text-slate-400">
+              <div className="flex items-center justify-center gap-2 mt-5 text-slate-400">
                 <span className="text-xs font-semibold">منصة آمنة ومحمية</span>
                 <ShieldCheck size={16} />
               </div>
