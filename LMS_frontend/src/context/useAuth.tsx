@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import axios from 'axios';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, type ReactNode } from 'react';
 import type { UserProfile, TeacherLoginCredentials, StudentLoginCredentials } from '../types/auth';
+import { loginTeacherApi, loginStudentApi, logoutApi } from '../services/authService';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -14,34 +15,25 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  useEffect(() => {
-    // Restore session from localStorage if saved
+  
+  const [user, setUser] = useState<UserProfile | null>(() => {
     const savedUser = localStorage.getItem('lms_user');
     if (savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
+        return JSON.parse(savedUser);
+      } catch {
         localStorage.removeItem('lms_user');
       }
     }
-  }, []);
+    return null;
+  });
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const loginTeacher = async (credentials: TeacherLoginCredentials) => {
     setIsLoading(true);
     try {
-      const response = await axios.post('/api/auth/teacher/login', credentials, {
-        withCredentials: true,
-      });
-      const userData = response.data?.user || response.data?.data;
-      const profile: UserProfile = {
-        id: userData._id || userData.id || '1',
-        name: userData.name || 'الأستاذ الصادق',
-        email: credentials.email,
-        role: userData.role || 'teacher',
-      };
+      const profile = await loginTeacherApi(credentials);
       setUser(profile);
       localStorage.setItem('lms_user', JSON.stringify(profile));
     } finally {
@@ -52,17 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loginStudent = async (credentials: StudentLoginCredentials) => {
     setIsLoading(true);
     try {
-      const response = await axios.post('/api/auth/student/login', credentials, {
-        withCredentials: true,
-      });
-      const userData = response.data?.data || response.data?.user;
-      const profile: UserProfile = {
-        id: userData?._id || userData?.id || '1',
-        name: userData?.name || 'الطالب',
-        phone: credentials.phone,
-        role: 'student',
-        hasActiveSubscription: userData?.hasActiveSubscription,
-      };
+      const profile = await loginStudentApi(credentials);
       setUser(profile);
       localStorage.setItem('lms_user', JSON.stringify(profile));
     } finally {
@@ -73,7 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = async () => {
     setIsLoading(true);
     try {
-      await axios.post('/api/auth/logout', {}, { withCredentials: true }).catch(() => {});
+      await logoutApi().catch(() => {});
     } finally {
       setUser(null);
       localStorage.removeItem('lms_user');
@@ -97,18 +79,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    // Provide safe default fallback when rendered outside provider during dev/preview
-    return {
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      loginTeacher: async () => {},
-      loginStudent: async () => {},
-      logout: async () => {},
-    };
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

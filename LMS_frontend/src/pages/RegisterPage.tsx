@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import axios from 'axios';
+import { Link } from 'react-router-dom';
 import {
   User,
   Phone,
@@ -16,8 +16,11 @@ import {
   ShieldCheck,
   ChevronDown
 } from 'lucide-react';
-import type { ApiErrorResponse, StudentRegisterCredentials } from '../types/auth';
-
+import { registerStudentApi } from '../services/authService';
+import { getGroupsApi, FALLBACK_GROUPS } from '../services/groupService';
+import { Footer } from '../components/layout/Footer';
+import type { ApiErrorResponse } from '../types/auth';
+import type { Group } from '../types/group';
 
 const registerSchema = z.object({
   name: z
@@ -57,6 +60,33 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [groups, setGroups] = useState<Group[]>(FALLBACK_GROUPS);
+  const [isGroupsLoading, setIsGroupsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchGroups = async () => {
+      try {
+        const data = await getGroupsApi();
+        if (isMounted && data.length > 0) {
+          setGroups(data);
+        }
+      } catch (e) {
+        if (isMounted) {
+          setGroups(FALLBACK_GROUPS);
+        }
+      } finally {
+        if (isMounted) {
+          setIsGroupsLoading(false);
+        }
+      }
+    };
+
+    fetchGroups();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const {
     register,
@@ -72,40 +102,31 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
     setIsLoading(true);
 
     try {
-      const payload: StudentRegisterCredentials = {
+      await registerStudentApi({
         name: data.name,
         phone: data.phone,
         parentPhone: data.parentPhone,
         groupId: data.groupId,
         password: data.password,
-      };
+      });
 
-      const response = await axios.post('/api/student/register', payload);
-
-      if (response.status === 201 || response.status === 200) {
-        setIsSuccess(true);
-      }
+      setIsSuccess(true);
     } catch (error: unknown) {
-      if (axios.isAxiosError<ApiErrorResponse>(error)) {
-        if (error.response) {
-          const status = error.response.status;
-          const msg = error.response.data?.message;
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const errObj = error as { response?: { status?: number; data?: ApiErrorResponse } };
+        const status = errObj.response?.status;
+        const msg = errObj.response?.data?.message;
 
-          if (status === 409) {
-            setServerError('رقم الهاتف مسجل بالفعل. يمكنك تسجيل الدخول مباشرة.');
-          } else if (status === 400 && error.response.data?.errors) {
-            const firstErr = error.response.data.errors[0]?.message;
-            setServerError(firstErr || 'يرجى التأكد من البيانات المدخلة.');
-          } else {
-            setServerError(msg || 'حدث خطأ في السيرفر أثناء إنشاء الحساب.');
-          }
-        } else if (error.request) {
-          setServerError('تعذر الاتصال بالسيرفر. يرجى التأكد من الاتصال بالشبكة.');
+        if (status === 409) {
+          setServerError('رقم الهاتف مسجل بالفعل. يمكنك تسجيل الدخول مباشرة.');
+        } else if (status === 400 && errObj.response?.data?.errors) {
+          const firstErr = errObj.response.data.errors[0]?.message;
+          setServerError(firstErr || 'يرجى التأكد من البيانات المدخلة.');
         } else {
-          setServerError(error.message || 'حدث خطأ أثناء إرسال البيانات.');
+          setServerError(msg || 'حدث خطأ في السيرفر أثناء إنشاء الحساب.');
         }
       } else {
-        setServerError('حدث خطأ غير متوقع.');
+        setServerError('حدث خطأ غير متوقع أثناء معالجة الطلب.');
       }
     } finally {
       setIsLoading(false);
@@ -113,14 +134,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
   };
 
   return (
-   
     <div dir="rtl" className="h-screen w-full flex flex-col lg:grid lg:grid-cols-5 font-sans bg-slate-50 overflow-hidden">
-      
       
       <div className="lg:col-span-2 flex flex-col justify-center items-center px-6 py-6 sm:px-10 lg:px-12 bg-[#FAFBFC] overflow-y-auto h-full z-10 shadow-lg">
         <div className="w-full max-w-md my-auto py-4">
           
-        
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-teal-50 text-[#0D8A82] mb-3 border border-teal-100 shadow-xs">
               <UserPlus size={26} />
@@ -129,7 +147,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
             <p className="text-slate-500 text-xs sm:text-sm font-semibold">أدخل بياناتك للانضمام إلى منصة الصادق</p>
           </div>
 
-        
           {isSuccess ? (
             <div className="flex flex-col items-center text-center p-6 bg-white rounded-2xl border border-teal-200 shadow-sm space-y-4">
               <div className="w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center text-[#0D8A82] border-2 border-[#0D8A82]">
@@ -141,18 +158,27 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                   مرحباً بك في منصة الصادق في الكيمياء. يمكنك الآن تسجيل الدخول باستخدام رقم هاتفك وكلمة المرور.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={onNavigateToLogin}
-                className="w-full bg-[#0D8A82] hover:bg-[#0B766F] text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-md shadow-teal-700/20 cursor-pointer"
-              >
-                <span>الانتقال لتسجيل الدخول</span>
-                <LogIn size={18} className="rotate-180" />
-              </button>
+              {onNavigateToLogin ? (
+                <button
+                  type="button"
+                  onClick={onNavigateToLogin}
+                  className="w-full bg-[#0D8A82] hover:bg-[#0B766F] text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-md shadow-teal-700/20 cursor-pointer"
+                >
+                  <span>الانتقال لتسجيل الدخول</span>
+                  <LogIn size={18} className="rotate-180" />
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  className="w-full bg-[#0D8A82] hover:bg-[#0B766F] text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-md shadow-teal-700/20 cursor-pointer text-center"
+                >
+                  <span>الانتقال لتسجيل الدخول</span>
+                  <LogIn size={18} className="rotate-180" />
+                </Link>
+              )}
             </div>
           ) : (
             <>
-            
               {serverError && (
                 <div className="flex items-center gap-2.5 p-3.5 mb-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm font-bold">
                   <AlertCircle size={20} className="shrink-0" />
@@ -160,10 +186,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                 </div>
               )}
 
-             
               <form className="space-y-3.5" onSubmit={handleSubmit(onSubmit)}>
                 
-              
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700">اسم الطالب الثلاثي</label>
                   <div className="relative">
@@ -183,7 +207,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                   )}
                 </div>
 
-               
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700">رقم هاتف الطالب</label>
                   <div className="relative">
@@ -203,7 +226,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                   )}
                 </div>
 
-                
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700">
                     رقم هاتف ولي الأمر <span className="text-slate-400 font-normal">(اختياري)</span>
@@ -225,21 +247,25 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                   )}
                 </div>
 
-                
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700">الصف الدراسي والمجموعة</label>
                   <div className="relative">
                     <select
                       dir="rtl"
                       {...register('groupId')}
+                      disabled={isGroupsLoading && groups.length === 0}
                       className={`w-full pr-4 pl-10 py-2.5 sm:py-3 rounded-xl border text-right appearance-none ${
                         errors.groupId ? 'border-red-400' : 'border-slate-200'
                       } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium cursor-pointer`}
                     >
-                      <option value="">اختر الصف الدراسي والمجموعة</option>
-                      <option value="660000000000000000000001">الصف الأول الثانوي - مجموعة السبت والأربعاء</option>
-                      <option value="660000000000000000000002">الصف الثاني الثانوي - مجموعة الأحد والثلاثاء</option>
-                      <option value="660000000000000000000003">الصف الثالث الثانوي - دفعة 2026 (المجموعة العامة)</option>
+                      <option value="">
+                        {isGroupsLoading && groups.length === 0 ? 'جاري تحميل المجموعات...' : 'اختر الصف الدراسي والمجموعة'}
+                      </option>
+                      {groups.map((group) => (
+                        <option key={group._id} value={group._id}>
+                          {group.name}
+                        </option>
+                      ))}
                     </select>
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center gap-1">
                       <GraduationCap size={18} />
@@ -251,7 +277,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                   )}
                 </div>
 
-               
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
                   <div className="relative">
@@ -279,7 +304,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                   )}
                 </div>
 
-               
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700">تأكيد كلمة المرور</label>
                   <div className="relative">
@@ -307,7 +331,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                   )}
                 </div>
 
-               
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -324,24 +347,34 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                 </button>
               </form>
 
-             
               <div className="text-center mt-5 pt-3 border-t border-slate-200/80">
                 <p className="text-xs text-slate-600 font-medium">
                   لديك حساب بالفعل؟{' '}
-                  <button
-                    type="button"
-                    onClick={onNavigateToLogin}
-                    className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
-                  >
-                    تسجيل الدخول
-                  </button>
+                  {onNavigateToLogin ? (
+                    <button
+                      type="button"
+                      onClick={onNavigateToLogin}
+                      className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
+                    >
+                      تسجيل الدخول
+                    </button>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
+                    >
+                      تسجيل الدخول
+                    </Link>
+                  )}
                 </p>
               </div>
 
-             
-              <div className="flex items-center justify-center gap-2 mt-4 text-slate-400">
-                <span className="text-xs font-semibold">منصة تعليمية آمنة ومحمية</span>
-                <ShieldCheck size={16} />
+              <div className="flex flex-col items-center justify-center gap-1 mt-4 text-slate-400">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-xs font-semibold">منصة تعليمية آمنة ومحمية</span>
+                  <ShieldCheck size={16} />
+                </div>
+                <Footer variant="card" />
               </div>
             </>
           )}
@@ -349,7 +382,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
         </div>
       </div>
 
-     
       <div className="hidden lg:block lg:col-span-3 relative h-full w-full overflow-hidden select-none bg-[#091523]">
         <img
           src="/slogan8k3.png"

@@ -54,16 +54,16 @@ app.use(async (req, res, next) => {
     }
 });
 
-// const allowedOrigins = process.env.FRONTEND_URL
-//     ? [process.env.FRONTEND_URL, "http://localhost:5173"]
-//     : (origin: any, callback: any) => callback(null, true);
+const allowedOrigins = process.env.FRONTEND_URL
+    ? [process.env.FRONTEND_URL, "http://localhost:5173"]
+    : (origin: any, callback: any) => callback(null, true);
 
-// app.use(
-//     cors({
-//         origin: allowedOrigins,
-//         credentials: true,
-//     })
-// );
+app.use(
+    cors({
+        origin: allowedOrigins,
+        credentials: true,
+    })
+);
 
 app.use(cookieParser());
 app.use(express.static("public"));

@@ -4,6 +4,7 @@ export interface UserProfile {
   email?: string;
   phone?: string;
   role: 'student' | 'teacher' | 'admin';
+  groupId?: string;
   isActive?: boolean;
   hasActiveSubscription?: boolean;
 }
@@ -30,4 +31,40 @@ export interface StudentRegisterCredentials {
   parentPhone?: string;
   groupId: string;
   password?: string;
+}
+
+export interface TeacherLoginResponse {
+  message: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    role: 'teacher' | 'admin';
+    isActive: boolean;
+  };
+}
+
+export interface StudentLoginResponse {
+  message: string;
+  data: {
+    _id: string;
+    name: string;
+    phone: string;
+    groupID: string;
+    hasActiveSubscription: boolean;
+  };
+}
+
+export interface StudentRegisterResponse {
+  message: string;
+  student: {
+    _id: string;
+    name: string;
+    phone: string;
+    groupID: string;
+  };
+}
+
+export interface LogoutResponse {
+  message: string;
 }
