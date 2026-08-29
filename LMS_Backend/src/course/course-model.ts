@@ -3,8 +3,8 @@ import mongoose from "mongoose";
 
 interface ICourse extends mongoose.Document {
     title: string;
-    isActive: boolean;
-    isPublished: boolean;
+    isActive?: boolean;
+    isPublished?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }

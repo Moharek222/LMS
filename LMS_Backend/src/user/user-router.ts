@@ -1,38 +1,16 @@
-// import { Router } from "express";
-// import { addUser, validator  } from "./user-controllers/add-teacher";
-// import { handleValidationErrors } from "../middlewares/handleValidationErrors";
-// import { getAllUsers } from "./user-controllers/get-all-users";
-// import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
-// import { isAuthorized } from "../middlewares/isAuthorized.middleware";
-// import { Role } from "./user-model";
-// import { getUserById } from "./user-controllers/get-user-by-id";
-// import { updateUser } from "./user-controllers/update-user";
+import { Router } from "express";
+import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
+import { isAuthorized } from "../middlewares/isAuthorized.middleware";
+import { Role } from "./user-model";
 
+import { addTeacher } from "./user-controllers/add-teacher";
+import { addAdmin } from "./user-controllers/add-admin";
 
+const router = Router();
 
-// const router = Router();
+router.use(isAuthenticated, isAuthorized(Role.Admin));
 
-// router.post("/",
-//     isAuthenticated,
-//     isAuthorized(Role.Admin),
-//     validator,
-//     handleValidationErrors,
-//     addUser);
+router.post("/teacher", addTeacher);
+router.post("/admin", addAdmin);
 
-// router.get("/",
-//     isAuthenticated,
-//     isAuthorized(Role.Admin),
-//     getAllUsers);
-
-// router.get("/:id",
-//     isAuthenticated,
-//     isAuthorized(Role.Admin),
-//     getUserById);
-
-// router.put("/:id",
-//     isAuthenticated,
-//     isAuthorized(Role.Admin),
-//     updateUser);
-
-
-// export default router;
+export default router;

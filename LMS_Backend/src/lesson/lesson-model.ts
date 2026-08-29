@@ -2,11 +2,12 @@ import mongoose from "mongoose";
 
 export interface ILesson extends mongoose.Document {
     title: string;
-    courseID: mongoose.Schema.Types.ObjectId;
+    courseID: mongoose.Types.ObjectId;
     description?: string;
     contentUrl: string;
     order: number;
     requiresPassing: boolean;
+    isActive: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -41,6 +42,10 @@ const lessonSchema = new mongoose.Schema<ILesson>({
     requiresPassing: {
         type: Boolean,
         default: false
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true,
