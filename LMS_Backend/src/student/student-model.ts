@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Role } from "../user/user-model";
 
 
 interface IStudent extends mongoose.Document {
@@ -7,6 +8,7 @@ interface IStudent extends mongoose.Document {
     phone: string;
     password:string;
     parentPhone?: string;
+    role:Role;
     isActive: boolean;
     activeToken?: string;
     createdAt?: Date;
@@ -37,6 +39,11 @@ const studentSchema = new mongoose.Schema<IStudent>({
         trim: true,
         select: false,
         minlength: 4
+    },
+    role : {
+        type: String,
+        enum: Object.values(Role),
+        default: Role.Student
     },
     parentPhone: {
         type: String,

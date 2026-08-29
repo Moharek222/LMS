@@ -3,8 +3,7 @@ import mongoose from "mongoose";
 
 export enum Status {
     Active = "active",
-    Expired = "expired",
-    Revoked = "revoked"
+    Expired = "expired"
 }
 
 interface IAccessCode extends mongoose.Document {
