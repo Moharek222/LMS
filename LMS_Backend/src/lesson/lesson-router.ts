@@ -10,42 +10,46 @@ import { deleteLesson } from "./lesson-controllers/delete-lesson";
 import { getLessonById } from "./lesson-controllers/get-lesson-by-id";
 import { getCourseLessons } from "./lesson-controllers/get-course-lessons";
 import { generateUploadUrl, generateUploadUrlValidation } from "./lesson-controllers/upload-controller";
+import quizRouter from "../quiz/quiz-router";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-router.use(isAuthenticated);
+// router.use(isAuthenticated);
+
+router.use("/:lessonID/quizzes", quizRouter);
 
 router.post("/generate-upload-url",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     generateUploadUrlValidation,
     handleValidationErrors,
     generateUploadUrl
 );
+
 router.post("/",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     addLessonValidation,
     handleValidationErrors,
     createLesson
 );
 
-router.put("/:id",
+router.put("/:lessonID",
     isAuthorized(Role.Admin, Role.Teacher),
     updateLessonValidation,
     handleValidationErrors,
     updateLesson
 );
 
-router.delete("/:id",
+router.delete("/:lessonID",
     isAuthorized(Role.Admin, Role.Teacher),
     deleteLesson
 );
 
-router.get("/:lessonId/video",
+router.get("/:lessonID/video",
     getLessonById
 );
 
 // Get All Lessons for a specific course (Students and Teachers/Admins)
-router.get("/course/:courseId",
+router.get("/",
     getCourseLessons
 );
 

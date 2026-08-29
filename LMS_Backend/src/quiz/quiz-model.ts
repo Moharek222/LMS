@@ -1,18 +1,19 @@
 import mongoose from "mongoose";
 
 
-interface IQuestion{
+interface IQuestion {
     question: string;
     options: string[];
     answer: string;
 }
 
 
-interface IQuiz extends mongoose.Document{
-    lessonID: mongoose.Schema.Types.ObjectId;
-    title:string;
+interface IQuiz extends mongoose.Document {
+    lessonID: mongoose.Types.ObjectId;
+    title: string;
     questions: IQuestion[];
     duration: number;
+    isActive: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -27,7 +28,7 @@ const questionSchema = new mongoose.Schema<IQuestion>({
         type: [String],
         required: true,
         validate: {
-            validator: function(arr: string[]) {
+            validator: function (arr: string[]) {
                 return arr.length >= 2;
             },
             message: "At least two options are required"
@@ -36,7 +37,13 @@ const questionSchema = new mongoose.Schema<IQuestion>({
     answer: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
+        validate: {
+            validator: function (this: any, val: string) {
+                return this.options.includes(val);
+            },
+            message: "The answer must be exactly one of the provided options"
+        }
     }
 });
 
@@ -56,7 +63,7 @@ const quizSchema = new mongoose.Schema<IQuiz>({
         type: [questionSchema],
         required: true,
         validate: {
-            validator: function(arr: IQuestion[]) {
+            validator: function (arr: IQuestion[]) {
                 return arr.length >= 1;
             },
             message: "At least one question is required"
@@ -66,8 +73,12 @@ const quizSchema = new mongoose.Schema<IQuiz>({
         type: Number,
         required: true,
         min: [0, "Duration can not be negative"]
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
-},{
+}, {
     timestamps: true,
     versionKey: false
 });
