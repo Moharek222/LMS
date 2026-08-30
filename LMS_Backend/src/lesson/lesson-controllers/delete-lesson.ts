@@ -1,41 +1,55 @@
 import { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { Lesson } from "../lesson-model"; 
 import mongoose from "mongoose";
-import { Lesson } from "../lesson-model";
 
-interface IResponse {
-    message: string;
-    data?: unknown;
-}
+const r2Client = new S3Client({
+    region: "auto",
+    endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID as string,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY as string,
+    },
+});
 
-export const deleteLesson: RequestHandler<{ id: string }, IResponse> = async (req, res, next) => {
+export const deleteLesson: RequestHandler<{ lessonID: string }, any, any> = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { lessonID } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(lessonID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid lesson ID format"
             });
         }
 
-        const lesson = await Lesson.findByIdAndUpdate(
-            id,
-            { $set: { isActive: false } },
-            { new: true }
-        ).lean().exec();
-
+        const lesson = await Lesson.findById(lessonID);
+        
         if (!lesson) {
             return res.status(StatusCodes.NOT_FOUND).json({
                 message: "Lesson not found"
             });
         }
 
+        if (lesson.contentUrl) {
+            const deleteCommand = new DeleteObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: lesson.contentUrl, 
+            });
+            
+            await r2Client.send(deleteCommand);
+        }
+
+        lesson.isActive = true;
+        lesson.contentUrl = "";
+        
+        await lesson.save();
+
         res.status(StatusCodes.OK).json({
-            message: "Lesson deleted (archived) successfully",
-            data: lesson
+            message: "Lesson deleted successfully"
         });
+
     } catch (err) {
         next(err);
     }
 };
-

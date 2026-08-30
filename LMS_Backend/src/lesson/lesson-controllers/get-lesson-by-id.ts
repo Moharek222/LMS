@@ -20,15 +20,15 @@ interface IResponse {
     data?: unknown;
 }
 
-export const getLessonById: RequestHandler<{ lessonId: string }, IResponse, {}> = async (req, res, next) => {
+export const getLessonById: RequestHandler<{ lessonID: string }, IResponse, {}> = async (req, res, next) => {
     try {
-        const { lessonId } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(lessonId)) {
+        const { lessonID } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(lessonID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid lesson ID format"
             });
         }
-        const lesson = await Lesson.findOne({ _id: lessonId, isActive: true });
+        const lesson = await Lesson.findOne({ _id: lessonID, isActive: true });
         if (!lesson) {
             return res.status(StatusCodes.NOT_FOUND).json({
                 message: "Lesson not found"

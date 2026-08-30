@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { handleValidationErrors } from "../middlewares/handleValidationErrors";
-import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
 import { isAuthorized } from "../middlewares/isAuthorized.middleware";
 import { Role } from "../user/user-model";
 
@@ -11,39 +10,35 @@ import { updateCourse, updateCourseValidation } from "./course-controllers/updat
 import { deleteCourse } from "./course-controllers/delete-course";
 import { getStudentCourses } from "./course-controllers/get-student-courses";
 
+import lessonRouter from "../lesson/lesson-router";
+
 const router = Router();
 
-router.use(isAuthenticated);
-
+router.use("/:courseID/lessons", lessonRouter);
 
 router.get("/student", isAuthorized(Role.Student), getStudentCourses);
 
 router.post("/",
-    isAuthorized(Role.Admin, Role.Teacher),
     addCourseValidation,
     handleValidationErrors,
     addCourse
 );
 
 router.get("/",
-    isAuthorized(Role.Admin, Role.Teacher),
     getCourses
 );
 
 router.get("/:id",
-    isAuthorized(Role.Admin, Role.Teacher, Role.Student),
     getCourseById
 );
 
 router.put("/:id",
-    isAuthorized(Role.Admin, Role.Teacher),
     updateCourseValidation,
     handleValidationErrors,
     updateCourse
 );
 
 router.delete("/:id",
-    isAuthorized(Role.Admin, Role.Teacher),
     deleteCourse
 );
 

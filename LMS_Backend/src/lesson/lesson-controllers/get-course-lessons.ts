@@ -5,17 +5,17 @@ import { Lesson } from "../lesson-model";
 import { Course } from "../../course/course-model";
 
 
-export const getCourseLessons: RequestHandler<{ courseId: string }> = async (req, res, next) => {
+export const getCourseLessons: RequestHandler<{ courseID: string }> = async (req, res, next) => {
     try {
-        const { courseId } = req.params;
+        const { courseID } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        if (!mongoose.Types.ObjectId.isValid(courseID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid course ID format"
             });
         }
 
-        const course = await Course.find({ _id: courseId , isActive: true , isPublished: true})
+        const course = await Course.find({ _id: courseID , isActive: true , isPublished: true})
         .lean()
         .exec();
         if (!course) {
@@ -26,7 +26,7 @@ export const getCourseLessons: RequestHandler<{ courseId: string }> = async (req
         const page=Math.max(1,Number(req.query.page) || 1);
         const limit=Math.max(1,Number(req.query.limit) || 10);
 
-        const lessons = await Lesson.find({ courseID: courseId, isActive: true })
+        const lessons = await Lesson.find({ courseID: courseID, isActive: true })
             .select("-contentUrl")
             .sort({ order: 1 })
             .skip((page-1)*limit)
@@ -34,7 +34,7 @@ export const getCourseLessons: RequestHandler<{ courseId: string }> = async (req
             .lean()
             .exec();
 
-        const total = await Lesson.countDocuments({ courseID: courseId, isActive: true });
+        const total = await Lesson.countDocuments({ courseID: courseID, isActive: true });
         res.status(StatusCodes.OK).json({
             message: "Lessons fetched successfully",
             page,
