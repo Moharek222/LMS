@@ -1,15 +1,11 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import mongoose from "mongoose";
 import { Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
-import cors from "cors";
-//routers
-import authRouter from "./src/auth/auth-router";
-import groupRouter from "./src/group/group-router";
-import accessCodeRouter from "./src/access-code/access-code-router";
-import userRouter from "./src/user/user-router";
-import courseRouter from "./src/course/course-router";
+
+// import userRouter from "./src/user/user-router";
 
 dotenv.config();
 
@@ -73,13 +69,8 @@ app.use(cookieParser());
 app.use(express.static("public"));
 app.use(express.json());
 
-// Routes
+// app.use("/api/user", userRouter);
 
-app.use("/api/auth", authRouter);
-app.use("/api/groups", groupRouter);
-app.use("/api/access-codes", accessCodeRouter);
-app.use("/api/users", userRouter);
-app.use("/api/courses", courseRouter);
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     console.error("Global Error Handler:", err);
