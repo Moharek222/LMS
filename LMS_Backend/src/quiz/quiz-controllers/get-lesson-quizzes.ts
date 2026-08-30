@@ -9,26 +9,23 @@ interface IResponse {
     data?: unknown;
 }
 
-export const getLessonQuizzes: RequestHandler<{ lessonId: string }, IResponse> = async (req, res, next) => {
+export const getLessonQuizzes: RequestHandler<{ lessonID: string }, IResponse> = async (req, res, next) => {
     try {
-        const { lessonId } = req.params;
+        const { lessonID } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(lessonId)) {
+        if (!mongoose.Types.ObjectId.isValid(lessonID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid lesson ID format"
             });
         }
 
-        const lessonExists = await Lesson.findById(lessonId).select('_id').lean().exec();
+        const lessonExists = await Lesson.findById(lessonID).lean().exec();
         if (!lessonExists) {
             return res.status(StatusCodes.NOT_FOUND).json({
                 message: "Lesson not found"
             });
         }
-
-        // Fetch active quizzes for this lesson.
-        // We exclude the questions array from the list view to reduce payload size and prevent exposing answers.
-        const quizzes = await Quiz.find({ lessonID: lessonId, isActive: true })
+        const quizzes = await Quiz.find({ lessonID, isActive: true })
             .select("-questions")
             .sort({ createdAt: 1 })
             .lean()

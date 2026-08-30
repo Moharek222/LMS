@@ -38,6 +38,7 @@ interface IRequest{
     title:string;
     questions: IQuestion[];
     duration: number;
+    passingPercentage: number;
 }
 
 interface IResponse{
@@ -59,12 +60,13 @@ export const createQuiz: RequestHandler<{lessonID: string}, IResponse, IRequest>
                 message: "Lesson not found, cannot create quiz for a non-existent lesson"
             });
         }
-        const { title, questions, duration } = req.body;
+        const { title, questions, duration ,passingPercentage } = req.body;
         const quiz = await Quiz.create({
             lessonID,
             title,
             questions,
             duration,
+            passingPercentage
         });
             res.status(StatusCodes.CREATED).json({
                 message: "Quiz created successfully",
