@@ -24,7 +24,7 @@ export const getSubmissionById: RequestHandler<{ id: string }> = async (req, res
                 },
                 {
                     path: "studentID",
-                    select: "name"
+                    select: "name phone"
                 }
             ])
             .lean()

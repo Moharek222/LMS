@@ -10,10 +10,7 @@ import accessCodeRouter from "./src/access-code/access-code-router";
 import userRouter from "./src/user/user-router";
 import courseRouter from "./src/course/course-router";
 import lessonRouter from "./src/lesson/lesson-router";
-import quizRouter from "./src/quiz/quiz-router";
 import studentRouter from "./src/student/student-router";
-import quizSubmissionRouter from "./src/quiz-submission/quiz-submission-router";
-import examRouter from "./src/exam/exam-router";
 
 dotenv.config();
 const app = express();
@@ -50,14 +47,11 @@ app.use(express.json());
 
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
-app.use("/api/quizzes", quizRouter);
-app.use("/api/exams", examRouter);
 app.use("/api/students", studentRouter);
 app.use("/api/access-codes", accessCodeRouter);
 app.use("/api/groups", groupRouter);
 app.use("/api/courses", courseRouter);
 app.use("/api/lessons", lessonRouter);
-app.use("/api/quiz-submissions", quizSubmissionRouter);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

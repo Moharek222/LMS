@@ -5,18 +5,18 @@ import { Group } from "../group-model";
 import { Student } from "../../student/student-model";
 
 
-export const deleteGroup: RequestHandler<{ id: string }> = async (req, res) => {
+export const deleteGroup: RequestHandler<{ groupID: string }> = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { groupID } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(groupID)) {
             res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid group ID format"
             });
             return;
         }
         const deletedGroup = await Group.findOneAndUpdate(
-            { _id: id, isActive: true },
+            { _id: groupID, isActive: true },
             { $set: { isActive: false } },
             { returnDocument: 'after' }
         );
@@ -29,7 +29,7 @@ export const deleteGroup: RequestHandler<{ id: string }> = async (req, res) => {
         }
         const studentsResult = await Student.updateMany(
             { 
-                groupID: id,
+                groupID: groupID,
                 isActive: true
             },
             { 

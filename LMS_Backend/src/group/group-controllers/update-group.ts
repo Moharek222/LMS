@@ -24,10 +24,10 @@ interface IResponse {
     data?: any
 }
 
-export const updateGroup: RequestHandler<{ id: string }, IResponse, IRequest> = async (req, res) => {
+export const updateGroup: RequestHandler<{ groupID: string }, IResponse, IRequest> = async (req, res) => {
     try{
-        const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        const { groupID } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(groupID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid group ID"
             });
@@ -47,7 +47,7 @@ export const updateGroup: RequestHandler<{ id: string }, IResponse, IRequest> = 
         }
         
         const group = await Group.findOneAndUpdate(
-            { _id: id },
+            { _id: groupID },
             {$set:updateData},
             { returnDocument: 'after', runValidators: true });
         if (!group) {

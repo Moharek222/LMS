@@ -11,11 +11,14 @@ import { updateGroup, updateGroupValidation } from "./group-controllers/update-g
 import { deleteGroup } from "./group-controllers/delete-group";
 import { getGroupStudents } from "./group-controllers/get-students-group";
 import { moveStudent, moveStudentValidation } from "./group-controllers/move-student";
+import attendanceRouter from "../attendance/attendance-router";
 
 const router = Router();
 
 // Only admin/teacher can manage groups
 // router.use(isAuthenticated, isAuthorized(Role.Admin, Role.Teacher));
+
+router.use("/:groupID/attendance",attendanceRouter);
 
 router.post("/",
     addGroupValidation,
@@ -29,7 +32,7 @@ router.put("/move-student/:studentID",
     moveStudent
 );
 
-router.put("/:id",
+router.put("/:groupID",
     updateGroupValidation,
     handleValidationErrors,
     updateGroup
@@ -37,13 +40,13 @@ router.put("/:id",
 
 router.get("/", getGroups);
 
-router.get("/:id", getGroupById);
+router.get("/:groupID", getGroupById);
 
 
 
-router.delete("/:id", deleteGroup);
+router.delete("/:groupID", deleteGroup);
 
-router.get("/:id/students", getGroupStudents);
+router.get("/:groupID/students", getGroupStudents);
 
 export default router;
 

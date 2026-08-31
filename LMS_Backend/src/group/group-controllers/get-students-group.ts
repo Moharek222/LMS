@@ -9,11 +9,11 @@ interface IResponse {
 }
 
 
-export const getGroupStudents: RequestHandler<{ id: string }, IResponse> = async (req, res) => {
+export const getGroupStudents: RequestHandler<{ groupID: string }, IResponse> = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { groupID } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(groupID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid group ID format"
             });
@@ -22,7 +22,7 @@ export const getGroupStudents: RequestHandler<{ id: string }, IResponse> = async
 
         
         const students = await Student.find({
-            groupID: id,
+            groupID,
             isActive: true
         })
         .select("name phone parentPhone")

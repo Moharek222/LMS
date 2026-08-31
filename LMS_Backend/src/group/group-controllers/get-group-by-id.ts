@@ -5,15 +5,15 @@ import { Group } from "../group-model";
 
 
 
-export const getGroupById: RequestHandler<{ id: string }> = async (req, res) => {
+export const getGroupById: RequestHandler<{ groupID: string }> = async (req, res) => {
     try{
-        const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        const { groupID } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(groupID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid group ID"
             });
         }
-        const group = await Group.findOne({ _id: id , isActive: true })
+        const group = await Group.findOne({ _id: groupID , isActive: true })
         .lean().exec();
         if (!group) {
             return res.status(StatusCodes.NOT_FOUND).json({

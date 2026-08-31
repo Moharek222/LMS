@@ -15,7 +15,6 @@ export const addGroupValidation = [
 
 interface IRequest {
     name: string;
-    // level: string;
 }
 
 interface IResponse {

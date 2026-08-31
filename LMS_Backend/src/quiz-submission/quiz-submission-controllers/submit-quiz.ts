@@ -86,7 +86,7 @@ export const submitQuiz: RequestHandler<{ quizID: string }, IResponse, IRequest>
                 score, 
                 totalQuestions, 
                 isPassed,
-                submissionId: submission._id
+                submission
             }
         });
 
