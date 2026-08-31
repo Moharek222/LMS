@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 
-interface IQuestion {
+interface IQuestion extends mongoose.Document {
     question: string;
     options: string[];
     answer: string;
@@ -13,6 +13,7 @@ interface IQuiz extends mongoose.Document {
     title: string;
     questions: IQuestion[];
     duration: number;
+    passingPercentage: number;
     isActive: boolean;
     createdAt?: Date;
     updatedAt?: Date;
@@ -73,6 +74,11 @@ const quizSchema = new mongoose.Schema<IQuiz>({
         type: Number,
         required: true,
         min: [0, "Duration can not be negative"]
+    },
+    passingPercentage: {
+        type: Number,
+        required: true,
+        min: [0, "Passing percentage can not be negative"]
     },
     isActive: {
         type: Boolean,

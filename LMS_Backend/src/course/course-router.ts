@@ -9,12 +9,14 @@ import { getCourseById } from "./course-controllers/get-course-by-id";
 import { updateCourse, updateCourseValidation } from "./course-controllers/update-course";
 import { deleteCourse } from "./course-controllers/delete-course";
 import { getStudentCourses } from "./course-controllers/get-student-courses";
+import examRouter from "../exam/exam-router";
 
-import lessonRouter from "../lesson/lesson-router";
 
 const router = Router();
 
-router.use("/:courseID/lessons", lessonRouter);
+
+router.use("/:coureseID/exams", examRouter);
+
 
 router.get("/student", isAuthorized(Role.Student), getStudentCourses);
 

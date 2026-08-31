@@ -2,9 +2,9 @@ import { RequestHandler } from "express";
 import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
 import { body } from "express-validator";
-import { Quiz } from "../quiz-model";
+import { Exam } from "../exam-model";
 
-export const updateQuizValidation = [
+export const updateExamValidation = [
     body("title")
         .optional()
         .trim()
@@ -35,7 +35,6 @@ export const updateQuizValidation = [
     body("duration")
         .optional()
         .isNumeric().withMessage("Duration must be a number"),
-
     body("isActive")
         .optional()
         .isBoolean().withMessage("isActive must be a boolean")
@@ -59,13 +58,13 @@ interface IResponse {
     data?: unknown;
 }
 
-export const updateQuiz: RequestHandler<{ id: string }, IResponse, IRequest> = async (req, res, next) => {
+export const updateExam: RequestHandler<{ id: string }, IResponse, IRequest> = async (req, res, next) => {
     try {
         const { id } = req.params;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
-                message: "Invalid quiz ID format"
+                message: "Invalid exam ID format"
             });
         }
 
@@ -83,21 +82,21 @@ export const updateQuiz: RequestHandler<{ id: string }, IResponse, IRequest> = a
             });
         }
 
-        const quiz = await Quiz.findByIdAndUpdate(
+        const exam = await Exam.findByIdAndUpdate(
             id,
             { $set: updateData },
             { new: true, runValidators: true }
         ).lean().exec();
 
-        if (!quiz) {
+        if (!exam) {
             return res.status(StatusCodes.NOT_FOUND).json({
-                message: "Quiz not found"
+                message: "Exam not found"
             });
         }
 
         res.status(StatusCodes.OK).json({
-            message: "Quiz updated successfully",
-            data: quiz
+            message: "Exam updated successfully",
+            data: exam
         });
     } catch (err) {
         next(err);

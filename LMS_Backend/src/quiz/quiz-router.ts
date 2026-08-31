@@ -9,32 +9,38 @@ import { updateQuiz, updateQuizValidation } from "./quiz-controllers/update-quiz
 import { deleteQuiz } from "./quiz-controllers/delete-quiz";
 import { getLessonQuizzes } from "./quiz-controllers/get-lesson-quizzes";
 import { getQuizForStudent } from "./quiz-controllers/get-student-quiz";
-
+import { getQuizForAdmin } from "./quiz-controllers/get-teacher-quiz";
+import quizSubmissionRouter from "../quiz-submission/quiz-submission-router";
 const router = Router({ mergeParams: true });
 
 router.use(isAuthenticated);
 
-// Get All Quizzes for a specific lesson (Students and Teachers/Admins)
-router.get("/lesson/:lessonId",
+router.use("/:quizID/submissions", quizSubmissionRouter);
+router.get("/",
     isAuthorized(Role.Admin, Role.Teacher, Role.Student),
     getLessonQuizzes
 );
 
-// Get Quiz by ID (Students and Teachers/Admins)
-router.get("/:id",
-    isAuthorized(Role.Admin, Role.Teacher, Role.Student),
-    getQuizForStudent
-);
-
-// Create Quiz (Teacher/Admin only)
-router.post("/:lessonID",
+router.post("/",
     isAuthorized(Role.Admin, Role.Teacher),
     createQuizValidation,
     handleValidationErrors,
     createQuiz
 );
 
-// Update Quiz (Teacher/Admin only)
+
+router.get("/:quizID/student",
+    isAuthorized(Role.Student),
+    getQuizForStudent
+);
+
+
+router.get("/:quizID/teacher",
+    isAuthorized(Role.Admin, Role.Teacher),
+    getQuizForAdmin
+);
+
+
 router.put("/:id",
     isAuthorized(Role.Admin, Role.Teacher),
     updateQuizValidation,
@@ -42,7 +48,7 @@ router.put("/:id",
     updateQuiz
 );
 
-// Delete Quiz (Soft Delete) (Teacher/Admin only)
+
 router.delete("/:id",
     isAuthorized(Role.Admin, Role.Teacher),
     deleteQuiz

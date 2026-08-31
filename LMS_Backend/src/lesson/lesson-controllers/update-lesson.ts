@@ -43,11 +43,11 @@ interface IResponse {
     data?: unknown;
 }
 
-export const updateLesson: RequestHandler<{ id: string }, IResponse, IRequest> = async (req, res, next) => {
+export const updateLesson: RequestHandler<{ lessonID: string }, IResponse, IRequest> = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { lessonID } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(lessonID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid lesson ID format"
             });
@@ -69,7 +69,7 @@ export const updateLesson: RequestHandler<{ id: string }, IResponse, IRequest> =
         }
 
         const lesson = await Lesson.findByIdAndUpdate(
-            id,
+            lessonID,
             { $set: updateData },
             { new: true, runValidators: true }
         ).lean().exec();

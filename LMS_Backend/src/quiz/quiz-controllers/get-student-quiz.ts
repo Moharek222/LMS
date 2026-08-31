@@ -13,7 +13,7 @@ export const getQuizForStudent: RequestHandler<{quizID: string}> = async (req, r
             });
         }
 
-        const quiz = await Quiz.findOne({ quizID, isActive: true })
+        const quiz = await Quiz.findOne({ _id: quizID, isActive: true })
             .select("-questions.answer")
             .lean()
             .exec();
