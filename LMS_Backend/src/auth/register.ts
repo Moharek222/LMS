@@ -37,7 +37,7 @@ export const registerHandler: RequestHandler<{}, {}, IRegisterBody> = async (req
 
                 const hashed = await bcrypt.hash(password, 10);
                 
-                const newStudent = new Student({ phone, password: hashed, name, groupId });
+                const newStudent = new Student({ phone, password: hashed, name, groupID: groupId || (req.body as any).groupID });
                 await newStudent.save();
                 
                 const studentObj = newStudent.toObject();

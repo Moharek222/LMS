@@ -47,7 +47,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) => {
-  const [accountType, setAccountType] = useState<'teacher' | 'student'>('teacher');
+  const [accountType, setAccountType] = useState<'teacher' | 'student'>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 

@@ -28,7 +28,7 @@ export const FALLBACK_GROUPS: Group[] = [
  */
 export const getGroupsApi = async (): Promise<Group[]> => {
   try {
-    const response = await apiClient.get<GroupResponse>('/api/group/', {
+    const response = await apiClient.get<GroupResponse>('/api/groups/', {
       params: { page: 1, limit: 20 },
     });
 
