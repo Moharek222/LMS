@@ -55,6 +55,7 @@ export const registerStudentApi = async (credentials: StudentRegisterCredentials
     name: credentials.name,
     phone: credentials.phone,
     password: credentials.password,
+    groupID: credentials.groupId,
     groupId: credentials.groupId,
   };
 

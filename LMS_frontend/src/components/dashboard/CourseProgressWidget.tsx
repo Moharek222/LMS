@@ -14,6 +14,7 @@ interface CourseProgressWidgetProps {
   courses?: CourseItem[];
   onAddCourse?: () => void;
   onViewAll?: () => void;
+  onSelectCourse?: (courseId: string) => void;
 }
 
 export const defaultCourses: CourseItem[] = [
@@ -47,6 +48,7 @@ export const CourseProgressWidget: React.FC<CourseProgressWidgetProps> = ({
   courses = defaultCourses,
   onAddCourse,
   onViewAll,
+  onSelectCourse,
 }) => {
   return (
     <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between h-full">
@@ -72,7 +74,11 @@ export const CourseProgressWidget: React.FC<CourseProgressWidgetProps> = ({
 
         <div className="space-y-4">
           {courses.map((course) => (
-            <div key={course.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition">
+            <div
+              key={course.id}
+              onClick={() => onSelectCourse?.(course.id)}
+              className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition cursor-pointer"
+            >
               
               <div className="flex-1 text-right space-y-1.5">
                 <div className="flex items-center justify-between">
