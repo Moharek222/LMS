@@ -1,10 +1,13 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import StudentDashboard from './pages/student/StudentDashboard';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/useAuth';
+
+const queryClient = new QueryClient();
 
 function RootRedirect() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -36,14 +39,14 @@ function RootRedirect() {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Root Smart Redirect */}
+      
       <Route path="/" element={<RootRedirect />} />
 
-      {/* Public Authentication Routes */}
+      
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Student Protected Routes */}
+      
       <Route
         path="/student/dashboard"
         element={
@@ -53,7 +56,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Teacher / Admin Protected Routes */}
+      
       <Route
         path="/teacher/dashboard"
         element={
@@ -63,7 +66,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Fallback Catch-all Route */}
+     
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -72,7 +75,9 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <QueryClientProvider client={queryClient}>
+        <AppRoutes />
+      </QueryClientProvider>
     </AuthProvider>
   );
 }

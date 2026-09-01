@@ -413,14 +413,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
               </div>
 
               
-              <button
-                type="button"
-                onClick={() => alert('يمكنك التواصل مع خدمة الدعم الفني للمساعدة.')}
+              <a
+                href="https://wa.me/mahmoud_3zb"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-full bg-white border border-slate-200/90 hover:bg-slate-50 text-[#0D8A82] font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer text-sm"
               >
                 <span>تواصل معنا للمساعدة</span>
                 <Headphones size={18} />
-              </button>
+              </a>
 
               
               <div className="text-center mt-4 pt-2">
