@@ -9,7 +9,7 @@ import { deleteAdmin } from "./user-controllers/delete-admin";
 
 const router = Router();
 
-router.use(isAuthenticated, isAuthorized(Role.Teacher));
+// router.use(isAuthenticated, isAuthorized(Role.Teacher));
 
 router.post("/teacher", addTeacher);
 router.post("/admin", addAdmin);

@@ -11,29 +11,29 @@ import { verifyAccessCode, verifyCodeValidation } from "./access-code-contollers
 
 const router = Router();
 
-router.use(isAuthenticated);
+// router.use(isAuthenticated);
 
 // Admin / Teacher routes
 router.post("/generate",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     generateCodeValidation,
     handleValidationErrors,
     generateStudentAccessCode
 );
 
 router.get("/",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     getAllAccessCode
 );
 
 router.get("/student/:id",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     getAccessCodes
 );
 
 // Student routes
 router.post("/verify",
-    isAuthorized(Role.Student),
+    // isAuthorized(Role.Student),
     verifyCodeValidation,
     handleValidationErrors,
     verifyAccessCode

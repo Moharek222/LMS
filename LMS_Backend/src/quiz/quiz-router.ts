@@ -13,16 +13,16 @@ import { getQuizForAdmin } from "./quiz-controllers/get-teacher-quiz";
 import quizSubmissionRouter from "../quiz-submission/quiz-submission-router";
 const router = Router({ mergeParams: true });
 
-router.use(isAuthenticated);
+// router.use(isAuthenticated);
 
 router.use("/:quizID/submissions", quizSubmissionRouter);
 router.get("/",
-    isAuthorized(Role.Admin, Role.Teacher, Role.Student),
+    // isAuthorized(Role.Admin, Role.Teacher, Role.Student),
     getLessonQuizzes
 );
 
 router.post("/",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     createQuizValidation,
     handleValidationErrors,
     createQuiz
@@ -30,19 +30,19 @@ router.post("/",
 
 
 router.get("/:quizID/student",
-    isAuthorized(Role.Student),
+    // isAuthorized(Role.Student),
     getQuizForStudent
 );
 
 
 router.get("/:quizID/teacher",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     getQuizForAdmin
 );
 
 
 router.put("/:id",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     updateQuizValidation,
     handleValidationErrors,
     updateQuiz

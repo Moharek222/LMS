@@ -8,17 +8,17 @@ import { getSubmissionById } from "./quiz-submission-controllers/get-submission-
 const router = Router({ mergeParams: true });
 
 router.post("/",
-    isAuthorized(Role.Student),
+    // isAuthorized(Role.Student),
     submitQuiz
 );
 
 router.get("/",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     getStudentsSubmissions
 );
 
 router.get("/:id",
-    isAuthorized(Role.Student),
+    // isAuthorized(Role.Student),
     getSubmissionById
 );
 

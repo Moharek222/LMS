@@ -6,34 +6,27 @@ import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
 
 import { getProfile } from "./student-controllers/get-profile";
 import { updateProfile, updateProfileValidation } from "./student-controllers/update-profile";
-import { updatePassword, updatePasswordValidation } from "./student-controllers/update-password";
 import { handleValidationErrors } from "../middlewares/handleValidationErrors";
 import { isAuthorized } from "../middlewares/isAuthorized.middleware";
 import { Role } from "../user/user-model";
+import { getStudents } from "./student-controllers/get-students";
 
 const router = Router();
 
-router.use(isAuthenticated);
+// router.use(isAuthenticated);
 // Only allow students to access these endpoints
-router.use(isAuthorized(Role.Student));
+// router.use(isAuthorized(Role.Student));
 
-// Get the student's profile information
+
+router.get("/", getStudents);
+
 router.get("/profile", getProfile);
 
-// Update the student's profile information (name, phone, parentPhone)
 router.put("/profile",
     updateProfileValidation,
     handleValidationErrors,
     updateProfile
 );
-
-// Update the student's password
-router.patch("/password",
-    updatePasswordValidation,
-    handleValidationErrors,
-    updatePassword
-);
-
 // Quiz history
 router.get("/quiz-history", getMySubmissionsQuiz)
 // Exam history

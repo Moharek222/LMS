@@ -33,14 +33,14 @@ router.post("/",
 );
 
 router.put("/:lessonID",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     updateLessonValidation,
     handleValidationErrors,
     updateLesson
 );
 
 router.delete("/:lessonID",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     deleteLesson
 );
 

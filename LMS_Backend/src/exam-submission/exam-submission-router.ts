@@ -8,17 +8,17 @@ import { submitExam } from "./exam-submission-controllers/submit-exam";
 const router = Router({ mergeParams: true });
 
 router.post("/",
-    isAuthorized(Role.Student),
+    // isAuthorized(Role.Student),
     submitExam
 );
 
 router.get("/",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     getStudentsSubmissions
 );
 
 router.get("/:id",
-    isAuthorized(Role.Student),
+    // isAuthorized(Role.Student),
     getSubmissionById
 );
 

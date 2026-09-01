@@ -17,12 +17,12 @@ router.use(isAuthenticated);
 
 router.use("/:examID/submissions", examSubmissionRouter);
 router.get("/",
-    isAuthorized(Role.Admin, Role.Teacher, Role.Student),
+    // isAuthorized(Role.Admin, Role.Teacher, Role.Student),
     getCourseExams
 );
 
 router.post("/",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     createExamValidation,
     handleValidationErrors,
     createExam
@@ -30,19 +30,19 @@ router.post("/",
 
 
 router.get("/:examID/student",
-    isAuthorized(Role.Student),
+    // isAuthorized(Role.Student),
     getExamForStudent
 );
 
 
 router.get("/:examID/teacher",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     getExamForAdmin
 );
 
 
 router.put("/:id",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     updateExamValidation,
     handleValidationErrors,
     updateExam
@@ -50,7 +50,7 @@ router.put("/:id",
 
 
 router.delete("/:id",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     deleteExam
 );
 
