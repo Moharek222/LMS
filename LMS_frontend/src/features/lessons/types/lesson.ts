@@ -19,3 +19,14 @@ export interface GetCourseLessonsResponse {
   totalPages?: number;
   data: Lesson[];
 }
+
+export interface LessonVideoData {
+  title: string;
+  videoUrl: string;
+}
+
+export interface GetLessonVideoResponse {
+  message: string;
+  data: LessonVideoData;
+}
+

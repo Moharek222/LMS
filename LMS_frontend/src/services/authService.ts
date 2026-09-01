@@ -56,7 +56,7 @@ export const registerStudentApi = async (credentials: StudentRegisterCredentials
     phone: credentials.phone,
     password: credentials.password,
     groupID: credentials.groupId,
-    groupId: credentials.groupId,
+    // groupId: credentials.groupId,
   };
 
   const response = await apiClient.post<StudentRegisterResponse>('/api/auth/register', payload);
