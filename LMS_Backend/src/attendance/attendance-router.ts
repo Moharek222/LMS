@@ -18,12 +18,12 @@ router.get("/sheet/:attendanceID",getAttendanceById);
 
 
 router.get("/my-percentage",
-    isAuthorized(Role.Student),
+    // isAuthorized(Role.Student),
     getStudentAttendancePercentage
 );
 
 router.get("/student/:studentID/percentage",
-    isAuthorized(Role.Admin, Role.Teacher),
+    // isAuthorized(Role.Admin, Role.Teacher),
     getStudentAttendancePercentage
 );
 

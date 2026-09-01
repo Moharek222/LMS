@@ -18,7 +18,7 @@ const router = Router();
 router.use("/:coureseID/exams", examRouter);
 
 
-router.get("/student", isAuthorized(Role.Student), getStudentCourses);
+router.get("/student", getStudentCourses);
 
 router.post("/",
     addCourseValidation,
