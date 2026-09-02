@@ -40,7 +40,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
 
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-5">
-      
+      {/* Lesson Header & Navigation Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
           {lessonOrder !== undefined && (
@@ -68,7 +68,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
           </div>
         </div>
 
-        
+        {/* Previous & Next Navigation Buttons */}
         <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
           <button
             onClick={onPreviousLesson}
@@ -100,7 +100,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
         </div>
       </div>
 
-      
+      {/* Video Container */}
       <div className="relative w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center shadow-inner">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center text-center p-6 text-slate-300 space-y-2">
@@ -133,24 +133,34 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
         )}
       </div>
 
-     
-      {isCompletedSession && hasNext && (
-        <div className="bg-emerald-50/90 rounded-2xl p-4 border border-emerald-200 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
-            <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
-            <span>رائع! اكتملت مشاهدة هذا الدرس في هذه الجلسة.</span>
+      {/* Completion Banners */}
+      {isCompletedSession && (
+        hasNext ? (
+          <div className="bg-emerald-50/90 rounded-2xl p-4 border border-emerald-200 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
+              <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+              <span>رائع! اكتملت مشاهدة هذا الدرس في هذه الجلسة.</span>
+            </div>
+            <button
+              onClick={onNextLesson}
+              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shrink-0 shadow-xs"
+            >
+              <span>الدرس التالي</span>
+              <ChevronLeft size={14} />
+            </button>
           </div>
-          <button
-            onClick={onNextLesson}
-            className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shrink-0 shadow-xs"
-          >
-            <span>الدرس التالي</span>
-            <ChevronLeft size={14} />
-          </button>
-        </div>
+        ) : (
+          <div className="bg-teal-50/90 rounded-2xl p-4 border border-teal-200 flex items-center gap-3">
+            <CheckCircle2 size={20} className="text-[#0D8A82] shrink-0" />
+            <div>
+              <h5 className="text-xs font-bold text-slate-800">أحسنت! أكملت جميع دروس هذا المقرر بنجاح.</h5>
+              <p className="text-[11px] text-[#0D8A82] font-extrabold mt-0.5">بالتوفيق.</p>
+            </div>
+          </div>
+        )
       )}
 
-      
+      {/* Lesson Description Card */}
       {lessonDescription && (
         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-1">
           <h5 className="text-xs font-bold text-slate-700">تفاصيل وملاحظات الدرس:</h5>

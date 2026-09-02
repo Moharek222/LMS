@@ -147,6 +147,7 @@ export const StudentDashboard: React.FC = () => {
     data: lessonsData,
     isLoading: isLoadingLessons,
     isError: isLessonsError,
+    refetch: refetchLessons,
   } = useCourseLessons(selectedCourseId);
 
   const effectiveCourses: Array<{ _id: string; title: string }> = (coursesData && coursesData.length > 0) ? coursesData : mockFallbackCourses;
@@ -158,6 +159,12 @@ export const StudentDashboard: React.FC = () => {
   const sortedLessons = React.useMemo(() => {
     return [...effectiveLessons].sort((a, b) => a.order - b.order);
   }, [effectiveLessons]);
+
+  const totalLessonsCount = sortedLessons.length;
+  const completedLessonsCount = sortedLessons.filter((l) => completedLessonIds.includes(l._id)).length;
+  const courseProgressPercentage = totalLessonsCount > 0
+    ? Math.round((completedLessonsCount / totalLessonsCount) * 100)
+    : 0;
 
   const isLessonsLoadingState = isLoadingLessons && effectiveLessons.length === 0;
 
@@ -361,6 +368,27 @@ export const StudentDashboard: React.FC = () => {
             </div>
           )}
 
+          {/* Course Lesson Progress Indicator */}
+          {selectedCourseId && totalLessonsCount > 0 && (
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-slate-700 flex items-center gap-1.5">
+                  <CheckCircle2 size={16} className="text-[#0D8A82]" />
+                  <span>نسبة الإنجاز في هذا المقرر</span>
+                </span>
+                <span className="text-[#0D8A82]">
+                  {completedLessonsCount} من {totalLessonsCount} دروس ({courseProgressPercentage}%)
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                <div
+                  className="h-full bg-[#0D8A82] rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${courseProgressPercentage}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           
           {selectedLessonId && (
             <LessonVideoPlayer
@@ -399,6 +427,12 @@ export const StudentDashboard: React.FC = () => {
               <AlertTriangle size={28} className="text-red-500" />
               <h4 className="text-sm font-bold text-slate-800">حدث خطأ أثناء تحميل دروس المقرر</h4>
               <p className="text-xs text-slate-500 font-semibold">يرجى المحاولة مرة أخرى لاحقاً</p>
+              <button
+                onClick={() => refetchLessons()}
+                className="mt-2 px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer"
+              >
+                إعادة المحاولة
+              </button>
             </div>
           ) : effectiveLessons.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-xs flex flex-col items-center justify-center text-center space-y-2">
