@@ -24,6 +24,9 @@ import {
 
 import type { Lesson } from '../../features/lessons/types/lesson';
 import { LessonVideoPlayer } from '../../features/lessons/components/LessonVideoPlayer';
+import { QuizList } from '../../features/quizzes/components/QuizList';
+import { StudentQuizPreview } from '../../features/quizzes/components/StudentQuizPreview';
+import { QuizRunner } from '../../features/quizzes/components/QuizRunner';
 
 const studentNavItems = [
   { id: 'home', label: 'الرئيسية', icon: <Home size={20} /> },
@@ -135,6 +138,8 @@ export const StudentDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [selectedLessonId, setSelectedLessonId] = useState<string>('');
+  const [selectedQuizId, setSelectedQuizId] = useState<string>('');
+  const [isSolvingQuiz, setIsSolvingQuiz] = useState<boolean>(false);
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
 
   const {
@@ -175,12 +180,16 @@ export const StudentDashboard: React.FC = () => {
   const handlePreviousLesson = () => {
     if (hasPreviousLesson) {
       setSelectedLessonId(sortedLessons[currentLessonIndex - 1]._id);
+      setSelectedQuizId('');
+      setIsSolvingQuiz(false);
     }
   };
 
   const handleNextLesson = () => {
     if (hasNextLesson) {
       setSelectedLessonId(sortedLessons[currentLessonIndex + 1]._id);
+      setSelectedQuizId('');
+      setIsSolvingQuiz(false);
     }
   };
 
@@ -195,6 +204,8 @@ export const StudentDashboard: React.FC = () => {
   const handleSelectCourse = (courseId: string) => {
     setSelectedCourseId(courseId);
     setSelectedLessonId('');
+    setSelectedQuizId('');
+    setIsSolvingQuiz(false);
     setCompletedLessonIds([]);
     setActiveTab('lessons');
   };
@@ -355,6 +366,8 @@ export const StudentDashboard: React.FC = () => {
                   onClick={() => {
                     setSelectedCourseId(course._id);
                     setSelectedLessonId('');
+                    setSelectedQuizId('');
+                    setIsSolvingQuiz(false);
                   }}
                   className={`px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer border ${
                     selectedCourseId === course._id
@@ -368,7 +381,7 @@ export const StudentDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Course Lesson Progress Indicator */}
+          
           {selectedCourseId && totalLessonsCount > 0 && (
             <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-2.5">
               <div className="flex items-center justify-between text-xs font-bold">
@@ -404,6 +417,40 @@ export const StudentDashboard: React.FC = () => {
               onVideoEnded={handleVideoEnded}
               isCompletedSession={completedLessonIds.includes(selectedLessonId)}
             />
+          )}
+
+          
+          {/* Quizzes List & Student Quiz Runner / Preview Section */}
+          {selectedLessonId && (
+            <div className="space-y-5">
+              <QuizList
+                lessonId={selectedLessonId}
+                selectedQuizId={selectedQuizId}
+                onSelectQuiz={(qId) => {
+                  setSelectedQuizId(qId);
+                  setIsSolvingQuiz(false);
+                }}
+              />
+
+              {selectedQuizId && (
+                isSolvingQuiz ? (
+                  <QuizRunner
+                    lessonId={selectedLessonId}
+                    quizId={selectedQuizId}
+                    onClose={() => setIsSolvingQuiz(false)}
+                  />
+                ) : (
+                  <StudentQuizPreview
+                    quizId={selectedQuizId}
+                    onClose={() => {
+                      setSelectedQuizId('');
+                      setIsSolvingQuiz(false);
+                    }}
+                    onStartQuiz={() => setIsSolvingQuiz(true)}
+                  />
+                )
+              )}
+            </div>
           )}
 
          
@@ -448,7 +495,11 @@ export const StudentDashboard: React.FC = () => {
                 return (
                   <div
                     key={lesson._id}
-                    onClick={() => setSelectedLessonId(lesson._id)}
+                    onClick={() => {
+                      setSelectedLessonId(lesson._id);
+                      setSelectedQuizId('');
+                      setIsSolvingQuiz(false);
+                    }}
                     className={`rounded-2xl p-4 border shadow-xs flex items-center justify-between gap-4 transition cursor-pointer ${
                       isSelected
                         ? 'bg-teal-50/60 border-[#0D8A82] ring-1 ring-[#0D8A82]'
