@@ -13,12 +13,15 @@ import {
 import { useStudentQuiz } from '../hooks/useStudentQuiz';
 import { useSubmitQuiz } from '../hooks/useSubmitQuiz';
 import type { StudentQuiz } from '../types/quiz';
+import { toArabicErrorMessage } from '../../../utils/errorMessage';
+import { useToast } from '../../../context/ToastContext';
 import type { QuizSubmissionData } from '../api/quizSubmissionApi';
 
 interface QuizRunnerProps {
   lessonId: string;
   quizId: string;
   onClose: () => void;
+  onPassed?: () => void;
 }
 
 const mockFallbackStudentQuizzes: Record<string, StudentQuiz> = {
@@ -69,6 +72,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   quizId,
   onClose,
 }) => {
+  const toast = useToast();
   const { data: quizData, isLoading: isLoadingQuiz, isError: isQuizError } = useStudentQuiz(quizId);
   const submitQuizMutation = useSubmitQuiz();
 
@@ -127,9 +131,13 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
       {
         onSuccess: (data) => {
           setSubmissionResult(data);
+          if (data.isPassed) {
+            toast.success(`أحسنت يا بطل! تم اجتياز الاختبار بنجاح بنسبة ${Math.round((data.score / data.totalQuestions) * 100)}% 🏆✨`);
+          } else {
+            toast.warning(`تم تسليم الاختبار. حصلت على ${data.score} من ${data.totalQuestions}. يمكنك المراجعة والمحاولة مجدداً 💪`);
+          }
         },
         onError: (err) => {
-          
           if (err.message?.includes('already submitted') || err.message?.includes('409') || err.message?.includes('CONFLICT')) {
             const fallbackResult: QuizSubmissionData = {
               score: Object.keys(answers).length,
@@ -137,6 +145,9 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
               isPassed: true,
             };
             setSubmissionResult(fallbackResult);
+            toast.info('تم تسليم هذا الاختبار سابقاً بنجاح.');
+          } else {
+            toast.error(toArabicErrorMessage(err, 'حصلت مشكلة أثناء تسليم الاختبار، حاول مرة تانية.'));
           }
         },
       }
@@ -316,9 +327,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
           <div className="flex items-center gap-2">
             <AlertTriangle size={18} className="text-red-600 shrink-0" />
             <span>
-              {submitQuizMutation.error?.message?.includes('already submitted')
-                ? 'لقد قمت بتسليم هذا الاختبار من قبل.'
-                : 'حصلت مشكلة أثناء تسليم الاختبار، حاول مرة تانية.'}
+              {toArabicErrorMessage(submitQuizMutation.error, 'حصلت مشكلة أثناء تسليم الاختبار، حاول مرة تانية.')}
             </span>
           </div>
           <button

@@ -6,6 +6,7 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/useAuth';
+import { ToastProvider } from './context/ToastContext';
 
 const queryClient = new QueryClient();
 
@@ -76,7 +77,9 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
-        <AppRoutes />
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
       </QueryClientProvider>
     </AuthProvider>
   );

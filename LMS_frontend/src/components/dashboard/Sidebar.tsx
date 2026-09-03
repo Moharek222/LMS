@@ -66,28 +66,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isMobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="flex flex-col h-full overflow-y-auto">
-         
-          <div className="px-3 pt-5 pb-2 flex items-center justify-center relative">
+        <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
+          {/* Top Branding & Mobile Close */}
+          <div className="px-3 pt-4 pb-1 flex items-center justify-center relative shrink-0">
             <img
               src="/logo.png"
               alt="منصة الصادق في الكيمياء"
-              className="h-32 sm:h-36 w-full max-w-[240px] object-contain mx-auto"
+              className="h-24 sm:h-28 w-full max-w-[200px] object-contain mx-auto"
             />
 
-            
+            {/* Mobile Close Button */}
             {onCloseMobile && (
               <button
                 onClick={onCloseMobile}
-                className="lg:hidden absolute left-3 top-6 text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
+                className="lg:hidden absolute left-3 top-5 text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
               >
                 <X size={20} />
               </button>
             )}
           </div>
 
-          
-          <nav className="flex-1 px-3 py-2 space-y-1.5 overflow-y-auto">
+          {/* Nav Items List */}
+          <nav className="flex-1 px-3 py-1 space-y-1">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onSelectTab(item.id);
                     if (onCloseMobile) onCloseMobile();
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition duration-200 cursor-pointer ${
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition duration-200 cursor-pointer ${
                     isActive
                       ? 'bg-[#0D8A82] text-white shadow-lg shadow-teal-900/40'
                       : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
@@ -112,37 +112,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
             })}
           </nav>
 
-          
-          <div className="px-3 py-1">
+          {/* Logout Action Button */}
+          <div className="px-3 py-1 shrink-0">
             <button
               onClick={onLogout}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition cursor-pointer"
+              className="w-full flex items-center gap-3 px-3.5 py-2 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition cursor-pointer"
             >
-              <LogOut size={20} />
+              <LogOut size={18} />
               <span>تسجيل الخروج</span>
             </button>
           </div>
-        </div>
 
-        
-        <div className="p-3 pb-4 flex flex-col items-center justify-center text-center space-y-1.5">
-          <img
-            src="/bottomSideBar.png"
-            alt="منصة الصادق"
-            className="w-full max-w-[130px] h-auto object-contain rounded-xl"
-          />
-          <p className="text-[11px] text-slate-400 font-medium">
-            Made by{' '}
-            <a
-              href="https://www.facebook.com/mahmoud.azaab.376/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-[#0D8A82] hover:underline"
-            >
-              azb
-            </a>{' '}
-            & <span className="font-bold text-[#0D8A82]">ma7arek</span>
-          </p>
+          {/* Footer Branding */}
+          <div className="p-3 pb-3 flex flex-col items-center justify-center text-center space-y-1 shrink-0">
+            <img
+              src="/bottomSideBar.png"
+              alt="منصة الصادق"
+              className="w-full max-w-[110px] h-auto object-contain rounded-xl"
+            />
+            <p className="text-[11px] text-slate-400 font-medium">
+              Made by{' '}
+              <a
+                href="https://www.facebook.com/mahmoud.azaab.376/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-[#0D8A82] hover:underline"
+              >
+                azb
+              </a>{' '}
+              & <span className="font-bold text-[#0D8A82]">ma7arek</span>
+            </p>
+          </div>
         </div>
       </aside>
     </>

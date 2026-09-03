@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
+
+const validStudentTabs = [
+  'home',
+  'courses',
+  'lessons',
+  'quizzes',
+  'attendance',
+  'profile',
+  'settings',
+];
 import { ChemistryBanner } from '../../components/dashboard/ChemistryBanner';
 import { KpiStatCard } from '../../components/dashboard/KpiStatCard';
 import { CourseProgressWidget } from '../../components/dashboard/CourseProgressWidget';
@@ -19,7 +30,6 @@ import {
   Home,
   User,
   Settings,
-  ChevronRight,
 } from 'lucide-react';
 
 import type { Lesson } from '../../features/lessons/types/lesson';
@@ -135,7 +145,14 @@ const mockFallbackLessons: Record<string, Lesson[]> = {
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const activeTab = tabParam && validStudentTabs.includes(tabParam) ? tabParam : 'home';
+
+  const handleSelectTab = (tabId: string) => {
+    setSearchParams({ tab: tabId });
+  };
+
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [selectedLessonId, setSelectedLessonId] = useState<string>('');
   const [selectedQuizId, setSelectedQuizId] = useState<string>('');
@@ -207,16 +224,15 @@ export const StudentDashboard: React.FC = () => {
     setSelectedQuizId('');
     setIsSolvingQuiz(false);
     setCompletedLessonIds([]);
-    setActiveTab('lessons');
+    handleSelectTab('lessons');
   };
 
-  const selectedCourse = effectiveCourses.find((c) => c._id === selectedCourseId);
   const selectedLesson = effectiveLessons.find((l) => l._id === selectedLessonId);
 
   return (
     <DashboardLayout
       activeTab={activeTab}
-      onSelectTab={setActiveTab}
+      onSelectTab={handleSelectTab}
       navItems={studentNavItems}
       subtitle="بوابة الطالب التعليمية"
     >
@@ -317,45 +333,19 @@ export const StudentDashboard: React.FC = () => {
                   progress: 0,
                   imageUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&q=80&w=200',
                 }))}
-                onViewAll={() => setActiveTab('courses')}
+                onViewAll={() => handleSelectTab('courses')}
                 onSelectCourse={handleSelectCourse}
               />
             )}
-            <UpcomingTasksWidget onViewAll={() => setActiveTab('quizzes')} />
+            <UpcomingTasksWidget onViewAll={() => handleSelectTab('quizzes')} />
           </div>
 
-          
           <PerformanceAnalytics />
         </div>
       )}
 
-     
       {(activeTab === 'courses' || activeTab === 'lessons') && (
         <div className="space-y-6">
-         
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#0D8A82] flex items-center justify-center shrink-0 border border-teal-100">
-                <BookOpen size={22} />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-800">
-                  {selectedCourse ? selectedCourse.title : 'المقررات والدروس التعليمية'}
-                </h3>
-                <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                  اختر الكورس لمتابعة المحاضرات والدروس المتاحة
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setActiveTab('home')}
-              className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-[#0D8A82] transition cursor-pointer"
-            >
-              <ChevronRight size={16} />
-              <span>العودة للرئيسية</span>
-            </button>
-          </div>
 
          
           {effectiveCourses.length > 0 && (
@@ -420,7 +410,7 @@ export const StudentDashboard: React.FC = () => {
           )}
 
           
-          {/* Quizzes List & Student Quiz Runner / Preview Section */}
+          
           {selectedLessonId && (
             <div className="space-y-5">
               <QuizList
@@ -571,7 +561,7 @@ export const StudentDashboard: React.FC = () => {
             أهلاً بك في بوابة الطالب. يتم الآن إعداد البيانات الخاصة بهذا القسم.
           </p>
           <button
-            onClick={() => setActiveTab('home')}
+            onClick={() => handleSelectTab('home')}
             className="px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm"
           >
             العودة للرئيسية

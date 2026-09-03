@@ -18,7 +18,7 @@ export const Footer: React.FC<FooterProps> = ({
         rel="noopener noreferrer"
         className="font-bold text-[#0D8A82] hover:underline"
       >
-         AZB
+         azb
       </a>{' '}
       & <span className="font-bold text-[#0D8A82]">ma7arek</span>
     </span>
