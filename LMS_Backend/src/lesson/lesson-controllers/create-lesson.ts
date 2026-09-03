@@ -32,6 +32,7 @@ export const addLessonValidation = [
 ];
 
 interface IRequest {
+    courseID: string
     title: string;
     description?: string;
     contentUrl: string;
@@ -44,10 +45,9 @@ interface IResponse {
     data?: unknown;
 }
 
-export const createLesson: RequestHandler<{courseID: string}, IResponse, IRequest> = async (req, res, next) => {
+export const createLesson: RequestHandler<{}, IResponse, IRequest> = async (req, res, next) => {
     try {
-        const { title, description, contentUrl, order, requiresPassing } = req.body;
-        const { courseID } = req.params;
+        const { title, description, contentUrl, order, requiresPassing ,courseID } = req.body;
         if(!mongoose.Types.ObjectId.isValid(courseID)){
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid course ID format"

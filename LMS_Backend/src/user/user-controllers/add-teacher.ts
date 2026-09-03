@@ -3,7 +3,16 @@ import bcrypt from "bcrypt";
 import { User ,Role } from "../user-model";
 import { StatusCodes } from "http-status-codes";
 
-export const addTeacher: RequestHandler = async (req, res, next) => {
+interface IRequest {
+    name: string;
+    email: string;
+    password: string;
+}
+interface IResponse {
+    message: string;
+    teacher?: unknown;
+}
+export const addTeacher: RequestHandler<{}, IResponse, IRequest, {}> = async (req, res, next) => {
     try {
         const { name, email, password } = req.body;
 
