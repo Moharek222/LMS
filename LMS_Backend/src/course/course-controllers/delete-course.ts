@@ -7,16 +7,16 @@ import { Course } from "../course-model";
 
 
 
-export const deleteCourse:RequestHandler<{id:string}> = async (req,res,next) =>{
+export const deleteCourse:RequestHandler<{courseID:string}> = async (req,res,next) =>{
     try{
-        const { id } = req.params;
-        if(!mongoose.Types.ObjectId.isValid(id)){
+        const { courseID } = req.params;
+        if(!mongoose.Types.ObjectId.isValid(courseID)){
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid course ID format"
             });
         }
         const course = await Course.findByIdAndUpdate(
-            id,
+            courseID,
             {$set:{isActive:false}})
             .lean()
             .exec();

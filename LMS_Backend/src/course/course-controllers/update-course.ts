@@ -26,9 +26,9 @@ interface IResponse {
     data?: unknown
 }
 
-export const updateCourse: RequestHandler<{ id: string }, IResponse, IRequest> = async (req, res, next) => {
+export const updateCourse: RequestHandler<{ courseID: string }, IResponse, IRequest> = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { courseID } = req.params;
         const { title, isPublished } = req.body;
         const updateData: any = {};
         if (title !== undefined) {
@@ -43,7 +43,7 @@ export const updateCourse: RequestHandler<{ id: string }, IResponse, IRequest> =
             });
         }
         const course = await Course.findOneAndUpdate(
-            { _id: id },
+            { _id: courseID },
             { $set: updateData },
             { new: true, runValidators: true })
             .lean()

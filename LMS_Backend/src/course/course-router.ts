@@ -15,7 +15,7 @@ import examRouter from "../exam/exam-router";
 const router = Router();
 
 
-router.use("/:coureseID/exams", examRouter);
+router.use("/:courseID/exams", examRouter);
 
 
 router.get("/student", getStudentCourses);
@@ -30,17 +30,17 @@ router.get("/",
     getCourses
 );
 
-router.get("/:id",
+router.get("/:courseID",
     getCourseById
 );
 
-router.put("/:id",
+router.put("/:courseID",
     updateCourseValidation,
     handleValidationErrors,
     updateCourse
 );
 
-router.delete("/:id",
+router.delete("/:courseID",
     deleteCourse
 );
 

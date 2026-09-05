@@ -25,7 +25,7 @@ router.post("/generate-upload-url",
     generateUploadUrl
 );
 
-router.post("/",
+router.post("/:courseID",
     // isAuthorized(Role.Admin, Role.Teacher),
     addLessonValidation,
     handleValidationErrors,
@@ -48,8 +48,7 @@ router.get("/:lessonID/video",
     getLessonById
 );
 
-// Get All Lessons for a specific course (Students and Teachers/Admins)
-router.get("/",
+router.get("/:courseID",
     getCourseLessons
 );
 
