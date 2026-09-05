@@ -15,7 +15,11 @@ export const getCourseLessons: RequestHandler<{ courseID: string }> = async (req
             });
         }
 
-        const course = await Course.find({ _id: courseID , isActive: true , isPublished: true})
+        const course = await Course.findOne({
+            _id: courseID
+            , isActive: true ,
+            isPublished: true
+        })
         .lean()
         .exec();
         if (!course) {

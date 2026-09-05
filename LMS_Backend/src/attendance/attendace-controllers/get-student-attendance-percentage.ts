@@ -29,7 +29,6 @@ export const getStudentAttendancePercentage: RequestHandler<{ groupID: string, s
                     attendedSessions: {
                         $sum: {
                             $cond: [
-                                // بنستخدم الـ targetStudentID الموحد
                                 { $in: [new mongoose.Types.ObjectId(targetStudentID), "$presentStudents"] },
                                 1,
                                 0
