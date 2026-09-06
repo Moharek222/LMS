@@ -73,7 +73,7 @@ export const studentLogin: RequestHandler<{}, IResponse, IRequest> = async (req,
         const { password: _, activeToken: __, ...studentWithoutPassword } = studentObj;
 
         const activeCode = await AccessCode.findOne({
-            studentId: student._id,
+            studentID: student._id,
             status: Status.Active
         });
 

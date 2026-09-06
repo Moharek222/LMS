@@ -41,7 +41,7 @@ router.get("/:quizID/teacher",
 );
 
 
-router.put("/:id",
+router.put("/:quizID",
     // isAuthorized(Role.Admin, Role.Teacher),
     updateQuizValidation,
     handleValidationErrors,
@@ -49,7 +49,7 @@ router.put("/:id",
 );
 
 
-router.delete("/:id",
+router.delete("/:quizID",
     isAuthorized(Role.Admin, Role.Teacher),
     deleteQuiz
 );

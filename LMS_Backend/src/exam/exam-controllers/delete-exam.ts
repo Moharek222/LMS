@@ -8,18 +8,18 @@ interface IResponse {
     data?: unknown;
 }
 
-export const deleteExam: RequestHandler<{ id: string }, IResponse> = async (req, res, next) => {
+export const deleteExam: RequestHandler<{ examID: string }, IResponse> = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { examID } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(examID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid exam ID format"
             });
         }
 
         const exam = await Exam.findByIdAndUpdate(
-            id,
+            examID,
             { $set: { isActive: false } },
             { new: true }
         ).lean().exec();

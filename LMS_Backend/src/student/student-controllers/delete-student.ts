@@ -15,7 +15,6 @@ export const deleteStudent:RequestHandler<{ id: string }> = async (req, res ,nex
                 message: "Invalid student ID format"
             });
         }
-
         const student = await Student.findByIdAndUpdate(
             id, 
             { $set: { isActive: false } },

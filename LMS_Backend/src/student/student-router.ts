@@ -4,8 +4,8 @@ import { getMySubmissionsExams } from "../exam-submission/exam-submission-contro
 import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
 
 
-import { getProfile } from "./student-controllers/get-profile";
-import { updateProfile, updateProfileValidation } from "./student-controllers/update-profile";
+import { getProfile } from "./student-controllers/get-me";
+import { updateProfile, updateProfileValidation } from "./student-controllers/update-me";
 import { handleValidationErrors } from "../middlewares/handleValidationErrors";
 import { isAuthorized } from "../middlewares/isAuthorized.middleware";
 import { Role } from "../user/user-model";
@@ -20,7 +20,7 @@ const router = Router();
 
 router.get("/", getStudents);
 
-router.get("/profile", getProfile);
+router.get("/me", getProfile);
 
 router.put("/profile",
     updateProfileValidation,

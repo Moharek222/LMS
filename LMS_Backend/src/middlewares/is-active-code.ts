@@ -4,15 +4,15 @@ import { AccessCode, Status } from "../access-code/access-code-model";
 
 export const requireActiveSubscription: RequestHandler = async (req, res, next) => {
     try {
-        const userId = req.user?.id;
-        if (!userId) {
+        const userID = req.user?.id;
+        if (!userID) {
             return res.status(StatusCodes.UNAUTHORIZED).json({ 
                 message: "Unauthorized, please login first" 
             });
         }
 
         const activeCode = await AccessCode.findOne({
-            studentId: userId,
+            studentID: userID,
             status: Status.Active
         });
 

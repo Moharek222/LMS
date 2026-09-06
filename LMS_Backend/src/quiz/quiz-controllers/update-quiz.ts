@@ -59,11 +59,11 @@ interface IResponse {
     data?: unknown;
 }
 
-export const updateQuiz: RequestHandler<{ id: string }, IResponse, IRequest> = async (req, res, next) => {
+export const updateQuiz: RequestHandler<{ quizID: string }, IResponse, IRequest> = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { quizID } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(quizID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid quiz ID format"
             });
@@ -84,7 +84,7 @@ export const updateQuiz: RequestHandler<{ id: string }, IResponse, IRequest> = a
         }
 
         const quiz = await Quiz.findByIdAndUpdate(
-            id,
+            quizID,
             { $set: updateData },
             { new: true, runValidators: true }
         ).lean().exec();

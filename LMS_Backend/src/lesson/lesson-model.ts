@@ -32,8 +32,7 @@ const lessonSchema = new mongoose.Schema<ILesson>({
     contentUrl: {
         type: String,
         required: true,
-        trim: true,
-        minlength: 3
+        trim: true
     },
     order: {
         type: Number,

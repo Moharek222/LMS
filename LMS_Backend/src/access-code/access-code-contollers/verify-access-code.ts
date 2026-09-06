@@ -16,9 +16,9 @@ interface IRequest {
 export const verifyAccessCode: RequestHandler<{}, any, IRequest> = async (req, res, next) => {
     try {
         const { code } = req.body;
-        const studentId = req.user?.id; 
+        const studentID = req.user?.id; 
 
-        const accessCode = await AccessCode.findOne({ code, studentId });
+        const accessCode = await AccessCode.findOne({ code, studentID });
 
         if (!accessCode) {
             return res.status(StatusCodes.NOT_FOUND).json({

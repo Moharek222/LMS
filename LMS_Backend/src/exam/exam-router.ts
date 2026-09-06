@@ -13,7 +13,7 @@ import { updateExam, updateExamValidation } from "./exam-controllers/update-exam
 
 const router = Router({ mergeParams: true });
 
-router.use(isAuthenticated);
+// router.use(isAuthenticated);
 
 router.use("/:examID/submissions", examSubmissionRouter);
 router.get("/",
@@ -41,7 +41,7 @@ router.get("/:examID/teacher",
 );
 
 
-router.put("/:id",
+router.put("/:examID",
     // isAuthorized(Role.Admin, Role.Teacher),
     updateExamValidation,
     handleValidationErrors,
@@ -49,7 +49,7 @@ router.put("/:id",
 );
 
 
-router.delete("/:id",
+router.delete("/:examID",
     // isAuthorized(Role.Admin, Role.Teacher),
     deleteExam
 );

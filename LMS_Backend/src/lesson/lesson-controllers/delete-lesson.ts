@@ -40,7 +40,7 @@ export const deleteLesson: RequestHandler<{ lessonID: string }, any, any> = asyn
             await r2Client.send(deleteCommand);
         }
 
-        lesson.isActive = true;
+        lesson.isActive = false;
         lesson.contentUrl = "";
         
         await lesson.save();

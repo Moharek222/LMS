@@ -37,7 +37,7 @@ export const updateGroup: RequestHandler<{ groupID: string }, IResponse, IReques
         if (name) {
             updateData.name = req.body.name;
         }
-        if (isActive) {
+        if (typeof isActive === "boolean") {
             updateData.isActive = req.body.isActive;
         }
         if (Object.keys(updateData).length === 0) {

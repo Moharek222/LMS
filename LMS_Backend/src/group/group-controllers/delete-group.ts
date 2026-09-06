@@ -34,7 +34,7 @@ export const deleteGroup: RequestHandler<{ groupID: string }> = async (req, res)
             },
             { 
                 $set: { isActive: false },
-                $unset: { group: "" }
+                $unset: { groupID: "" }
             }
         );
 

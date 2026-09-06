@@ -8,18 +8,18 @@ interface IResponse {
     data?: unknown;
 }
 
-export const deleteQuiz: RequestHandler<{ id: string }, IResponse> = async (req, res, next) => {
+export const deleteQuiz: RequestHandler<{ quizID: string }, IResponse> = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { quizID } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(quizID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid quiz ID format"
             });
         }
 
         const quiz = await Quiz.findByIdAndUpdate(
-            id,
+            quizID,
             { $set: { isActive: false } },
             { new: true }
         ).lean().exec();

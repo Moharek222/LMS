@@ -11,23 +11,8 @@ export const getProfile: RequestHandler<{}, IResponse> = async (req, res, next) 
     try {
         const studentID = req.user?.id;
 
-        if (!studentID) {
-            return res.status(StatusCodes.UNAUTHORIZED).json({
-                message: "Unauthorized"
-            });
-        }
-
         const student = await Student.findById(studentID)
-            .populate([
-                {
-                    path: "groupID",
-                    select: "name"
-                },
-                {
-                    path: "parentID",
-                    select: "name"
-                }
-            ])
+            .populate("groupID", "name")
             .lean()
             .exec();
 

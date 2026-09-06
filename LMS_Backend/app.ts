@@ -36,15 +36,14 @@ mongoose
 
 // app.use(
 //     cors({
-//         origin: allowedOrigins,
-//         credentials: true,
+//         // origin: allowedOrigins,
+//         credentials: true
 //     })
 // );
 
 app.use(cookieParser());
 app.use(express.static("public"));
 app.use(express.json());
-
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/students", studentRouter);
