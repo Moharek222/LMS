@@ -22,10 +22,13 @@ export const updateExamValidation = [
         .isString().withMessage("Question must be a string")
         .isLength({ min: 3 }).withMessage("Question must be at least 3 characters long"),
 
-    body("questions.*.options")
-        .if(body("questions").exists())
-        .notEmpty().withMessage("Options are required")
-        .isArray().withMessage("Options must be an array"),
+        body("questions.*.questionImage")
+        .optional()
+        .trim()
+        .isString().withMessage("Question image must be a string URL"),
+
+    body("questions.*.options").if(body("questions").exists())
+        .isArray({ min: 2 }).withMessage("Options must be an array with at least two options"),
 
     body("questions.*.answer")
         .if(body("questions").exists())
@@ -43,6 +46,7 @@ export const updateExamValidation = [
 
 interface IQuestion {
     question: string;
+    questionImage?: string;
     options: string[];
     answer: string;
 }

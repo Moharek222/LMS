@@ -11,6 +11,8 @@ import { getLessonQuizzes } from "./quiz-controllers/get-lesson-quizzes";
 import { getQuizForStudent } from "./quiz-controllers/get-student-quiz";
 import { getQuizForAdmin } from "./quiz-controllers/get-teacher-quiz";
 import quizSubmissionRouter from "../quiz-submission/quiz-submission-router";
+import { upload } from "../middlewares/upload";
+import { uploadQuestionImage } from "./quiz-controllers/upload-question-image";
 const router = Router({ mergeParams: true });
 
 // router.use(isAuthenticated);
@@ -19,6 +21,13 @@ router.use("/:quizID/submissions", quizSubmissionRouter);
 router.get("/",
     // isAuthorized(Role.Admin, Role.Teacher, Role.Student),
     getLessonQuizzes
+);
+
+
+router.post("/upload-image", 
+    isAuthorized(Role.Admin, Role.Teacher),
+    upload.single("image"), 
+    uploadQuestionImage
 );
 
 router.post("/",

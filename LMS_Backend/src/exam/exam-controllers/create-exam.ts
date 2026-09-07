@@ -14,7 +14,12 @@ export const createExamValidation = [
 
     body("questions")
         .notEmpty().withMessage("Questions are required")
-        .isArray().withMessage("Questions must be an array"),
+        .isArray({ min: 1 }).withMessage("Questions must be an array with at least one question"),
+
+        body("questions.*.questionImage")
+        .optional()
+        .trim()
+        .isString().withMessage("Question image must be a string URL"),
 
     body("questions.*.question")
         .trim()
@@ -24,7 +29,7 @@ export const createExamValidation = [
 
     body("questions.*.options")
         .notEmpty().withMessage("Options are required")
-        .isArray().withMessage("Options must be an array"),
+        .isArray({ min: 2 }).withMessage("Options must be an array with at least two options"),
 
     body("questions.*.answer")
         .trim()
@@ -37,6 +42,7 @@ export const createExamValidation = [
 
 interface IQuestion {
     question: string;
+    questionImage?: string;
     options: string[];
     answer: string;
 }
@@ -45,7 +51,6 @@ interface IRequest {
     title: string;
     questions: IQuestion[];
     duration: number;
-    passingPercentage: number;
 }
 
 interface IResponse {

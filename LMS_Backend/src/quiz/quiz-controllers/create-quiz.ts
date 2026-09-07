@@ -16,6 +16,11 @@ export const createQuizValidation = [
         .notEmpty().withMessage("Questions are required")
         .isArray().withMessage("Questions must be an array"),
 
+    body("questions.*.questionImage")
+        .optional()
+        .trim()
+        .isString().withMessage("Question image must be a string URL"),
+
     body("questions.*.question")
         .trim()
         .notEmpty().withMessage("Question is required")
@@ -29,6 +34,7 @@ export const createQuizValidation = [
 
 interface IQuestion{
     question: string;
+    questionImage?: string;
     options: string[];
     answer: string;
 }

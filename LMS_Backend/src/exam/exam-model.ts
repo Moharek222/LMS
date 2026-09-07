@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 interface IQuestion extends mongoose.Document {
     question: string;
+    questionImage?: string;
     options: string[];
     answer: string;
 }
@@ -22,6 +23,12 @@ const questionSchema = new mongoose.Schema<IQuestion>({
         type: String,
         required: true,
         trim: true
+    },
+    questionImage: {
+        type: String,
+        required: false,
+        trim: true,
+        default: null
     },
     options: {
         type: [String],

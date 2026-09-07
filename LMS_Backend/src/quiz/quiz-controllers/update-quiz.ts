@@ -15,6 +15,11 @@ export const updateQuizValidation = [
         .optional()
         .isArray().withMessage("Questions must be an array"),
 
+    body("questions.*.questionImage")
+        .optional()
+        .trim()
+        .isString().withMessage("Question image must be a string URL"),
+
     body("questions.*.question")
         .if(body("questions").exists())
         .trim()
@@ -43,6 +48,7 @@ export const updateQuizValidation = [
 
 interface IQuestion {
     question: string;
+    questionImage?: string;
     options: string[];
     answer: string;
 }

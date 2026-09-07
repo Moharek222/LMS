@@ -10,19 +10,27 @@ import { getCourseExams } from "./exam-controllers/get-course-exams";
 import { getExamForStudent } from "./exam-controllers/get-student-exam";
 import { getExamForAdmin } from "./exam-controllers/get-teacher-exam";
 import { updateExam, updateExamValidation } from "./exam-controllers/update-exam";
+import { upload } from "../middlewares/upload";
+import { uploadQuestionImage } from "./exam-controllers/upload-question-image";
 
 const router = Router({ mergeParams: true });
 
-// router.use(isAuthenticated);
+router.use(isAuthenticated);
 
 router.use("/:examID/submissions", examSubmissionRouter);
+
 router.get("/",
-    // isAuthorized(Role.Admin, Role.Teacher, Role.Student),
+    isAuthorized(Role.Admin, Role.Teacher, Role.Student),
     getCourseExams
 );
 
+router.post("/upload-image", 
+    isAuthorized(Role.Admin, Role.Teacher),
+    upload.single("image"), 
+    uploadQuestionImage
+);
 router.post("/",
-    // isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     createExamValidation,
     handleValidationErrors,
     createExam
@@ -30,19 +38,19 @@ router.post("/",
 
 
 router.get("/:examID/student",
-    // isAuthorized(Role.Student),
+    isAuthorized(Role.Student),
     getExamForStudent
 );
 
 
 router.get("/:examID/teacher",
-    // isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     getExamForAdmin
 );
 
 
 router.put("/:examID",
-    // isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     updateExamValidation,
     handleValidationErrors,
     updateExam
@@ -50,7 +58,7 @@ router.put("/:examID",
 
 
 router.delete("/:examID",
-    // isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     deleteExam
 );
 

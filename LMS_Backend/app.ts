@@ -46,9 +46,9 @@ app.use(express.static("public"));
 app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
-app.use("/api/students", studentRouter);
 app.use("/api/access-codes", accessCodeRouter);
 app.use("/api/groups", groupRouter);
+app.use("/api/students", studentRouter);
 app.use("/api/courses", courseRouter);
 app.use("/api/lessons", lessonRouter);
 

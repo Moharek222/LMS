@@ -3,9 +3,10 @@ import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
 import { Attendance } from "../attendance-model";
 
-export const getStudentAttendancePercentage: RequestHandler<{ groupID: string, studentID: string }> = async (req, res, next) => {
+export const getMyAttendancePercentage: RequestHandler<{ groupID: string }> = async (req, res, next) => {
     try {
-        const { groupID, studentID } = req.params;
+        const { groupID } = req.params;
+        const studentID =  req.user?.id;
 
         if (!mongoose.Types.ObjectId.isValid(groupID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid group ID format" });
