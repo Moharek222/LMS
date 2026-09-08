@@ -9,6 +9,11 @@ export interface CreateCoursePayload {
   isPublished?: boolean;
 }
 
+export interface UpdateCoursePayload {
+  title?: string;
+  isPublished?: boolean;
+}
+
 export interface CreateLessonPayload {
   title: string;
   description?: string;
@@ -43,6 +48,11 @@ export const createCourse = async (payload: CreateCoursePayload): Promise<Course
   return response.data.data;
 };
 
+export const updateCourse = async (courseId: string, payload: UpdateCoursePayload): Promise<Course> => {
+  const response = await apiClient.put<{ message: string; data: Course }>(`/api/courses/${courseId}`, payload);
+  return response.data.data;
+};
+
 export const getTeacherCourses = async (): Promise<Course[]> => {
   const response = await apiClient.get<{ message: string; data: Course[] }>('/api/courses');
   return response.data.data || [];
@@ -74,10 +84,10 @@ export const uploadVideoToR2 = async (
 };
 
 export const createLesson = async (courseId: string, payload: CreateLessonPayload): Promise<Lesson> => {
-  const response = await apiClient.post<{ message: string; data: Lesson }>('/api/lessons', {
-    ...payload,
-    courseID: courseId,
-  });
+  const response = await apiClient.post<{ message: string; data: Lesson }>(
+    `/api/lessons/${courseId}`,
+    payload
+  );
   return response.data.data;
 };
 
@@ -91,6 +101,7 @@ export const createQuiz = async (lessonId: string, payload: CreateQuizPayload): 
 
 export const teacherApi = {
   createCourse,
+  updateCourse,
   getTeacherCourses,
   generateUploadUrl,
   uploadVideoToR2,

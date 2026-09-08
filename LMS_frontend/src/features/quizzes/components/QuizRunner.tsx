@@ -24,56 +24,13 @@ interface QuizRunnerProps {
   onPassed?: () => void;
 }
 
-const mockFallbackStudentQuizzes: Record<string, StudentQuiz> = {
-  'mock-quiz-1': {
-    _id: 'mock-quiz-1',
-    lessonID: 'mock-lesson-2',
-    title: 'اختبار تقييمي: الهيدروكربونات الأروماتية',
-    duration: 15,
-    passingPercentage: 60,
-    isActive: true,
-    questions: [
-      {
-        _id: 'q1',
-        question: 'ما هي الصيغة الجزئية للبنزين العطري؟',
-        options: ['C6H6', 'C6H12', 'C6H14', 'C2H2'],
-      },
-      {
-        _id: 'q2',
-        question: 'عند تفاعل البنزين العطري مع الكلور في وجود عامل حفاز، يتكون:',
-        options: ['كلوروبنزين', 'سداسي كلورو هكسان', 'بنزين كبريتونيك', 'نيتروبنزين'],
-      },
-    ],
-  },
-  'mock-quiz-2': {
-    _id: 'mock-quiz-2',
-    lessonID: 'mock-lesson-5',
-    title: 'اختبار شامل: استخلاص الحديد وتفاعلات الأكاسيد',
-    duration: 20,
-    passingPercentage: 70,
-    isActive: true,
-    questions: [
-      {
-        _id: 'q3',
-        question: 'أي من الأكاسيد التالية يُختزل في الفرن العالي بواسطة الغاز المائي؟',
-        options: [
-          'أكسيد الحديد الثلاثي Fe2O3',
-          'أكسيد الحديد الثنائي FeO',
-          'أكسيد الحديد المغناطيسي Fe3O4',
-          'هيدروكسيد الحديد',
-        ],
-      },
-    ],
-  },
-};
-
 export const QuizRunner: React.FC<QuizRunnerProps> = ({
   lessonId,
   quizId,
   onClose,
 }) => {
   const toast = useToast();
-  const { data: quizData, isLoading: isLoadingQuiz, isError: isQuizError } = useStudentQuiz(quizId);
+  const { data: quizData, isLoading: isLoadingQuiz, isError: isQuizError } = useStudentQuiz(lessonId, quizId);
   const submitQuizMutation = useSubmitQuiz();
 
   
@@ -85,7 +42,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   const [validationError, setValidationError] = useState<string>('');
   const [submissionResult, setSubmissionResult] = useState<QuizSubmissionData | null>(null);
 
-  const quiz: StudentQuiz | undefined = quizData || mockFallbackStudentQuizzes[quizId];
+  const quiz: StudentQuiz | undefined = quizData;
   const questions = quiz?.questions || [];
 
   const handleSelectOption = (questionId: string, optionText: string) => {
@@ -168,7 +125,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
   if (isLoadingQuiz && !quiz) {
     return (
-      <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs flex flex-col items-center justify-center min-h-[260px] text-center space-y-3">
+      <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs flex flex-col items-center justify-center min-h-55 text-center space-y-3">
         <Loader2 size={36} className="animate-spin text-amber-500" />
         <p className="text-sm font-bold text-slate-700">جاري تجهيز أسئلة الاختبار...</p>
       </div>

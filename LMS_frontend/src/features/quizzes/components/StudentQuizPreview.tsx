@@ -4,66 +4,25 @@ import { useStudentQuiz } from '../hooks/useStudentQuiz';
 import type { StudentQuiz } from '../types/quiz';
 
 interface StudentQuizPreviewProps {
+  lessonId: string;
   quizId: string;
   onClose?: () => void;
   onStartQuiz?: () => void;
 }
 
-const mockFallbackStudentQuizzes: Record<string, StudentQuiz> = {
-  'mock-quiz-1': {
-    _id: 'mock-quiz-1',
-    lessonID: 'mock-lesson-2',
-    title: 'اختبار تقييمي: الهيدروكربونات الأروماتية',
-    duration: 15,
-    passingPercentage: 60,
-    isActive: true,
-    questions: [
-      {
-        _id: 'q1',
-        question: 'ما هي الصيغة الجزئية للبنزين العطري؟',
-        options: ['C6H6', 'C6H12', 'C6H14', 'C2H2'],
-      },
-      {
-        _id: 'q2',
-        question: 'عند تفاعل البنزين العطري مع الكلور في وجود عامل حفاز، يتكون:',
-        options: ['كلوروبنزين', 'سداسي كلورو هكسان', 'بنزين كبريتونيك', 'نيتروبنزين'],
-      },
-    ],
-  },
-  'mock-quiz-2': {
-    _id: 'mock-quiz-2',
-    lessonID: 'mock-lesson-5',
-    title: 'اختبار شامل: استخلاص الحديد وتفاعلات الأكاسيد',
-    duration: 20,
-    passingPercentage: 70,
-    isActive: true,
-    questions: [
-      {
-        _id: 'q3',
-        question: 'أي من الأكاسيد التالية يُختزل في الفرن العالي بواسطة الغاز المائي؟',
-        options: [
-          'أكسيد الحديد الثلاثي Fe2O3',
-          'أكسيد الحديد الثنائي FeO',
-          'أكسيد الحديد المغناطيسي Fe3O4',
-          'هيدروكسيد الحديد',
-        ],
-      },
-    ],
-  },
-};
-
 export const StudentQuizPreview: React.FC<StudentQuizPreviewProps> = ({
+  lessonId,
   quizId,
   onClose,
   onStartQuiz,
 }) => {
-  const { data: quizData, isLoading, isError, refetch } = useStudentQuiz(quizId);
+  const { data: quizData, isLoading, isError, refetch } = useStudentQuiz(lessonId, quizId);
 
   if (!quizId) {
     return null;
   }
 
-  const quiz: StudentQuiz | undefined = quizData || mockFallbackStudentQuizzes[quizId];
+  const quiz: StudentQuiz | undefined = quizData;
 
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-6 border border-amber-200 shadow-xs space-y-5">
@@ -120,12 +79,12 @@ export const StudentQuizPreview: React.FC<StudentQuizPreviewProps> = ({
 
       
       {isLoading && !quiz ? (
-        <div className="flex flex-col items-center justify-center min-h-[160px] text-center space-y-2">
+        <div className="flex flex-col items-center justify-center min-h-40 text-center space-y-2">
           <Loader2 size={32} className="animate-spin text-amber-500" />
           <p className="text-xs font-semibold text-slate-500">جاري تحميل أسئلة الاختبار بدون إجابات...</p>
         </div>
       ) : isError && !quiz ? (
-        <div className="flex flex-col items-center justify-center min-h-[160px] text-center space-y-2">
+        <div className="flex flex-col items-center justify-center min-h-40 text-center space-y-2">
           <AlertTriangle size={32} className="text-red-500" />
           <p className="text-xs font-bold text-slate-800">تعذر تحميل بيانات الاختبار</p>
           <button

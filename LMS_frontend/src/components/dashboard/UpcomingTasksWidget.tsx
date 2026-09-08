@@ -15,43 +15,8 @@ interface UpcomingTasksWidgetProps {
   onViewAll?: () => void;
 }
 
-export const defaultTasks: TaskItem[] = [
-  {
-    id: '1',
-    day: '25',
-    month: 'مايو',
-    title: 'اختبار الفصل الأول',
-    subtitle: 'الكيمياء العضوية - المجموعة 1',
-    color: 'teal',
-  },
-  {
-    id: '2',
-    day: '28',
-    month: 'مايو',
-    title: 'واجب تفاعلي',
-    subtitle: 'الكيمياء غير العضوية - المجموعة 2',
-    color: 'blue',
-  },
-  {
-    id: '3',
-    day: '30',
-    month: 'مايو',
-    title: 'تصحيح اختبارات',
-    subtitle: 'الكيمياء التحليلية - المجموعة 3',
-    color: 'purple',
-  },
-  {
-    id: '4',
-    day: '02',
-    month: 'يونيو',
-    title: 'شرح الدرس القادم',
-    subtitle: 'الاتزان الكيميائي',
-    color: 'teal',
-  },
-];
-
 export const UpcomingTasksWidget: React.FC<UpcomingTasksWidgetProps> = ({
-  tasks = defaultTasks,
+  tasks = [],
   onViewAll,
 }) => {
   return (
@@ -65,29 +30,34 @@ export const UpcomingTasksWidget: React.FC<UpcomingTasksWidgetProps> = ({
         </div>
 
         <div className="space-y-3">
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-slate-50 transition"
-            >
-              <div className="text-right">
-                <h4 className="text-xs font-bold text-slate-800">{task.title}</h4>
-                <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                  {task.subtitle}
-                </p>
-              </div>
-
-              
-              <div className="w-11 h-11 rounded-2xl bg-teal-50 border border-teal-100 flex flex-col items-center justify-center shrink-0">
-                <span className="text-xs font-black text-[#0D8A82] leading-none">
-                  {task.day}
-                </span>
-                <span className="text-[9px] font-bold text-teal-600 mt-0.5 leading-none">
-                  {task.month}
-                </span>
-              </div>
+          {tasks.length === 0 ? (
+            <div className="text-center py-6 text-xs text-slate-400 font-semibold">
+              لا توجد مهام قادمة
             </div>
-          ))}
+          ) : (
+            tasks.map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-slate-50 transition"
+              >
+                <div className="text-right">
+                  <h4 className="text-xs font-bold text-slate-800">{task.title}</h4>
+                  <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                    {task.subtitle}
+                  </p>
+                </div>
+
+                <div className="w-11 h-11 rounded-2xl bg-teal-50 border border-teal-100 flex flex-col items-center justify-center shrink-0">
+                  <span className="text-xs font-black text-[#0D8A82] leading-none">
+                    {task.day}
+                  </span>
+                  <span className="text-[9px] font-bold text-teal-600 mt-0.5 leading-none">
+                    {task.month}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

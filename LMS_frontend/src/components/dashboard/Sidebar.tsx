@@ -20,7 +20,7 @@ export interface NavItem {
   icon: React.ReactNode;
 }
 
-export const defaultNavItems: NavItem[] = [
+const defaultNavItems: NavItem[] = [
   { id: 'home', label: 'الرئيسية', icon: <Home size={20} /> },
   { id: 'courses', label: 'المقررات', icon: <BookOpen size={20} /> },
   { id: 'lessons', label: 'الدروس', icon: <Video size={20} /> },
@@ -67,15 +67,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }`}
       >
         <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
-          {/* Top Branding & Mobile Close */}
+          
           <div className="px-3 pt-4 pb-1 flex items-center justify-center relative shrink-0">
             <img
               src="/logo.png"
               alt="منصة الصادق في الكيمياء"
-              className="h-24 sm:h-28 w-full max-w-[200px] object-contain mx-auto"
+              className="h-24 sm:h-28 w-full max-w-50 object-contain mx-auto"
             />
 
-            {/* Mobile Close Button */}
+           
             {onCloseMobile && (
               <button
                 onClick={onCloseMobile}
@@ -86,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          {/* Nav Items List */}
+          
           <nav className="flex-1 px-3 py-1 space-y-1">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             })}
           </nav>
 
-          {/* Logout Action Button */}
+          
           <div className="px-3 py-1 shrink-0">
             <button
               onClick={onLogout}
@@ -123,12 +123,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          {/* Footer Branding */}
+         
           <div className="p-3 pb-3 flex flex-col items-center justify-center text-center space-y-1 shrink-0">
             <img
               src="/bottomSideBar.png"
               alt="منصة الصادق"
-              className="w-full max-w-[110px] h-auto object-contain rounded-xl"
+              className="w-full max-w-27.5 h-auto object-contain rounded-xl"
             />
             <p className="text-[11px] text-slate-400 font-medium">
               Made by{' '}

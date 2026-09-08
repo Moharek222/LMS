@@ -35,20 +35,9 @@ export const submitQuiz = async (
   quizId: string,
   payload: SubmitQuizRequestPayload
 ): Promise<QuizSubmissionData> => {
-  try {
-    const url = lessonId
-      ? `/api/lessons/${lessonId}/quizzes/${quizId}/submissions`
-      : `/api/quizzes/${quizId}/submissions`;
-    const response = await apiClient.post<SubmitQuizResponse>(url, payload);
-    return response.data.data;
-  } catch (error) {
-    if (lessonId) {
-      const fallbackUrl = `/api/quizzes/${quizId}/submissions`;
-      const response = await apiClient.post<SubmitQuizResponse>(fallbackUrl, payload);
-      return response.data.data;
-    }
-    throw error;
-  }
+  const url = `/api/lessons/${lessonId}/quizzes/${quizId}/submissions`;
+  const response = await apiClient.post<SubmitQuizResponse>(url, payload);
+  return response.data.data;
 };
 
 export const quizSubmissionApi = {

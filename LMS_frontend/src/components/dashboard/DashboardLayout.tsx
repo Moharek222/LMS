@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sidebar, defaultNavItems, type NavItem } from './Sidebar';
+import { Sidebar, type NavItem } from './Sidebar';
 import { Topbar } from './Topbar';
 import { Footer } from '../layout/Footer';
 import { useAuth } from '../../context/useAuth';
@@ -16,7 +16,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children,
   activeTab,
   onSelectTab,
-  navItems = defaultNavItems,
+  navItems,
   subtitle,
 }) => {
   const { user, logout } = useAuth();
