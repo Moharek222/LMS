@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getMySubmissionsQuiz } from "../quiz-submission/quiz-submission-controllers/get-my-submission";
-import { getMySubmissionsExams } from "../exam-submission/exam-submission-controllers/get-my-submission";
+import { getMySubmissions } from "../exam-submission/exam-submission-controllers/get-my-submission";
 import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
 
 
@@ -30,6 +30,8 @@ router.put("/profile",
 // Quiz history
 router.get("/quiz-history", getMySubmissionsQuiz)
 // Exam history
-router.get("/exam-history", getMySubmissionsExams)
+router.get("/exam-history",
+    isAuthorized(Role.Student),
+    getMySubmissions)
 
 export default router;

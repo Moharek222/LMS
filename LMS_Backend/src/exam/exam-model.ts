@@ -1,12 +1,13 @@
 import mongoose from "mongoose";
 
 interface IQuestion extends mongoose.Document {
+    type: "MCQ" | "ESSAY";
+    points: number;
     question: string;
     questionImage?: string;
-    options: string[];
-    answer: string;
+    options?: string[];
+    answer?: string;
 }
-
 
 export interface IExam extends mongoose.Document {
     courseID: mongoose.Types.ObjectId;
@@ -19,6 +20,17 @@ export interface IExam extends mongoose.Document {
 }
 
 const questionSchema = new mongoose.Schema<IQuestion>({
+    type: {
+        type: String,
+        enum: ["MCQ", "ESSAY"],
+        required: true,
+        default: "MCQ"
+    },
+    points: {
+        type: Number,
+        required: true,
+        min: [1, "Question points must be at least 1"]
+    },
     question: {
         type: String,
         required: true,
@@ -26,27 +38,32 @@ const questionSchema = new mongoose.Schema<IQuestion>({
     },
     questionImage: {
         type: String,
-        required: false,
         trim: true,
         default: null
     },
     options: {
         type: [String],
-        required: true,
+        required: function (this: any) { 
+            return this.type === "MCQ"; 
+        },
         validate: {
-            validator: function (arr: string[]) {
-                return arr.length >= 2;
+            validator: function (this: any, arr: string[]) {
+                if (this.type === "ESSAY") return true;
+                return arr && arr.length >= 2;
             },
-            message: "At least two options are required"
+            message: "MCQ questions require at least two options"
         }
     },
     answer: {
         type: String,
-        required: true,
+        required: function (this: any) { 
+            return this.type === "MCQ"; 
+        },
         trim: true,
         validate: {
             validator: function (this: any, val: string) {
-                return this.options.includes(val);
+                if (this.type === "ESSAY") return true;
+                return this.options ? this.options.includes(val) : false;
             },
             message: "The answer must be exactly one of the provided options"
         }

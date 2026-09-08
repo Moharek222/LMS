@@ -1,25 +1,54 @@
 import { Router } from "express";
 import { isAuthorized } from "../middlewares/isAuthorized.middleware";
 import { Role } from "../user/user-model";
-import { getStudentsSubmissions } from "./exam-submission-controllers/get-students-submissions";
-import { getSubmissionById } from "./exam-submission-controllers/get-submission-by-id";
 import { submitExam } from "./exam-submission-controllers/submit-exam";
+import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
+import { getMySubmissions } from "./exam-submission-controllers/get-my-submission";
+import { getExamSubmission } from "./exam-submission-controllers/get-exam-submission";
+import { getExamStatistics } from "./exam-submission-controllers/get-exam-statistics";
+import { getSubmissionDetails } from "./exam-submission-controllers/get-submission-details";
+import { getSubmissionResult } from "./exam-submission-controllers/get-submission-result";
+import { gradeEssayQuestions } from "./exam-submission-controllers/grade-essay";
+import { deleteSubmission } from "./exam-submission-controllers/delete-submission";
 
 const router = Router({ mergeParams: true });
 
-router.post("/",
-    // isAuthorized(Role.Student),
-    submitExam
+router.use(isAuthenticated);
+
+router.get("/statistics",
+    isAuthorized(Role.Admin, Role.Teacher), 
+    getExamStatistics
 );
 
 router.get("/",
-    // isAuthorized(Role.Admin, Role.Teacher),
-    getStudentsSubmissions
+    isAuthorized(Role.Admin, Role.Teacher),
+    getExamSubmission
 );
 
-router.get("/:id",
-    // isAuthorized(Role.Student),
-    getSubmissionById
+
+router.post("/",
+    isAuthorized(Role.Student),
+    submitExam
 );
+
+router.put("/:submissionID/grade",
+    isAuthorized(Role.Admin, Role.Teacher),
+    gradeEssayQuestions
+);
+
+
+router.get("/:submissionID/details",
+    isAuthorized(Role.Admin, Role.Teacher),
+    getSubmissionDetails
+);
+
+router.get("/:submissionID/result",
+    isAuthorized(Role.Student),
+    getSubmissionResult
+);
+router.delete("/:submissionID",
+    isAuthorized(Role.Admin, Role.Teacher),
+    deleteSubmission
+)
 
 export default router;

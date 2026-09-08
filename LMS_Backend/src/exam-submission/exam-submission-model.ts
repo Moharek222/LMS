@@ -1,68 +1,108 @@
 import mongoose from "mongoose";
 
-
-interface ISelectedOption {
-    QuestionId: mongoose.Types.ObjectId;
-    selectedAnswer: string
+export interface IStudentAnswer{
+    questionID: mongoose.Types.ObjectId;
+    type: "MCQ" | "ESSAY"; 
+    studentAnswer: string;  
+    score: number;
+    isCorrect?: boolean;
+    teacherFeedback?: string;
 }
 
 export interface IExamSubmission extends mongoose.Document {
-    studentID: mongoose.Types.ObjectId;
     examID: mongoose.Types.ObjectId;
-    score: number;
-    selectedOption: ISelectedOption[];
-    isPassed: boolean;
+    studentID: mongoose.Types.ObjectId;
+    answers: IStudentAnswer[];
+    mcqScore: number;
+    essayScore: number;
+    totalScore: number;
+    totalExamPoints: number
+    status: "PENDING" | "GRADED"; 
+    gradedBy?: mongoose.Types.ObjectId;
     createdAt?: Date;
     updatedAt?: Date;
 }
 
-const examSubmissionSchema = new mongoose.Schema<IExamSubmission>({
-    studentID: {
+const studentAnswerSchema = new mongoose.Schema<IStudentAnswer>({
+    questionID: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Student",
         required: true
     },
+    type: {
+        type: String,
+        enum: ["MCQ", "ESSAY"],
+        required: true
+    },
+    studentAnswer: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    score: {
+        type: Number,
+        default: 0
+    },
+    isCorrect: {
+        type: Boolean,
+        default: false
+    },
+    teacherFeedback: {
+        type: String,
+        trim: true,
+        default: null
+    }
+}, { _id: false });
+
+const examSubmissionSchema = new mongoose.Schema<IExamSubmission>({
     examID: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Exam",
         required: true
     },
-    score: {
-        type: Number,
-        required: true,
-        min: [0, "Score can not be negative"]
-    },
-    isPassed: {
-        type: Boolean,
+    studentID: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Student",
         required: true
     },
-    selectedOption: {
-        type: [
-            {
-                QuestionId: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: "Question",
-                    required: true
-                },
-                selectedAnswer: {
-                    type: String,
-                    required: true
-                }
-            }
-        ],
+    answers: {
+        type: [studentAnswerSchema],
+        required: true
+    },
+    mcqScore: {
+        type: Number,
         required: true,
-        validate: {
-            validator: function (selectedOption: ISelectedOption[]) {
-                return selectedOption.length > 0;
-            },
-            message: "At least one question is required"
-        }
+        default: 0
+    },
+    essayScore: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    totalScore: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    totalExamPoints: {
+        type: Number,
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ["PENDING", "GRADED"],
+        required: true,
+        default: "PENDING" 
+    },
+    gradedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null
     }
 }, {
     timestamps: true,
     versionKey: false
 });
 
-examSubmissionSchema.index({ studentID: 1, examID: 1 }, { unique: true });
+examSubmissionSchema.index({ examID: 1, studentID: 1 }, { unique: true });
 
 export const ExamSubmission = mongoose.model<IExamSubmission>("ExamSubmission", examSubmissionSchema);
