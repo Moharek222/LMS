@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../../context/useAuth';
+import { StudentQRCode } from './StudentQRCode';
 
 export const StudentProfileCard: React.FC = () => {
   const { user } = useAuth();
@@ -103,6 +104,9 @@ export const StudentProfileCard: React.FC = () => {
         </div>
       </div>
 
+      {/* Student QR Code Section */}
+      <StudentQRCode />
+
       
       <div className="bg-teal-50/60 rounded-2xl p-4 border border-teal-100/80 flex items-center gap-3 text-slate-600">
         <ShieldCheck size={20} className="text-[#0D8A82] shrink-0" />
@@ -115,3 +119,4 @@ export const StudentProfileCard: React.FC = () => {
 };
 
 export default StudentProfileCard;
+
