@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, HelpCircle, Check, X, RefreshCw } from 'lucide-react';
+import { Edit, Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, HelpCircle, Check, X, RefreshCw, Image as ImageIcon, UploadCloud } from 'lucide-react';
 import { useTeacherQuiz } from '../../../quizzes/hooks/useTeacherQuiz';
 import { useUpdateQuiz } from '../../../quizzes/hooks/useUpdateQuiz';
 import type { TeacherQuizQuestion } from '../../../quizzes/types/quiz';
@@ -10,6 +10,7 @@ interface QuestionDraft {
   id: string;
   _id?: string;
   question: string;
+  questionImage?: string;
   options: string[];
   answer: string;
 }
@@ -58,6 +59,7 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
               id: q._id || `q_${idx}_${Date.now()}`,
               _id: q._id,
               question: q.question || '',
+              questionImage: q.questionImage || '',
               options: q.options ? [...q.options] : ['', ''],
               answer: q.answer || '',
             }))
@@ -65,6 +67,7 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
               {
                 id: `q_${Date.now()}`,
                 question: '',
+                questionImage: '',
                 options: ['', ''],
                 answer: '',
               },
@@ -86,6 +89,7 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
       {
         id: `q_${Date.now()}`,
         question: '',
+        questionImage: '',
         options: ['', ''],
         answer: '',
       },
@@ -104,6 +108,32 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
     setQuestions((prev) =>
       prev.map((q) => (q.id === qId ? { ...q, question: text } : q))
     );
+  };
+
+  const handleQuestionImageChange = (qId: string, imageUrl: string) => {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === qId ? { ...q, questionImage: imageUrl } : q))
+    );
+  };
+
+  const handleImageFileSelect = (qId: string, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 5 ميجابايت');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (result) {
+        handleQuestionImageChange(qId, result);
+        toast.success('تم تحميل الصورة بنجاح 🖼️');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleAddOption = (qId: string) => {
@@ -204,6 +234,7 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
     const formattedQuestions: TeacherQuizQuestion[] = questions.map((q) => ({
       ...(q._id ? { _id: q._id } : {}),
       question: q.question.trim(),
+      questionImage: q.questionImage?.trim() || undefined,
       options: q.options.map((opt) => opt.trim()).filter((opt) => opt !== ''),
       answer: q.answer.trim(),
     }));
@@ -395,6 +426,62 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
                       disabled={updateQuizMutation.isPending}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-none focus:border-amber-500"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1.5 flex items-center gap-1">
+                      <ImageIcon size={14} className="text-amber-600" />
+                      <span>صورة توضيحية للسؤال (اختياري):</span>
+                    </label>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition cursor-pointer shrink-0">
+                        <UploadCloud size={16} />
+                        <span>اختر صورة من الموبايل / الجهاز 📱</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={updateQuizMutation.isPending}
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageFileSelect(q.id, file);
+                          }}
+                        />
+                      </label>
+                      <div className="flex-1 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={q.questionImage || ''}
+                          onChange={(e) => handleQuestionImageChange(q.id, e.target.value)}
+                          placeholder="أو ألصق رابط الصورة هنا..."
+                          disabled={updateQuizMutation.isPending}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white focus:outline-none focus:border-amber-500"
+                        />
+                        {q.questionImage && (
+                          <button
+                            type="button"
+                            onClick={() => handleQuestionImageChange(q.id, '')}
+                            className="p-2 text-slate-400 hover:text-rose-500 rounded-xl transition cursor-pointer shrink-0"
+                            title="حذف الصورة"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {q.questionImage?.trim() && (
+                      <div className="mt-2.5 relative rounded-xl overflow-hidden max-h-36 border border-slate-200 bg-white flex items-center justify-center p-2 w-fit max-w-xs">
+                        <img
+                          src={q.questionImage.trim()}
+                          alt="معاينة صورة السؤال"
+                          className="max-h-32 object-contain rounded-lg"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2.5 pr-2 sm:pr-6">

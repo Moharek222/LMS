@@ -9,6 +9,8 @@ import { ExamCard } from './exams/ExamCard';
 import { CreateExamModal } from './exams/CreateExamModal';
 import { EditExamModal } from './exams/EditExamModal';
 import { DeactivateExamModal } from './exams/DeactivateExamModal';
+import { ExamSubmissionsModal } from './exams/ExamSubmissionsModal';
+import { ExamStatsModal } from './exams/ExamStatsModal';
 
 export const TeacherExamManager: React.FC = () => {
   const toast = useToast();
@@ -46,6 +48,14 @@ export const TeacherExamManager: React.FC = () => {
   const [deactivatingExamTitle, setDeactivatingExamTitle] = useState<string>('');
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
 
+  // Submissions Modal State
+  const [submissionsExamId, setSubmissionsExamId] = useState<string>('');
+  const [submissionsExamTitle, setSubmissionsExamTitle] = useState<string>('');
+
+  // Stats Modal State
+  const [statsExamId, setStatsExamId] = useState<string>('');
+  const [statsExamTitle, setStatsExamTitle] = useState<string>('');
+
   const handleOpenEditModal = (examId: string) => {
     setEditingExamId(examId);
     setIsEditModalOpen(true);
@@ -57,9 +67,19 @@ export const TeacherExamManager: React.FC = () => {
     setIsDeactivateModalOpen(true);
   };
 
+  const handleOpenSubmissionsModal = (examId: string, examTitle: string) => {
+    setSubmissionsExamId(examId);
+    setSubmissionsExamTitle(examTitle);
+  };
+
+  const handleOpenStatsModal = (examId: string, examTitle: string) => {
+    setStatsExamId(examId);
+    setStatsExamTitle(examTitle);
+  };
+
   return (
     <div className="space-y-6">
-     
+      
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
@@ -69,7 +89,7 @@ export const TeacherExamManager: React.FC = () => {
             <div>
               <h2 className="text-xl font-extrabold text-slate-800">إدارة الامتحانات الشاملة</h2>
               <p className="text-xs text-slate-500 font-semibold">
-                استعراض وتنظيم الامتحانات الشاملة على مستوى المقررات الدراسية
+                استعراض وتنظيم الامتحانات الشاملة وتصحيح وإجابات الطلاب
               </p>
             </div>
           </div>
@@ -205,6 +225,8 @@ export const TeacherExamManager: React.FC = () => {
                 exam={exam}
                 onEdit={handleOpenEditModal}
                 onDeactivate={handleOpenDeactivateModal}
+                onViewSubmissions={handleOpenSubmissionsModal}
+                onViewStats={handleOpenStatsModal}
               />
             ))}
           </div>
@@ -239,6 +261,34 @@ export const TeacherExamManager: React.FC = () => {
         deactivatingExamId={deactivatingExamId}
         deactivatingExamTitle={deactivatingExamTitle}
       />
+
+      {/* Submissions Modal */}
+      {submissionsExamId && (
+        <ExamSubmissionsModal
+          isOpen={Boolean(submissionsExamId)}
+          onClose={() => {
+            setSubmissionsExamId('');
+            setSubmissionsExamTitle('');
+          }}
+          courseId={selectedCourseId}
+          examId={submissionsExamId}
+          examTitle={submissionsExamTitle}
+        />
+      )}
+
+      {/* Stats Modal */}
+      {statsExamId && (
+        <ExamStatsModal
+          isOpen={Boolean(statsExamId)}
+          onClose={() => {
+            setStatsExamId('');
+            setStatsExamTitle('');
+          }}
+          courseId={selectedCourseId}
+          examId={statsExamId}
+          examTitle={statsExamTitle}
+        />
+      )}
     </div>
   );
 };

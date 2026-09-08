@@ -326,6 +326,19 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
                 </h4>
               </div>
 
+              {q.questionImage?.trim() && (
+                <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center">
+                  <img
+                    src={q.questionImage.trim()}
+                    alt="صورة السؤال"
+                    className="max-h-56 object-contain rounded-lg"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+
               <div className="space-y-2.5 pr-1 sm:pr-10">
                 {q.options.map((optionText, optIndex) => {
                   const isOptionSelected = selectedForThisQuestion === optionText;

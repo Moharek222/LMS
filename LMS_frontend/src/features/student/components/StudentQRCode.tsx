@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Download, QrCode, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Download, QrCode, AlertTriangle, ShieldCheck, Printer } from 'lucide-react';
 import { useAuth } from '../../../context/useAuth';
 import { generateQRMatrix } from '../utils/qrGenerator';
+import { PrintStudentQrCardModal } from './PrintStudentQrCardModal';
 
 export const StudentQRCode: React.FC = () => {
   const { user, isLoading } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isQrGenerated, setIsQrGenerated] = useState<boolean>(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
 
   const studentId = user?.id || '';
   const studentName = user?.name || '';
@@ -175,16 +177,36 @@ export const StudentQRCode: React.FC = () => {
         </p>
       </div>
 
-      {/* Download Action Button */}
-      <button
-        type="button"
-        onClick={handleDownload}
-        disabled={!isQrGenerated}
-        className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#0D8A82] text-white text-xs font-extrabold hover:bg-teal-700 transition cursor-pointer shadow-xs disabled:opacity-40 disabled:cursor-not-allowed w-full sm:w-auto min-w-48"
-      >
-        <Download size={16} />
-        <span>تحميل QR</span>
-      </button>
+      {/* Action Buttons */}
+      <div className="flex items-center justify-center gap-3 w-full sm:w-auto flex-wrap">
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={!isQrGenerated}
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#0D8A82] text-white text-xs font-extrabold hover:bg-teal-700 transition cursor-pointer shadow-xs disabled:opacity-40 disabled:cursor-not-allowed flex-1 sm:flex-none"
+        >
+          <Download size={16} />
+          <span>تحميل صورة الـ QR</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setIsPrintModalOpen(true)}
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-teal-50 text-[#0D8A82] border border-teal-200 text-xs font-extrabold hover:bg-teal-100 transition cursor-pointer shadow-xs flex-1 sm:flex-none"
+        >
+          <Printer size={16} />
+          <span>طباعة كارت الطالب 🖨️</span>
+        </button>
+      </div>
+
+      {/* Print QR Badge Modal */}
+      <PrintStudentQrCardModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        studentId={studentId}
+        studentName={studentName}
+        studentPhone={user?.phone}
+      />
     </div>
   );
 };

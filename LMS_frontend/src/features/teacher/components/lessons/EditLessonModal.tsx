@@ -4,6 +4,7 @@ import type { Lesson } from '../../../lessons/types/lesson';
 import { useUpdateLesson } from '../../../lessons/hooks/useUpdateLesson';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import { DirectVideoUploader } from '../../../lessons/components/DirectVideoUploader';
 
 interface EditLessonModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
   const [description, setDescription] = useState('');
   const [order, setOrder] = useState<number | string>(1);
   const [requiresPassing, setRequiresPassing] = useState(false);
+  const [contentUrl, setContentUrl] = useState('');
   const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
       setDescription(lesson.description || '');
       setOrder(lesson.order ?? 1);
       setRequiresPassing(Boolean(lesson.requiresPassing));
+      setContentUrl(lesson.contentUrl || '');
       setValidationError('');
     }
   }, [lesson, isOpen]);
@@ -74,6 +77,7 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
         payload: {
           title: trimmedTitle,
           description: trimmedDescription || undefined,
+          contentUrl: contentUrl || undefined,
           order: parsedOrder,
           requiresPassing,
         },
@@ -181,6 +185,12 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] resize-none"
             />
           </div>
+
+          {/* Direct Cloud Video Uploader */}
+          <DirectVideoUploader
+            currentVideoUrl={contentUrl}
+            onVideoUploaded={(key: string) => setContentUrl(key)}
+          />
 
           {/* Requires Passing Checkbox/Toggle */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">

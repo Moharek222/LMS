@@ -50,16 +50,19 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
   }, [userAnswers]);
 
   const handleDoSubmit = () => {
-    if (isSubmittingRef.current || submissionResult || timeExpiredNoAnswers) return;
+    const answersPayload = (exam?.questions || [])
+      .map((q) => {
+        const ans = userAnswersRef.current[q._id];
+        if (!ans || !ans.trim()) return null;
+        return {
+          questionID: q._id,
+          type: q.type || 'MCQ',
+          studentAnswer: ans.trim(),
+        };
+      })
+      .filter((item): item is { questionID: string; type: 'MCQ' | 'ESSAY'; studentAnswer: string } => item !== null);
 
-    const selectedOption = Object.entries(userAnswersRef.current)
-      .filter(([, answer]) => Boolean(answer && answer.trim()))
-      .map(([QuestionId, selectedAnswer]) => ({
-        QuestionId,
-        selectedAnswer,
-      }));
-
-    if (selectedOption.length === 0) {
+    if (answersPayload.length === 0) {
       setShowConfirmModal(false);
       setSubmitErrorMessage('يجب الإجابة على سؤال واحد على الأقل قبل تسليم الامتحان.');
       return;
@@ -73,7 +76,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
       {
         courseId,
         examId,
-        payload: { selectedOption },
+        payload: { answers: answersPayload },
       },
       {
         onSuccess: (result) => {
@@ -223,41 +226,56 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
  
   if (submissionResult) {
-    const percentage = Math.round(
-      (submissionResult.score / Math.max(1, submissionResult.totalQuestions)) * 100
-    );
+    const isPendingGrade = submissionResult.status === 'PENDING';
+    const score = submissionResult.score ?? 0;
+    const totalQ = submissionResult.totalQuestions || 1;
+    const percentage = Math.round((score / Math.max(1, totalQ)) * 100);
 
     return (
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xs text-center space-y-6 max-w-2xl mx-auto">
         <div
           className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto border shadow-sm ${
-            submissionResult.isPassed
+            isPendingGrade
+              ? 'bg-amber-50 text-amber-600 border-amber-200'
+              : submissionResult.isPassed
               ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
               : 'bg-rose-50 text-rose-600 border-rose-200'
           }`}
         >
-          {submissionResult.isPassed ? <CheckCircle2 size={44} /> : <XCircle size={44} />}
+          {isPendingGrade ? <Clock size={44} /> : submissionResult.isPassed ? <CheckCircle2 size={44} /> : <XCircle size={44} />}
         </div>
 
         <div className="space-y-2">
           <span
             className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-extrabold border ${
-              submissionResult.isPassed
+              isPendingGrade
+                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                : submissionResult.isPassed
                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                 : 'bg-rose-100 text-rose-800 border-rose-300'
             }`}
           >
             <Award size={16} />
-            <span>{submissionResult.isPassed ? 'تم اجتياز الامتحان بنجاح' : 'لم يتم اجتياز الامتحان'}</span>
+            <span>
+              {isPendingGrade
+                ? 'تم التسليم وبانتظار تصحيح الأسئلة المقالية'
+                : submissionResult.isPassed
+                ? 'تم اجتياز الامتحان بنجاح'
+                : 'لم يتم اجتياز الامتحان'}
+            </span>
           </span>
           <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
-          <p className="text-xs text-slate-500 font-semibold">تم تسجيل نتيجتك وحفظها في النظام</p>
+          <p className="text-xs text-slate-500 font-semibold">
+            {isPendingGrade
+              ? 'تم تسليم إجاباتك بنجاح وفي انتظار تقييم المعلم للأسئلة المقالية.'
+              : 'تم تسجيل نتيجتك وحفظها في النظام'}
+          </p>
         </div>
 
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80">
-            <span className="text-[11px] text-slate-400 font-bold block">درجة الطالب</span>
+            <span className="text-[11px] text-slate-400 font-bold block">درجة الطالب الحالية</span>
             <span className="text-xl font-black text-slate-800">{submissionResult.score} درجة</span>
           </div>
 
@@ -267,7 +285,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           </div>
 
           <div className="bg-teal-50/60 rounded-2xl p-4 border border-teal-100">
-            <span className="text-[11px] text-[#0D8A82] font-bold block">النسبة المئوية</span>
+            <span className="text-[11px] text-[#0D8A82] font-bold block">النسبة الحالية</span>
             <span className="text-xl font-black text-[#0D8A82]">{percentage}%</span>
           </div>
         </div>
@@ -351,7 +369,6 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
         )}
       </div>
 
-      
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
         {submitErrorMessage && (
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center justify-between gap-3">
@@ -372,51 +389,93 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           <span className="w-9 h-9 rounded-xl bg-[#0D8A82] text-white font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
             {currentQuestionIndex + 1}
           </span>
-          <h2 className="text-base sm:text-lg font-bold text-slate-800 pt-1 leading-relaxed">
-            {currentQuestion.question}
-          </h2>
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-md text-[11px] font-extrabold bg-teal-50 text-[#0D8A82] border border-teal-200">
+                {currentQuestion.type === 'ESSAY' ? 'سؤال مقالي' : 'اختيار من متعدد'}
+              </span>
+              {typeof currentQuestion.points === 'number' && (
+                <span className="px-2.5 py-0.5 rounded-md text-[11px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200">
+                  {currentQuestion.points} {currentQuestion.points === 1 ? 'درجة' : 'درجات'}
+                </span>
+              )}
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-800 leading-relaxed">
+              {currentQuestion.question}
+            </h2>
+          </div>
         </div>
 
-       
-        <div className="space-y-3">
-          {currentQuestion.options.map((optionText, optIdx) => {
-            const isSelected = currentAnswer === optionText;
-            return (
-              <div
-                key={optIdx}
-                onClick={() => handleSelectOption(currentQuestion._id, optionText)}
-                className={`rounded-2xl p-4 border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                  isSelected
-                    ? 'bg-teal-50/80 border-[#0D8A82] ring-2 ring-[#0D8A82]/20 shadow-2xs'
-                    : 'bg-slate-50/50 border-slate-200/90 hover:bg-slate-50 hover:border-teal-200'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`w-7 h-7 rounded-lg font-extrabold text-xs flex items-center justify-center shrink-0 border ${
-                      isSelected
-                        ? 'bg-[#0D8A82] text-white border-[#0D8A82]'
-                        : 'bg-white text-slate-500 border-slate-200'
-                    }`}
-                  >
-                    {String.fromCharCode(65 + optIdx)}
-                  </span>
-                  <span className={`text-xs sm:text-sm font-bold ${isSelected ? 'text-[#0D8A82]' : 'text-slate-700'}`}>
-                    {optionText}
-                  </span>
-                </div>
+        {/* Question Image if present */}
+        {currentQuestion.questionImage?.trim() && (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex items-center justify-center overflow-hidden">
+            <img
+              src={currentQuestion.questionImage.trim()}
+              alt="صورة السؤال"
+              className="max-h-72 object-contain rounded-xl"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </div>
+        )}
 
+        {/* Question Input Section */}
+        {currentQuestion.type === 'ESSAY' ? (
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-700">
+              اكتب إجابتك المقالية بالتفصيل:
+            </label>
+            <textarea
+              rows={5}
+              value={currentAnswer}
+              onChange={(e) => handleSelectOption(currentQuestion._id, e.target.value)}
+              placeholder="اكتب الإجابة المقالية هنا..."
+              disabled={Boolean(submissionResult || timeExpiredNoAnswers || submitExamMutation.isPending)}
+              className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs font-semibold bg-slate-50/50 focus:bg-white focus:outline-none focus:border-[#0D8A82] transition"
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {(currentQuestion.options || []).map((optionText, optIdx) => {
+              const isSelected = currentAnswer === optionText;
+              return (
                 <div
-                  className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                    isSelected ? 'border-[#0D8A82] bg-[#0D8A82]' : 'border-slate-300 bg-white'
+                  key={optIdx}
+                  onClick={() => handleSelectOption(currentQuestion._id, optionText)}
+                  className={`rounded-2xl p-4 border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    isSelected
+                      ? 'bg-teal-50/80 border-[#0D8A82] ring-2 ring-[#0D8A82]/20 shadow-2xs'
+                      : 'bg-slate-50/50 border-slate-200/90 hover:bg-slate-50 hover:border-teal-200'
                   }`}
                 >
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`w-7 h-7 rounded-lg font-extrabold text-xs flex items-center justify-center shrink-0 border ${
+                        isSelected
+                          ? 'bg-[#0D8A82] text-white border-[#0D8A82]'
+                          : 'bg-white text-slate-500 border-slate-200'
+                      }`}
+                    >
+                      {String.fromCharCode(65 + optIdx)}
+                    </span>
+                    <span className={`text-xs sm:text-sm font-bold ${isSelected ? 'text-[#0D8A82]' : 'text-slate-700'}`}>
+                      {optionText}
+                    </span>
+                  </div>
+
+                  <div
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                      isSelected ? 'border-[#0D8A82] bg-[#0D8A82]' : 'border-slate-300 bg-white'
+                    }`}
+                  >
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         
         <div className="flex items-center justify-between gap-3 pt-6 border-t border-slate-100 flex-wrap">

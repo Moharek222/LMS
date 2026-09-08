@@ -12,6 +12,7 @@ export interface QuizListItem {
 export interface StudentQuestion {
   _id: string;
   question: string;
+  questionImage?: string;
   options: string[];
 }
 
@@ -22,6 +23,7 @@ export interface StudentQuiz extends QuizListItem {
 export interface TeacherQuizQuestion {
   _id?: string;
   question: string;
+  questionImage?: string;
   options: string[];
   answer: string;
 }

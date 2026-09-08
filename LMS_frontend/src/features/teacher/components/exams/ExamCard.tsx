@@ -1,14 +1,22 @@
 import React from 'react';
-import { Award, Clock, Calendar, CheckCircle2, XCircle, Edit } from 'lucide-react';
+import { Award, Clock, Calendar, CheckCircle2, XCircle, Edit, FileCheck, BarChart3 } from 'lucide-react';
 import type { ExamListItem } from '../../../exams/types/exam';
 
 interface ExamCardProps {
   exam: ExamListItem;
   onEdit: (examId: string) => void;
   onDeactivate: (examId: string, examTitle: string) => void;
+  onViewSubmissions?: (examId: string, examTitle: string) => void;
+  onViewStats?: (examId: string, examTitle: string) => void;
 }
 
-export const ExamCard: React.FC<ExamCardProps> = ({ exam, onEdit, onDeactivate }) => {
+export const ExamCard: React.FC<ExamCardProps> = ({
+  exam,
+  onEdit,
+  onDeactivate,
+  onViewSubmissions,
+  onViewStats,
+}) => {
   const formattedDate = exam.createdAt
     ? new Date(exam.createdAt).toLocaleDateString('ar-EG', {
         year: 'numeric',
@@ -58,33 +66,62 @@ export const ExamCard: React.FC<ExamCardProps> = ({ exam, onEdit, onDeactivate }
         </div>
       </div>
 
-      <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
-        <button
-          onClick={() => onEdit(exam._id)}
-          className="w-1/2 py-2 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
-        >
-          <Edit size={14} />
-          <span>تعديل</span>
-        </button>
-        {exam.isActive ? (
+      <div className="pt-3 border-t border-slate-100 space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {onViewSubmissions && (
+            <button
+              type="button"
+              onClick={() => onViewSubmissions(exam._id, exam.title)}
+              className="py-2.5 rounded-xl bg-[#0D8A82] text-white hover:bg-teal-700 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+            >
+              <FileCheck size={15} />
+              <span>تسليمات الطلاب</span>
+            </button>
+          )}
+
+          {onViewStats && (
+            <button
+              type="button"
+              onClick={() => onViewStats(exam._id, exam.title)}
+              className="py-2.5 rounded-xl bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <BarChart3 size={15} />
+              <span>الإحصائيات 📊</span>
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => onDeactivate(exam._id, exam.title)}
-            className="w-1/2 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
+            type="button"
+            onClick={() => onEdit(exam._id)}
+            className="w-1/2 py-2 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
           >
-            <XCircle size={14} />
-            <span>إيقاف الامتحان</span>
+            <Edit size={14} />
+            <span>تعديل</span>
           </button>
-        ) : (
-          <button
-            disabled
-            className="w-1/2 py-2 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed opacity-75"
-          >
-            الامتحان متوقف
-          </button>
-        )}
+          {exam.isActive ? (
+            <button
+              type="button"
+              onClick={() => onDeactivate(exam._id, exam.title)}
+              className="w-1/2 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
+            >
+              <XCircle size={14} />
+              <span>إيقاف</span>
+            </button>
+          ) : (
+            <button
+              disabled
+              className="w-1/2 py-2 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed opacity-75"
+            >
+              متوقف
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
 export default ExamCard;
+

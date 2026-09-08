@@ -1,14 +1,20 @@
 import React from 'react';
-import { FileText, Clock, Award, CheckCircle2, Edit, AlertTriangle } from 'lucide-react';
+import { FileText, Clock, Award, CheckCircle2, Edit, AlertTriangle, Users } from 'lucide-react';
 import type { QuizListItem } from '../../../quizzes/types/quiz';
 
 interface QuizCardProps {
   quiz: QuizListItem;
   onEdit?: (quiz: QuizListItem) => void;
   onDeactivate?: (quiz: QuizListItem) => void;
+  onViewSubmissions?: (quiz: QuizListItem) => void;
 }
 
-export const QuizCard: React.FC<QuizCardProps> = ({ quiz, onEdit, onDeactivate }) => {
+export const QuizCard: React.FC<QuizCardProps> = ({
+  quiz,
+  onEdit,
+  onDeactivate,
+  onViewSubmissions,
+}) => {
   const isQuizActive = quiz.isActive !== false;
 
   return (
@@ -33,6 +39,18 @@ export const QuizCard: React.FC<QuizCardProps> = ({ quiz, onEdit, onDeactivate }
       </div>
 
       <div className="flex items-center gap-2">
+        {onViewSubmissions && (
+          <button
+            type="button"
+            onClick={() => onViewSubmissions(quiz)}
+            className="px-3 py-1.5 rounded-xl bg-amber-600 text-white hover:bg-amber-700 transition cursor-pointer text-xs font-bold shadow-2xs flex items-center gap-1"
+            title="عرض تسليمات الطلاب"
+          >
+            <Users size={14} />
+            <span>عرض التسليمات</span>
+          </button>
+        )}
+
         {isQuizActive ? (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
             <CheckCircle2 size={12} />
@@ -71,5 +89,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({ quiz, onEdit, onDeactivate }
 };
 
 export default QuizCard;
+
 
 

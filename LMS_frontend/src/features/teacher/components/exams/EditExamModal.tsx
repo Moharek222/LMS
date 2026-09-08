@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Plus, Loader2, AlertTriangle, RefreshCw, X, Trash2, HelpCircle, Check } from 'lucide-react';
+import { Edit, Plus, Loader2, AlertTriangle, RefreshCw, X, Trash2, HelpCircle, Check, Image as ImageIcon, UploadCloud } from 'lucide-react';
 import { useTeacherExam } from '../../hooks/useTeacherExam';
 import { useUpdateExam } from '../../hooks/useUpdateExam';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
@@ -7,7 +7,10 @@ import { useToast } from '../../../../context/ToastContext';
 
 interface QuestionDraft {
   id: string;
+  type: 'MCQ' | 'ESSAY';
+  points: number;
   question: string;
+  questionImage: string;
   options: string[];
   answer: string;
 }
@@ -49,9 +52,12 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
         setEditQuestions(
           teacherExamData.questions.map((q, idx) => ({
             id: q._id || `eq_${idx}_${Date.now()}`,
-            question: q.question,
-            options: [...q.options],
-            answer: q.answer,
+            type: q.type || 'MCQ',
+            points: q.points || 1,
+            question: q.question || '',
+            questionImage: q.questionImage || '',
+            options: q.options ? [...q.options] : ['', ''],
+            answer: q.answer || '',
           }))
         );
       }
@@ -69,7 +75,10 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
       ...prev,
       {
         id: `eq_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        type: 'MCQ',
+        points: 1,
         question: '',
+        questionImage: '',
         options: ['', ''],
         answer: '',
       },
@@ -82,6 +91,24 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
       return;
     }
     setEditQuestions((prev) => prev.filter((q) => q.id !== qId));
+  };
+
+  const handleEditQuestionTypeChange = (qId: string, type: 'MCQ' | 'ESSAY') => {
+    setEditQuestions((prev) =>
+      prev.map((q) => (q.id === qId ? { ...q, type } : q))
+    );
+  };
+
+  const handleEditQuestionPointsChange = (qId: string, points: number) => {
+    setEditQuestions((prev) =>
+      prev.map((q) => (q.id === qId ? { ...q, points: Math.max(1, points) } : q))
+    );
+  };
+
+  const handleEditQuestionImageChange = (qId: string, image: string) => {
+    setEditQuestions((prev) =>
+      prev.map((q) => (q.id === qId ? { ...q, questionImage: image } : q))
+    );
   };
 
   const handleEditQuestionTextChange = (qId: string, text: string) => {
@@ -132,6 +159,26 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
     );
   };
 
+  const handleImageFileSelect = (qId: string, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 5 ميجابايت');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (result) {
+        handleEditQuestionImageChange(qId, result);
+        toast.success('تم تحميل الصورة بنجاح 🖼️');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -160,24 +207,29 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
         return;
       }
 
-      const validOptions = q.options.map((opt) => opt.trim()).filter((opt) => opt !== '');
-      if (validOptions.length < 2) {
-        setEditValidationError(`السؤال رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل`);
-        return;
-      }
+      if (q.type === 'MCQ') {
+        const validOptions = q.options.map((opt) => opt.trim()).filter((opt) => opt !== '');
+        if (validOptions.length < 2) {
+          setEditValidationError(`سؤال الاختيارات رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل`);
+          return;
+        }
 
-      if (!q.answer.trim() || !validOptions.includes(q.answer.trim())) {
-        setEditValidationError(`يرجى تحديد إجابة صحيحة تطابق أحد الاختيارات في السؤال رقم ${i + 1}`);
-        return;
+        if (!q.answer.trim() || !validOptions.includes(q.answer.trim())) {
+          setEditValidationError(`يرجى تحديد إجابة صحيحة تطابق أحد الاختيارات في السؤال رقم ${i + 1}`);
+          return;
+        }
       }
     }
 
     setEditValidationError('');
 
     const formattedEditQuestions = editQuestions.map((q) => ({
+      type: q.type,
+      points: Number(q.points) || 1,
       question: q.question.trim(),
-      options: q.options.map((opt) => opt.trim()).filter((opt) => opt !== ''),
-      answer: q.answer.trim(),
+      questionImage: q.questionImage.trim() || undefined,
+      options: q.type === 'MCQ' ? q.options.map((opt) => opt.trim()).filter((opt) => opt !== '') : undefined,
+      answer: q.type === 'MCQ' ? q.answer.trim() : undefined,
     }));
 
     updateExamMutation.mutate(
@@ -208,8 +260,8 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 my-8">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 my-8 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
               <Edit size={22} />
@@ -217,7 +269,7 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
             <div>
               <h3 className="text-lg font-extrabold text-slate-800">تعديل الامتحان الشامل</h3>
               <p className="text-xs text-slate-500 font-semibold">
-                تعديل بيانات وأسئلة الامتحان الحالي
+                تعديل بيانات وأسئلة الامتحان الحالي (اختيار من متعدد ومقالي وصور الأسئلة)
               </p>
             </div>
           </div>
@@ -251,7 +303,7 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
             </button>
           </div>
         ) : (
-          <form onSubmit={handleEditSubmit} className="space-y-6">
+          <form onSubmit={handleEditSubmit} className="space-y-6 overflow-y-auto flex-1 pr-1">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
@@ -299,100 +351,192 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
                 </button>
               </div>
 
-              <div className="space-y-4 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-4">
                 {editQuestions.map((q, qIndex) => (
                   <div
                     key={q.id}
                     className="p-5 rounded-2xl border border-slate-200/90 bg-slate-50/50 space-y-4 relative"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="px-2.5 py-1 rounded-lg bg-[#0D8A82] text-white text-[11px] font-extrabold">
-                        السؤال {qIndex + 1}
-                      </span>
-                      {editQuestions.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleEditRemoveQuestion(q.id)}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-lg bg-[#0D8A82] text-white text-[11px] font-extrabold">
+                          السؤال {qIndex + 1}
+                        </span>
+                        <select
+                          value={q.type}
+                          onChange={(e) => handleEditQuestionTypeChange(q.id, e.target.value as 'MCQ' | 'ESSAY')}
                           disabled={updateExamMutation.isPending}
-                          className="text-rose-500 hover:text-rose-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] font-bold bg-white text-slate-800 focus:outline-none focus:border-[#0D8A82]"
                         >
-                          <Trash2 size={14} />
-                          <span>حذف السؤال</span>
-                        </button>
-                      )}
+                          <option value="MCQ">اختيار من متعدد (MCQ)</option>
+                          <option value="ESSAY">سؤال مقالي (ESSAY)</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <label className="text-[11px] font-bold text-slate-600">الدرجة:</label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={q.points}
+                            onChange={(e) => handleEditQuestionPointsChange(q.id, Number(e.target.value))}
+                            disabled={updateExamMutation.isPending}
+                            className="w-16 px-2 py-1 rounded-lg border border-slate-200 text-xs font-bold bg-white text-center"
+                          />
+                        </div>
+
+                        {editQuestions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleEditRemoveQuestion(q.id)}
+                            disabled={updateExamMutation.isPending}
+                            className="text-rose-500 hover:text-rose-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 size={14} />
+                            <span>حذف</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <div>
-                      <input
-                        type="text"
-                        value={q.question}
-                        onChange={(e) => handleEditQuestionTextChange(q.id, e.target.value)}
-                        placeholder={`نص السؤال رقم ${qIndex + 1}...`}
-                        disabled={updateExamMutation.isPending}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white focus:outline-none focus:border-[#0D8A82]"
-                      />
-                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <input
+                          type="text"
+                          value={q.question}
+                          onChange={(e) => handleEditQuestionTextChange(q.id, e.target.value)}
+                          placeholder={`نص السؤال رقم ${qIndex + 1}...`}
+                          disabled={updateExamMutation.isPending}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white focus:outline-none focus:border-[#0D8A82]"
+                        />
+                      </div>
 
-                    <div className="space-y-2.5 pr-2">
-                      <label className="block text-[11px] font-bold text-slate-500">
-                        الاختيارات المتاحة (انقر على الاختيار لتحديده كإجابة صحيحة):
-                      </label>
-                      {q.options.map((opt, optIndex) => {
-                        const isCorrect = q.answer !== '' && q.answer === opt;
-                        return (
-                          <div key={optIndex} className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (opt.trim()) handleEditSetAnswer(q.id, opt);
+                      {/* Image Upload or URL field */}
+                      <div className="space-y-1.5">
+                        <label className="block text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                          <ImageIcon size={14} className="text-[#0D8A82]" />
+                          <span>صورة توضيحية للسؤال (اختياري):</span>
+                        </label>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                          <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-teal-50 text-[#0D8A82] border border-teal-200 text-xs font-bold hover:bg-teal-100 transition cursor-pointer shrink-0">
+                            <UploadCloud size={16} />
+                            <span>اختر صورة من الموبايل / الجهاز 📱</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={updateExamMutation.isPending}
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleImageFileSelect(q.id, file);
                               }}
-                              title={isCorrect ? 'الإجابة الصحيحة المحددة' : 'تحديد كإجابة صحيحة'}
-                              className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 border transition ${
-                                isCorrect
-                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
-                                  : 'bg-white text-slate-400 border-slate-200 hover:border-teal-400'
-                              }`}
-                            >
-                              {isCorrect ? <Check size={14} /> : String.fromCharCode(65 + optIndex)}
-                            </button>
-
+                            />
+                          </label>
+                          <div className="flex-1 flex items-center gap-2">
                             <input
                               type="text"
-                              value={opt}
-                              onChange={(e) => handleEditOptionTextChange(q.id, optIndex, e.target.value)}
-                              placeholder={`اختيار ${optIndex + 1}...`}
+                              value={q.questionImage}
+                              onChange={(e) => handleEditQuestionImageChange(q.id, e.target.value)}
+                              placeholder="أو ألصق رابط الصورة هنا..."
                               disabled={updateExamMutation.isPending}
-                              className={`flex-1 px-3.5 py-2 rounded-xl border text-xs font-semibold bg-white focus:outline-none ${
-                                isCorrect
-                                  ? 'border-emerald-500 ring-2 ring-emerald-500/10'
-                                  : 'border-slate-200 focus:border-[#0D8A82]'
-                              }`}
+                              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:outline-none focus:border-[#0D8A82]"
                             />
-
-                            {q.options.length > 2 && (
+                            {q.questionImage && (
                               <button
                                 type="button"
-                                onClick={() => handleEditRemoveOption(q.id, optIndex)}
-                                disabled={updateExamMutation.isPending}
-                                className="text-slate-400 hover:text-rose-500 p-1 rounded-lg transition"
+                                onClick={() => handleEditQuestionImageChange(q.id, '')}
+                                className="p-2 text-slate-400 hover:text-rose-500 rounded-xl transition cursor-pointer shrink-0"
+                                title="حذف الصورة"
                               >
-                                <X size={14} />
+                                <Trash2 size={16} />
                               </button>
                             )}
                           </div>
-                        );
-                      })}
+                        </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleEditAddOption(q.id)}
-                        disabled={updateExamMutation.isPending}
-                        className="text-[11px] text-[#0D8A82] font-bold hover:underline flex items-center gap-1 pt-1 cursor-pointer"
-                      >
-                        <Plus size={12} />
-                        <span>إضافة اختيار آخر</span>
-                      </button>
+                        {q.questionImage && (
+                          <div className="p-2 bg-white rounded-xl border border-slate-200 w-fit max-w-xs relative mt-2">
+                            <img
+                              src={q.questionImage}
+                              alt={`معاينة صورة السؤال ${qIndex + 1}`}
+                              className="max-h-36 object-contain rounded-lg"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    {/* MCQ Options rendering */}
+                    {q.type === 'MCQ' ? (
+                      <div className="space-y-2.5 pr-2 pt-1">
+                        <label className="block text-[11px] font-bold text-slate-500">
+                          الاختيارات المتاحة (انقر على الاختيار لتحديده كإجابة صحيحة):
+                        </label>
+                        {q.options.map((opt, optIndex) => {
+                          const isCorrect = q.answer !== '' && q.answer === opt;
+                          return (
+                            <div key={optIndex} className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (opt.trim()) handleEditSetAnswer(q.id, opt);
+                                }}
+                                title={isCorrect ? 'الإجابة الصحيحة المحددة' : 'تحديد كإجابة صحيحة'}
+                                className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 border transition ${
+                                  isCorrect
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                                    : 'bg-white text-slate-400 border-slate-200 hover:border-teal-400'
+                                }`}
+                              >
+                                {isCorrect ? <Check size={14} /> : String.fromCharCode(65 + optIndex)}
+                              </button>
+
+                              <input
+                                type="text"
+                                value={opt}
+                                onChange={(e) => handleEditOptionTextChange(q.id, optIndex, e.target.value)}
+                                placeholder={`اختيار ${optIndex + 1}...`}
+                                disabled={updateExamMutation.isPending}
+                                className={`flex-1 px-3.5 py-2 rounded-xl border text-xs font-semibold bg-white focus:outline-none ${
+                                  isCorrect
+                                    ? 'border-emerald-500 ring-2 ring-emerald-500/10'
+                                    : 'border-slate-200 focus:border-[#0D8A82]'
+                                }`}
+                              />
+
+                              {q.options.length > 2 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditRemoveOption(q.id, optIndex)}
+                                  disabled={updateExamMutation.isPending}
+                                  className="text-slate-400 hover:text-rose-500 p-1 rounded-lg transition"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        <button
+                          type="button"
+                          onClick={() => handleEditAddOption(q.id)}
+                          disabled={updateExamMutation.isPending}
+                          className="text-[11px] text-[#0D8A82] font-bold hover:underline flex items-center gap-1 pt-1 cursor-pointer"
+                        >
+                          <Plus size={12} />
+                          <span>إضافة اختيار آخر</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs font-bold text-amber-800">
+                        هذا السؤال مقالي. سيقوم الطالب بكتابة إجابته النصية بحرية أثناء الحل، وسيتاح لك تصحيحها ورصد الدرجة لاحقاً.
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -405,7 +549,7 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
               <button
                 type="button"
                 onClick={handleCloseModal}
@@ -437,3 +581,4 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
 };
 
 export default EditExamModal;
+

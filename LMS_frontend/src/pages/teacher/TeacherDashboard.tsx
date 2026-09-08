@@ -14,6 +14,7 @@ import { TeacherExamManager } from '../../features/teacher/components/TeacherExa
 import TeacherGroupManager from '../../features/teacher/components/TeacherGroupManager';
 import TeacherAccessCodeManager from '../../features/teacher/components/TeacherAccessCodeManager';
 import TeacherAttendanceManager from '../../features/teacher/components/TeacherAttendanceManager';
+import AdminUserManagement from '../../features/admin/components/AdminUserManagement';
 import { useTeacherCourses } from '../../features/teacher/hooks/useTeacherCourses';
 import {
   Home,
@@ -138,6 +139,7 @@ export const TeacherDashboard: React.FC = () => {
       {activeTab === 'groups' && <TeacherGroupManager />}
       {activeTab === 'access-codes' && <TeacherAccessCodeManager />}
       {activeTab === 'attendance' && <TeacherAttendanceManager />}
+      {activeTab === 'students' && <AdminUserManagement />}
 
      
       {activeTab !== 'home' &&

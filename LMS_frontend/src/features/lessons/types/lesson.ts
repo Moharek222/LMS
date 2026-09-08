@@ -33,6 +33,7 @@ export interface GetLessonVideoResponse {
 export interface UpdateLessonPayload {
   title?: string;
   description?: string;
+  contentUrl?: string;
   order?: number;
   requiresPassing?: boolean;
   isActive?: boolean;

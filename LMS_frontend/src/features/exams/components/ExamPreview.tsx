@@ -222,14 +222,39 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
                   <span className="w-7 h-7 rounded-lg bg-teal-100 text-[#0D8A82] font-black text-xs flex items-center justify-center shrink-0 border border-teal-200">
                     {idx + 1}
                   </span>
-                  <h4 className="text-sm font-bold text-slate-800 pt-0.5 leading-relaxed">
-                    {q.question}
-                  </h4>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-50 text-[#0D8A82] border border-teal-200">
+                        {q.type === 'ESSAY' ? 'سؤال مقالي' : 'اختيار من متعدد'}
+                      </span>
+                      {typeof q.points === 'number' && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200">
+                          {q.points} {q.points === 1 ? 'درجة' : 'درجات'}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-800 leading-relaxed">
+                      {q.question}
+                    </h4>
+                  </div>
                 </div>
+
+                {q.questionImage?.trim() && (
+                  <div className="mr-10 p-2 bg-white rounded-xl border border-slate-200/80 w-fit max-w-xs">
+                    <img
+                      src={q.questionImage.trim()}
+                      alt={`صورة السؤال ${idx + 1}`}
+                      className="max-h-40 object-contain rounded-lg"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
 
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pr-10">
-                  {q.options.map((opt, optIdx) => (
+                  {(q.options || []).map((opt, optIdx) => (
                     <div
                       key={optIdx}
                       className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 flex items-center gap-2"

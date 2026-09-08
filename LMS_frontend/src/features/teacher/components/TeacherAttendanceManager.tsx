@@ -11,6 +11,9 @@ import {
   ChevronRight,
   ChevronLeft,
   X,
+  QrCode,
+  ArrowRightLeft,
+  Printer,
 } from 'lucide-react';
 import { useTeacherGroups } from '../hooks/useTeacherGroups';
 import { useGroupStudents } from '../hooks/useGroupStudents';
@@ -21,6 +24,9 @@ import {
 } from '../../attendance/hooks/useStudentAttendance';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
+import { QrAttendanceScannerModal } from './attendance/QrAttendanceScannerModal';
+import { MoveStudentModal } from './groups/MoveStudentModal';
+import { PrintStudentQrCardModal } from '../../student/components/PrintStudentQrCardModal';
 
 export const TeacherAttendanceManager: React.FC = () => {
   const toast = useToast();
@@ -28,6 +34,13 @@ export const TeacherAttendanceManager: React.FC = () => {
   const [sheetsPage, setSheetsPage] = useState<number>(1);
   const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null);
   const [recordingStudentId, setRecordingStudentId] = useState<string | null>(null);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [moveStudentTarget, setMoveStudentTarget] = useState<{ id: string; name: string } | null>(null);
+  const [printStudentTarget, setPrintStudentTarget] = useState<{
+    id: string;
+    name: string;
+    phone?: string;
+  } | null>(null);
 
   // 1. Fetch active teacher groups
   const {
@@ -124,12 +137,23 @@ export const TeacherAttendanceManager: React.FC = () => {
             <CalendarCheck size={24} />
           </div>
           <div>
-            <h3 className="text-base font-extrabold text-slate-800">نظام المرور والغياب</h3>
+            <h3 className="text-base font-extrabold text-slate-800">نظام تسجيل الحضور والغياب</h3>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              تطسير حضور وغياب الطلاب بالمجموعات الدراسية واستعراض كشوف الجلسات
+              تسجيل حضور وغياب الطلاب بالـ QR Code واستعراض كشوف الجلسات
             </p>
           </div>
         </div>
+
+        {selectedGroupId && (
+          <button
+            type="button"
+            onClick={() => setIsQrScannerOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-2xs flex items-center gap-2"
+          >
+            <QrCode size={16} />
+            <span>ماسح الـ QR Code 📷</span>
+          </button>
+        )}
       </div>
 
       {/* Step 1: Select Active Group */}
@@ -240,24 +264,52 @@ export const TeacherAttendanceManager: React.FC = () => {
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleRecordAttendance(student._id, student.name)}
-                        disabled={recordAttendanceMutation.isPending}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-2xs shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isRecordingThis ? (
-                          <>
-                            <Loader2 size={13} className="animate-spin" />
-                            <span>تسجيل...</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 size={13} />
-                            <span>تسجيل حضور</span>
-                          </>
-                        )}
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPrintStudentTarget({
+                              id: student._id,
+                              name: student.name,
+                              phone: student.phone,
+                            })
+                          }
+                          className="px-2.5 py-1.5 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                          title="طباعة كارت الـ QR للطالب"
+                        >
+                          <Printer size={13} />
+                          <span className="hidden sm:inline">طباعة</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setMoveStudentTarget({ id: student._id, name: student.name })}
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                          title="نقل الطالب لمجموعة أخرى"
+                        >
+                          <ArrowRightLeft size={13} />
+                          <span className="hidden sm:inline">نقل</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRecordAttendance(student._id, student.name)}
+                          disabled={recordAttendanceMutation.isPending}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-2xs shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isRecordingThis ? (
+                            <>
+                              <Loader2 size={13} className="animate-spin" />
+                              <span>تسجيل...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 size={13} />
+                              <span>تسجيل حضور</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -455,6 +507,39 @@ export const TeacherAttendanceManager: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* QR Attendance Scanner Modal */}
+      {selectedGroupId && (
+        <QrAttendanceScannerModal
+          isOpen={isQrScannerOpen}
+          onClose={() => setIsQrScannerOpen(false)}
+          groupId={selectedGroupId}
+          groupName={activeGroups.find((g) => g._id === selectedGroupId)?.name}
+        />
+      )}
+
+      {/* Move Student Modal */}
+      {moveStudentTarget && selectedGroupId && (
+        <MoveStudentModal
+          isOpen={Boolean(moveStudentTarget)}
+          onClose={() => setMoveStudentTarget(null)}
+          studentId={moveStudentTarget.id}
+          studentName={moveStudentTarget.name}
+          currentGroupId={selectedGroupId}
+        />
+      )}
+
+      {/* Print Student QR Card Modal */}
+      {printStudentTarget && (
+        <PrintStudentQrCardModal
+          isOpen={Boolean(printStudentTarget)}
+          onClose={() => setPrintStudentTarget(null)}
+          studentId={printStudentTarget.id}
+          studentName={printStudentTarget.name}
+          studentPhone={printStudentTarget.phone}
+          groupName={activeGroups.find((g) => g._id === selectedGroupId)?.name}
+        />
       )}
     </div>
   );

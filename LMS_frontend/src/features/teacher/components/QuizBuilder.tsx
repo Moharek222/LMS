@@ -9,6 +9,7 @@ import { QuizCard } from './quizzes/QuizCard';
 import { CreateQuizModal } from './quizzes/CreateQuizModal';
 import { EditQuizModal } from './quizzes/EditQuizModal';
 import { DeactivateQuizModal } from './quizzes/DeactivateQuizModal';
+import { QuizSubmissionsModal } from './quizzes/QuizSubmissionsModal';
 
 export const QuizBuilder: React.FC = () => {
   const { data: courses, isLoading: isLoadingCourses } = useTeacherCourses();
@@ -20,6 +21,7 @@ export const QuizBuilder: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<QuizListItem | null>(null);
   const [deactivatingQuiz, setDeactivatingQuiz] = useState<QuizListItem | null>(null);
+  const [viewingSubmissionsQuiz, setViewingSubmissionsQuiz] = useState<QuizListItem | null>(null);
 
   const {
     data: quizzes,
@@ -105,7 +107,7 @@ export const QuizBuilder: React.FC = () => {
               </span>
             ) : (
               <span className="text-slate-600 font-semibold">
-                تم تحديد الدرس. يمكنك الآن إضافة اختبارات لهذا الدرس.
+                تم تحديد الدرس. يمكنك الآن إضافة اختبارات واستعراض التسليمات.
               </span>
             )}
           </div>
@@ -177,6 +179,7 @@ export const QuizBuilder: React.FC = () => {
                 quiz={quiz}
                 onEdit={(q) => setEditingQuiz(q)}
                 onDeactivate={(q) => setDeactivatingQuiz(q)}
+                onViewSubmissions={(q) => setViewingSubmissionsQuiz(q)}
               />
             ))}
           </div>
@@ -205,10 +208,22 @@ export const QuizBuilder: React.FC = () => {
         lessonId={selectedLessonId}
         quiz={deactivatingQuiz}
       />
+
+      {/* Quiz Submissions Modal */}
+      {viewingSubmissionsQuiz && (
+        <QuizSubmissionsModal
+          isOpen={Boolean(viewingSubmissionsQuiz)}
+          onClose={() => setViewingSubmissionsQuiz(null)}
+          lessonId={selectedLessonId}
+          quizId={viewingSubmissionsQuiz._id}
+          quizTitle={viewingSubmissionsQuiz.title}
+        />
+      )}
     </div>
   );
 };
 
 export default QuizBuilder;
+
 
 

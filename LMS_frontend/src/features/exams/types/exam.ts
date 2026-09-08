@@ -15,8 +15,11 @@ export interface GetCourseExamsResponse {
 
 export interface StudentExamQuestion {
   _id: string;
+  type?: 'MCQ' | 'ESSAY';
+  points?: number;
   question: string;
-  options: string[];
+  questionImage?: string;
+  options?: string[];
 }
 
 export interface StudentExam extends ExamListItem {
@@ -30,9 +33,12 @@ export interface GetStudentExamResponse {
 
 export interface TeacherExamQuestion {
   _id?: string;
+  type: 'MCQ' | 'ESSAY';
+  points: number;
   question: string;
-  options: string[];
-  answer: string;
+  questionImage?: string;
+  options?: string[];
+  answer?: string;
 }
 
 export interface TeacherExam extends ExamListItem {
@@ -48,9 +54,12 @@ export interface CreateTeacherExamPayload {
   title: string;
   duration: number;
   questions: {
+    type: 'MCQ' | 'ESSAY';
+    points: number;
     question: string;
-    options: string[];
-    answer: string;
+    questionImage?: string;
+    options?: string[];
+    answer?: string;
   }[];
 }
 
@@ -58,9 +67,12 @@ export interface UpdateTeacherExamPayload {
   title?: string;
   duration?: number;
   questions?: {
+    type: 'MCQ' | 'ESSAY';
+    points: number;
     question: string;
-    options: string[];
-    answer: string;
+    questionImage?: string;
+    options?: string[];
+    answer?: string;
   }[];
   isActive?: boolean;
 }
@@ -69,4 +81,5 @@ export interface TeacherExamMutationResponse {
   message: string;
   data: TeacherExam;
 }
+
 
