@@ -30,3 +30,19 @@ export interface GetLessonVideoResponse {
   data: LessonVideoData;
 }
 
+export interface UpdateLessonPayload {
+  title?: string;
+  description?: string;
+  order?: number;
+  requiresPassing?: boolean;
+  isActive?: boolean;
+}
+
+export interface UpdateLessonResponse {
+  message: string;
+  data: Lesson;
+}
+
+export interface DeleteLessonResponse {
+  message: string;
+}

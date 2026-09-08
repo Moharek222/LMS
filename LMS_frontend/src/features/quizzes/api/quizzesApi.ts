@@ -13,9 +13,9 @@ export const getLessonQuizzes = async (lessonId: string): Promise<QuizListItem[]
   return response.data.data;
 };
 
-export const getStudentQuiz = async (quizId: string): Promise<StudentQuiz> => {
+export const getStudentQuiz = async (lessonId: string, quizId: string): Promise<StudentQuiz> => {
   const response = await apiClient.get<GetStudentQuizResponse>(
-    `/api/quizzes/${quizId}/student`
+    `/api/lessons/${lessonId}/quizzes/${quizId}/student`
   );
   return response.data.data;
 };

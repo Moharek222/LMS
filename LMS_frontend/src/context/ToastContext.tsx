@@ -32,7 +32,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const id = `toast_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     const newToast: ToastItem = { id, message, type, duration };
 
-    setToasts((prev) => [...prev.slice(-4), newToast]); // Keep at most 5 visible toasts
+    setToasts((prev) => [...prev.slice(-4), newToast]);
 
     if (duration > 0) {
       setTimeout(() => {
@@ -50,7 +50,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={{ showToast, success, error, warning, info, removeToast }}>
       {children}
       
-      {/* Floating Toasts Container (Top-Left floating for RTL UI) */}
+     
       <div
         dir="rtl"
         className="fixed top-5 left-5 z-[9999] flex flex-col gap-2.5 max-w-md w-full sm:w-auto pointer-events-none px-4 sm:px-0"
