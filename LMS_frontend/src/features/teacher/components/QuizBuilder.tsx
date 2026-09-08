@@ -121,7 +121,7 @@ export const QuizBuilder: React.FC = () => {
         </div>
       </div>
 
-      {/* Quizzes List Section */}
+      
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs max-w-4xl mx-auto space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <h4 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
@@ -183,14 +183,14 @@ export const QuizBuilder: React.FC = () => {
         )}
       </div>
 
-      {/* Create Quiz Modal */}
+      
       <CreateQuizModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         selectedLessonId={selectedLessonId}
       />
 
-      {/* Edit Quiz Modal */}
+     
       <EditQuizModal
         isOpen={Boolean(editingQuiz)}
         onClose={() => setEditingQuiz(null)}
@@ -198,7 +198,7 @@ export const QuizBuilder: React.FC = () => {
         quizId={editingQuiz?._id || null}
       />
 
-      {/* Deactivate Quiz Modal */}
+     
       <DeactivateQuizModal
         isOpen={Boolean(deactivatingQuiz)}
         onClose={() => setDeactivatingQuiz(null)}

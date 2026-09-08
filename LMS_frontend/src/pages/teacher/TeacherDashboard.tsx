@@ -11,6 +11,7 @@ import { CourseManager } from '../../features/teacher/components/CourseManager';
 import { LessonManager } from '../../features/teacher/components/LessonManager';
 import { QuizBuilder } from '../../features/teacher/components/QuizBuilder';
 import { TeacherExamManager } from '../../features/teacher/components/TeacherExamManager';
+import TeacherGroupManager from '../../features/teacher/components/TeacherGroupManager';
 import { useTeacherCourses } from '../../features/teacher/hooks/useTeacherCourses';
 import {
   Home,
@@ -112,7 +113,7 @@ export const TeacherDashboard: React.FC = () => {
             />
           </div>
 
-          {/* Middle 3-Column Widgets Row */}
+         
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <RecentStudentsWidget onViewAll={() => handleSelectTab('students')} />
             <CourseProgressWidget
@@ -132,13 +133,15 @@ export const TeacherDashboard: React.FC = () => {
       {activeTab === 'lessons' && <LessonManager />}
       {activeTab === 'quizzes' && <QuizBuilder />}
       {activeTab === 'exams' && <TeacherExamManager />}
+      {activeTab === 'groups' && <TeacherGroupManager />}
 
      
       {activeTab !== 'home' &&
         activeTab !== 'courses' &&
         activeTab !== 'lessons' &&
         activeTab !== 'quizzes' &&
-        activeTab !== 'exams' && (
+        activeTab !== 'exams' &&
+        activeTab !== 'groups' && (
           <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center space-y-4 max-w-2xl mx-auto">
             <div className="w-16 h-16 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100 shadow-2xs">
               {activeTab === 'exams' && <Award size={32} />}
