@@ -141,7 +141,7 @@ export const TeacherDashboard: React.FC = () => {
       {activeTab === 'attendance' && <TeacherAttendanceManager />}
       {activeTab === 'students' && <AdminUserManagement />}
 
-     
+      {/* Fallback Screen for Unknown Tabs */}
       {activeTab !== 'home' &&
         activeTab !== 'courses' &&
         activeTab !== 'lessons' &&
@@ -149,45 +149,19 @@ export const TeacherDashboard: React.FC = () => {
         activeTab !== 'exams' &&
         activeTab !== 'groups' &&
         activeTab !== 'access-codes' &&
-        activeTab !== 'attendance' && (
+        activeTab !== 'attendance' &&
+        activeTab !== 'students' && (
           <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center space-y-4 max-w-2xl mx-auto">
             <div className="w-16 h-16 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100 shadow-2xs">
-              {activeTab === 'exams' && <Award size={32} />}
-              {activeTab === 'groups' && <FolderKanban size={32} />}
-              {activeTab === 'attendance' && <CalendarCheck size={32} />}
-              {activeTab === 'access-codes' && <KeyRound size={32} />}
-              {activeTab === 'students' && <Users size={32} />}
-              {activeTab !== 'exams' &&
-                activeTab !== 'groups' &&
-                activeTab !== 'attendance' &&
-                activeTab !== 'access-codes' &&
-                activeTab !== 'students' && <FlaskConical size={32} />}
+              <FlaskConical size={32} />
             </div>
 
             <h3 className="text-xl font-black text-slate-800">
-              {activeTab === 'exams' && 'إدارة الامتحانات الشاملة (/api/courses/:courseID/exams)'}
-              {activeTab === 'groups' && 'إدارة مجموعات الطلاب (/api/groups)'}
-              {activeTab === 'attendance' && 'نظام الحضور والغياب بالـ QR (/api/groups/:groupID/attendance)'}
-              {activeTab === 'access-codes' && 'نظام أكواد التفعيل والشحن (/api/access-codes)'}
-              {activeTab === 'students' && 'إدارة ملفات الطلاب والمستخدمين (/api/students)'}
-              {activeTab !== 'exams' &&
-                activeTab !== 'groups' &&
-                activeTab !== 'attendance' &&
-                activeTab !== 'access-codes' &&
-                activeTab !== 'students' && 'قسم الإدارة'}
+              قسم غير معروف أو تحت التطوير
             </h3>
 
             <p className="text-sm text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
-              {activeTab === 'exams' && 'وحدة مخصصة لإنشاء الامتحانات الشاملة على مستوى الكورس وتحديد مدة الامتحان ونسبة النجاح والأسئلة.'}
-              {activeTab === 'groups' && 'وحدة مخصصة لإنشاء المجموعات وتحديد المواعيد ونقل الطلاب واستخراج قوائم الطلاب بالسنتر والأونلاين.'}
-              {activeTab === 'attendance' && 'وحدة تسطير حضور وغياب الطلاب عبر مسح الباركود/QR وتتبع نسب التزام الطلاب بالحضور.'}
-              {activeTab === 'access-codes' && 'وحدة توليد واستعراض كروت الشحن وأكواد التفعيل وتتبع الأكواد المستخدمة والمنسوبة للطلاب.'}
-              {activeTab === 'students' && 'وحدة استعراض وتعديل بيانات ملفات الطلاب وحسابات المعلمين والأدمن وصلاحيات النظام.'}
-              {activeTab !== 'exams' &&
-                activeTab !== 'groups' &&
-                activeTab !== 'attendance' &&
-                activeTab !== 'access-codes' &&
-                activeTab !== 'students' && 'أهلاً بك في قسم الإدارة. تم ربط الهيكل بالكامل بالباك إيند.'}
+              التبويب المحدد غير موجود حالياً. يرجى التوجه إلى أحد الأقسام الرئيسية من القائمة الجانبية.
             </p>
 
             <button

@@ -3,21 +3,24 @@ export interface HistorySelectedOption {
   selectedAnswer: string;
 }
 
-export interface QuizHistoryItem {
+export interface BaseAssessmentHistoryItem {
   _id: string;
   studentID: {
     _id: string;
     name: string;
-  };
-  quizID: {
-    _id: string;
-    title: string;
   };
   score: number;
   isPassed: boolean;
   selectedOption: HistorySelectedOption[];
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface QuizHistoryItem extends BaseAssessmentHistoryItem {
+  quizID: {
+    _id: string;
+    title: string;
+  };
 }
 
 export interface QuizHistoryResponse {
@@ -29,21 +32,11 @@ export interface QuizHistoryResponse {
   data: QuizHistoryItem[];
 }
 
-export interface ExamHistoryItem {
-  _id: string;
-  studentID: {
-    _id: string;
-    name: string;
-  };
+export interface ExamHistoryItem extends BaseAssessmentHistoryItem {
   examID: {
     _id: string;
     title: string;
   };
-  score: number;
-  isPassed: boolean;
-  selectedOption: HistorySelectedOption[];
-  createdAt: string;
-  updatedAt?: string;
 }
 
 export interface ExamHistoryResponse {

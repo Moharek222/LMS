@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Mail, Lock, User, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, User, Loader2, CheckCircle2, AlertCircle, UserCheck } from 'lucide-react';
 import { addTeacher, addAdmin } from '../api/adminUserApi';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
@@ -45,19 +45,31 @@ export const AdminUserManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      
-     
+      {/* Header Banner */}
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
+            <UserCheck size={24} />
+          </div>
+          <div>
+            <h3 className="text-base font-extrabold text-slate-800">إدارة طاقم المعلمين والمدراء 👨‍🏫</h3>
+            <p className="text-xs text-slate-500 font-semibold mt-0.5">
+              تزويد وإضافة حسابات جديدة للمدرسين ومدراء النظام وتحديد الصلاحيات
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Account Creation Form */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 max-w-2xl">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
             <ShieldCheck size={18} className="text-[#0D8A82]" />
-            <span>إضافة حساب جديد</span>
+            <span>إضافة حساب طاقم جديد</span>
           </h4>
 
           {/* Role Selector Pills */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200" role="group" aria-label="نوع الحساب">
             <button
               type="button"
               onClick={() => setRole('teacher')}

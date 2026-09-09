@@ -1,3 +1,17 @@
+export interface PaginatedResponse<T> {
+  message: string;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  data: T[];
+}
+
+export interface BaseQueryParams {
+  page?: number;
+  limit?: number;
+}
+
 export interface Group {
   _id: string;
   name: string;
@@ -13,14 +27,7 @@ export interface GroupStudent {
   parentPhone: string;
 }
 
-export interface PaginatedGroupsResponse {
-  message: string;
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  data: Group[];
-}
+export type PaginatedGroupsResponse = PaginatedResponse<Group>;
 
 export interface GroupResponse {
   message: string;
@@ -68,14 +75,7 @@ export interface AccessCode {
   updatedAt?: string;
 }
 
-export interface PaginatedAccessCodesResponse {
-  message: string;
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  data: AccessCode[];
-}
+export type PaginatedAccessCodesResponse = PaginatedResponse<AccessCode>;
 
 export interface GeneratedAccessCodeResult {
   code: string;
@@ -104,12 +104,5 @@ export interface GenerateAccessCodePayload {
   studentID: string;
 }
 
-export interface GroupQueryParams {
-  page?: number;
-  limit?: number;
-}
-
-export interface AccessCodeQueryParams {
-  page?: number;
-  limit?: number;
-}
+export type GroupQueryParams = BaseQueryParams;
+export type AccessCodeQueryParams = BaseQueryParams;
