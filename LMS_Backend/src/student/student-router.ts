@@ -13,9 +13,8 @@ import { getStudents } from "./student-controllers/get-students";
 
 const router = Router();
 
-// router.use(isAuthenticated);
-// Only allow students to access these endpoints
-// router.use(isAuthorized(Role.Student));
+router.use(isAuthenticated);
+
 
 
 router.get("/", getStudents);

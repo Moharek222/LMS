@@ -15,8 +15,7 @@ import attendanceRouter from "../attendance/attendance-router";
 
 const router = Router();
 
-// Only admin/teacher can manage groups
-// router.use(isAuthenticated, isAuthorized(Role.Admin, Role.Teacher));
+router.use(isAuthenticated, isAuthorized(Role.Admin, Role.Teacher));
 
 router.use("/:groupID/attendance",attendanceRouter);
 

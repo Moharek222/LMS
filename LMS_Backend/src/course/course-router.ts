@@ -10,10 +10,11 @@ import { updateCourse, updateCourseValidation } from "./course-controllers/updat
 import { deleteCourse } from "./course-controllers/delete-course";
 import { getStudentCourses } from "./course-controllers/get-student-courses";
 import examRouter from "../exam/exam-router";
+import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
 
 
 const router = Router();
-
+router.use(isAuthenticated)
 
 router.use("/:courseID/exams", examRouter);
 
