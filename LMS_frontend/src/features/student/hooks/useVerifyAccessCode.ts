@@ -7,6 +7,8 @@ export const useVerifyAccessCode = () => {
   return useMutation<VerifyAccessCodeResponse, Error, string>({
     mutationFn: (code: string) => verifyAccessCode(code),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
+      queryClient.invalidateQueries({ queryKey: ['student-profile'] });
       queryClient.invalidateQueries({ queryKey: ['student-courses'] });
       queryClient.invalidateQueries({ queryKey: ['student-groups'] });
     },

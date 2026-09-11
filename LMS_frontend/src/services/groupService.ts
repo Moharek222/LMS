@@ -30,6 +30,9 @@ export const getGroupsApi = async (): Promise<Group[]> => {
   try {
     const response = await apiClient.get<GroupResponse>('/api/groups/', {
       params: { page: 1, limit: 20 },
+      headers: {
+        'X-Skip-Auth-Redirect': 'true',
+      },
     });
 
     if (response.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
@@ -37,7 +40,7 @@ export const getGroupsApi = async (): Promise<Group[]> => {
     }
     return FALLBACK_GROUPS;
   } catch (error) {
-    // Return safe fallback groups on backend 404/network error to prevent UI crash
+    // Return safe fallback groups on backend 404/401/network error to prevent UI crash
     return FALLBACK_GROUPS;
   }
 };

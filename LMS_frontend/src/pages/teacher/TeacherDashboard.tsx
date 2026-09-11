@@ -3,10 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
 import { ChemistryBanner } from '../../components/dashboard/ChemistryBanner';
 import { KpiStatCard } from '../../components/dashboard/KpiStatCard';
-import { RecentStudentsWidget } from '../../components/dashboard/RecentStudentsWidget';
-import { CourseProgressWidget } from '../../components/dashboard/CourseProgressWidget';
-import { UpcomingTasksWidget } from '../../components/dashboard/UpcomingTasksWidget';
-import { PerformanceAnalytics } from '../../components/dashboard/PerformanceAnalytics';
+import { RecentStudentsWidget, type JoinedStudent } from '../../components/dashboard/RecentStudentsWidget';
+import { CourseProgressWidget, type CourseItem } from '../../components/dashboard/CourseProgressWidget';
+// import { PerformanceAnalytics } from '../../components/dashboard/PerformanceAnalytics';
 import { CourseManager } from '../../features/teacher/components/CourseManager';
 import { LessonManager } from '../../features/teacher/components/LessonManager';
 import { QuizBuilder } from '../../features/teacher/components/QuizBuilder';
@@ -16,6 +15,8 @@ import TeacherAccessCodeManager from '../../features/teacher/components/TeacherA
 import TeacherAttendanceManager from '../../features/teacher/components/TeacherAttendanceManager';
 import AdminUserManagement from '../../features/admin/components/AdminUserManagement';
 import { useTeacherCourses } from '../../features/teacher/hooks/useTeacherCourses';
+import { getGroupsApi } from '../../services/groupService';
+import apiClient from '../../services/apiClient';
 import {
   Home,
   BookOpen,
@@ -25,8 +26,8 @@ import {
   FolderKanban,
   CalendarCheck,
   KeyRound,
+  UserCheck,
   Users,
-  FlaskConical,
 } from 'lucide-react';
 import type { NavItem } from '../../components/dashboard/Sidebar';
 
@@ -52,7 +53,7 @@ const teacherNavItems: NavItem[] = [
   { id: 'groups', label: 'إدارة المجموعات', icon: <FolderKanban size={20} /> },
   { id: 'attendance', label: 'المرور والغياب (QR)', icon: <CalendarCheck size={20} /> },
   { id: 'access-codes', label: 'أكواد التفعيل', icon: <KeyRound size={20} /> },
-  { id: 'students', label: 'إدارة الطلاب', icon: <Users size={20} /> },
+  { id: 'students', label: 'إدارة المدراء والمنصة', icon: <UserCheck size={20} /> },
 ];
 
 export const TeacherDashboard: React.FC = () => {
@@ -65,8 +66,77 @@ export const TeacherDashboard: React.FC = () => {
   };
 
   const { data: teacherCourses } = useTeacherCourses();
-
   const totalCourses = teacherCourses?.length || 0;
+
+  const [groupsCount, setGroupsCount] = React.useState<number>(0);
+  const [totalStudentsCount, setTotalStudentsCount] = React.useState<number>(0);
+  const [recentStudents, setRecentStudents] = React.useState<JoinedStudent[]>([]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const fetchDashboardData = async () => {
+      try {
+        const groups = await getGroupsApi();
+        if (isMounted) {
+          setGroupsCount(groups.length);
+        }
+      } catch {
+        if (isMounted) setGroupsCount(0);
+      }
+
+      try {
+        const res = await apiClient.get('/api/students', {
+          params: { page: 1, limit: 5 },
+          headers: { 'X-Skip-Auth-Redirect': 'true' },
+        });
+
+        if (isMounted && res.data) {
+          setTotalStudentsCount(res.data.total || 0);
+          if (Array.isArray(res.data.data)) {
+            const mappedStudents: JoinedStudent[] = res.data.data.map((s: any) => ({
+              id: s._id,
+              name: s.name,
+              groupName: s.groupID?.name || s.phone || 'طالب مسجل',
+              timeAgo: 'انضم حديثاً',
+            }));
+            setRecentStudents(mappedStudents);
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setRecentStudents([]);
+          setTotalStudentsCount(0);
+        }
+      }
+    };
+
+    fetchDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const formattedCourses: CourseItem[] = React.useMemo(() => {
+    if (!teacherCourses || teacherCourses.length === 0) return [];
+    return teacherCourses.map((c) => ({
+      id: c._id,
+      title: c.title,
+      level: c.isPublished ? 'منشور للمجموعات' : 'مسودة غير منشورة',
+      studentCount: totalStudentsCount,
+      progress: c.isPublished ? 100 : 40,
+      imageUrl: '',
+    }));
+  }, [teacherCourses, totalStudentsCount]);
+
+  // const performanceBreakdown = React.useMemo(() => [
+  //   { label: 'ممتاز (A)', percentage: 45, color: 'bg-[#0D8A82]' },
+  //   { label: 'جيد جداً (B)', percentage: 30, color: 'bg-[#0D8A82]' },
+  //   { label: 'جيد (C)', percentage: 15, color: 'bg-amber-400' },
+  //   { label: 'مقبول (D)', percentage: 7, color: 'bg-orange-400' },
+  //   { label: 'يحتاج تحسين', percentage: 3, color: 'bg-rose-500' },
+  // ], []);
 
   return (
     <DashboardLayout
@@ -78,60 +148,62 @@ export const TeacherDashboard: React.FC = () => {
       {activeTab === 'home' && (
         <div className="space-y-6">
           <ChemistryBanner quote="الكيمياء ليست مجرد معادلات، بل هي لغة الطبيعة" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
+          {/* KPI Stat Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiStatCard
-              title="المقررات"
-              value={totalCourses}
-              subtitle="مقرر نشط"
-              icon={<BookOpen size={24} />}
+              title="إجمالي الطلاب"
+              value={totalStudentsCount}
+              subtitle="طالب مسجل بالمنصة"
+              icon={<Users size={24} />}
               color="teal"
             />
             <KpiStatCard
-              title="الدروس"
-              value="—"
-              subtitle="دروس "
-              icon={<Video size={24} />}
-              color="blue"
+              title="المقررات المتاحة"
+              value={totalCourses}
+              subtitle="مقرر تعليمي نشط"
+              icon={<BookOpen size={24} />}
+              color="purple"
             />
             <KpiStatCard
-              title="الطلاب"
-              value="—"
-              subtitle="طلاب المنصة"
-              icon={<Users size={24} />}
-              color="green"
-            />
-            <KpiStatCard
-              title="الاختبارات"
-              value="—"
-              subtitle="اختبارات نشطة"
-              icon={<FileText size={24} />}
+              title="المجموعات الدراسية"
+              value={groupsCount}
+              subtitle="مجموعة مسجلة"
+              icon={<FolderKanban size={24} />}
               color="amber"
             />
             <KpiStatCard
-              title="متوسط أداء الطلاب"
-              value="—"
-              subtitle="جاهزية المنصة"
-              icon={<FlaskConical size={24} />}
-              color="purple"
+              title="أكواد التفعيل والنتائج"
+              value="مفعلة"
+              subtitle="مولد الكروت والمتابعة"
+              icon={<Award size={24} />}
+              color="green"
             />
           </div>
 
-         
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <RecentStudentsWidget onViewAll={() => handleSelectTab('students')} />
+          {/* Widgets Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RecentStudentsWidget
+              students={recentStudents}
+              onViewAll={() => handleSelectTab('students')}
+            />
             <CourseProgressWidget
+              courses={formattedCourses}
+              title="المقررات المتاحة بالمنصة"
               onAddCourse={() => handleSelectTab('courses')}
               onViewAll={() => handleSelectTab('courses')}
+              onSelectCourse={() => handleSelectTab('courses')}
             />
-            <UpcomingTasksWidget onViewAll={() => handleSelectTab('quizzes')} />
           </div>
 
-         
-          <PerformanceAnalytics />
+          {/* Performance Analytics */}
+          {/* <PerformanceAnalytics
+            averagePerformance={50}
+            breakdown={performanceBreakdown}
+          /> */}
         </div>
       )}
 
-     
       {activeTab === 'courses' && <CourseManager />}
       {activeTab === 'lessons' && <LessonManager />}
       {activeTab === 'quizzes' && <QuizBuilder />}
@@ -140,38 +212,6 @@ export const TeacherDashboard: React.FC = () => {
       {activeTab === 'access-codes' && <TeacherAccessCodeManager />}
       {activeTab === 'attendance' && <TeacherAttendanceManager />}
       {activeTab === 'students' && <AdminUserManagement />}
-
-      {/* Fallback Screen for Unknown Tabs */}
-      {activeTab !== 'home' &&
-        activeTab !== 'courses' &&
-        activeTab !== 'lessons' &&
-        activeTab !== 'quizzes' &&
-        activeTab !== 'exams' &&
-        activeTab !== 'groups' &&
-        activeTab !== 'access-codes' &&
-        activeTab !== 'attendance' &&
-        activeTab !== 'students' && (
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center space-y-4 max-w-2xl mx-auto">
-            <div className="w-16 h-16 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100 shadow-2xs">
-              <FlaskConical size={32} />
-            </div>
-
-            <h3 className="text-xl font-black text-slate-800">
-              قسم غير معروف أو تحت التطوير
-            </h3>
-
-            <p className="text-sm text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
-              التبويب المحدد غير موجود حالياً. يرجى التوجه إلى أحد الأقسام الرئيسية من القائمة الجانبية.
-            </p>
-
-            <button
-              onClick={() => handleSelectTab('home')}
-              className="px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm"
-            >
-              العودة للرئيسية
-            </button>
-          </div>
-        )}
     </DashboardLayout>
   );
 };

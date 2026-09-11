@@ -39,10 +39,30 @@ export const deleteQuiz = async (
   return response.data;
 };
 
+export const uploadQuizQuestionImage = async (
+  lessonId: string,
+  file: File
+): Promise<{ imageUrl: string }> => {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await apiClient.post<{ message: string; data: { imageUrl: string } }>(
+    `/api/lessons/${lessonId}/quizzes/upload-image`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data.data;
+};
+
 export const teacherQuizzesApi = {
   getTeacherQuiz,
   updateQuiz,
   deleteQuiz,
+  uploadQuizQuestionImage,
 };
 
 export default teacherQuizzesApi;

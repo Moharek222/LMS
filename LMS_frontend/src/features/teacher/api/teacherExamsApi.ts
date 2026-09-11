@@ -50,11 +50,31 @@ export const deleteExam = async (
   return response.data.data;
 };
 
+export const uploadExamQuestionImage = async (
+  courseId: string,
+  file: File
+): Promise<{ imageUrl: string }> => {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await apiClient.post<{ message: string; data: { imageUrl: string } }>(
+    `/api/courses/${courseId}/exams/upload-image`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data.data;
+};
+
 export const teacherExamsApi = {
   getTeacherExam,
   createExam,
   updateExam,
   deleteExam,
+  uploadExamQuestionImage,
 };
 
 export default teacherExamsApi;

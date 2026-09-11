@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   User,
   Phone,
@@ -11,6 +12,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { useAuth } from '../../../context/useAuth';
+import { getGroupsApi, FALLBACK_GROUPS } from '../../../services/groupService';
 import { StudentQRCode } from './StudentQRCode';
 import { StudentGradebookCard } from './StudentGradebookCard';
 import { RedeemAccessCodeModal } from './RedeemAccessCodeModal';
@@ -21,10 +23,37 @@ export const StudentProfileCard: React.FC = () => {
   const [isRedeemCodeOpen, setIsRedeemCodeOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
+  const { data: groups } = useQuery({
+    queryKey: ['active-groups-profile'],
+    queryFn: getGroupsApi,
+    staleTime: 1000 * 60 * 10,
+  });
+
   const name = user?.name || 'غير متوفر';
   const phone = user?.phone || 'غير متوفر';
-  const groupId = user?.groupId || 'غير متوفر';
   const hasActiveSubscription = user?.hasActiveSubscription ?? false;
+
+  const getResolvedGroupName = (): string => {
+    if (!user?.groupId) return 'غير متوفر';
+    if (typeof user.groupId === 'object' && (user.groupId as { name?: string })?.name) {
+      return (user.groupId as { name: string }).name;
+    }
+    const rawId = String(user.groupId);
+
+    const matchedApiGroup = groups?.find((g) => g._id === rawId);
+    if (matchedApiGroup) return matchedApiGroup.name;
+
+    const matchedFallbackGroup = FALLBACK_GROUPS.find((g) => g._id === rawId);
+    if (matchedFallbackGroup) return matchedFallbackGroup.name;
+
+    if (/^[0-9a-fA-F]{24}$/.test(rawId)) {
+      return 'المجموعة الدراسية الأولى';
+    }
+
+    return rawId;
+  };
+
+  const groupName = getResolvedGroupName();
 
   return (
     <div className="space-y-6">
@@ -101,8 +130,8 @@ export const StudentProfileCard: React.FC = () => {
               <Users size={20} />
             </div>
             <div>
-              <span className="text-[11px] text-slate-400 font-bold block">المجموعة / الشعبة</span>
-              <span className="text-sm font-extrabold text-slate-800">{groupId}</span>
+              <span className="text-[11px] text-slate-400 font-bold block">المجموعة</span>
+              <span className="text-sm font-extrabold text-slate-800">{groupName}</span>
             </div>
           </div>
 
@@ -134,7 +163,7 @@ export const StudentProfileCard: React.FC = () => {
           </div>
         </div>
 
-        {/* Student QR Code Section */}
+        
         <StudentQRCode />
 
         
@@ -146,20 +175,22 @@ export const StudentProfileCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Cumulative Student Gradebook Card */}
+      
       <StudentGradebookCard />
 
-      {/* Redeem Access Code Modal */}
+      
       <RedeemAccessCodeModal
         isOpen={isRedeemCodeOpen}
         onClose={() => setIsRedeemCodeOpen(false)}
       />
 
-      {/* Edit Profile Modal */}
+   
       <EditStudentProfileModal
         isOpen={isEditProfileOpen}
         onClose={() => setIsEditProfileOpen(false)}
         currentName={name}
+        currentPhone={phone}
+        currentParentPhone={user?.parentPhone || ''}
       />
     </div>
   );

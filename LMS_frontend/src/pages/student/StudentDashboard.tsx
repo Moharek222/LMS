@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 
 import StudentLessonsView from '../../features/lessons/components/StudentLessonsView';
+import RedeemAccessCodeModal from '../../features/student/components/RedeemAccessCodeModal';
 
 const studentNavItems = [
   { id: 'home', label: 'الرئيسية', icon: <Home size={20} /> },
@@ -177,15 +178,30 @@ const sortedLessons = React.useMemo(() => {
     }
   };
 
+  const [verifiedState, setVerifiedState] = useState<boolean>(() => {
+    return user?.id ? sessionStorage.getItem(`lms_code_verified_${user.id}`) === 'true' : false;
+  });
+
   const selectedLesson = effectiveLessons.find((l) => l._id === selectedLessonId);
+  const isSubscriptionActive =
+    user?.role === 'student'
+      ? Boolean(user?.hasActiveSubscription && (verifiedState || (user?.id && sessionStorage.getItem(`lms_code_verified_${user.id}`) === 'true')))
+      : true;
 
   return (
-    <DashboardLayout
-      activeTab={activeTab}
-      onSelectTab={handleSelectTab}
-      navItems={studentNavItems}
-      subtitle="بوابة الطالب التعليمية"
-    >
+    <>
+      <RedeemAccessCodeModal
+        isOpen={!isSubscriptionActive}
+        isMandatory={true}
+        onSuccessVerified={() => setVerifiedState(true)}
+        onClose={() => {}}
+      />
+      <DashboardLayout
+        activeTab={activeTab}
+        onSelectTab={handleSelectTab}
+        navItems={studentNavItems}
+        subtitle="بوابة الطالب التعليمية"
+      >
       {activeTab === 'home' && (
         <StudentHomeView
           user={user}
@@ -258,6 +274,7 @@ const sortedLessons = React.useMemo(() => {
         )
       )}
     </DashboardLayout>
+    </>
   );
 };
 

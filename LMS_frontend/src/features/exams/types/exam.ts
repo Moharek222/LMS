@@ -4,6 +4,7 @@ export interface ExamListItem {
   title: string;
   duration: number; // in minutes
   isActive: boolean;
+  startAt?: string; // Optional scheduled start date/time (ISO string)
   createdAt?: string;
   updatedAt?: string;
 }
@@ -53,6 +54,7 @@ export interface GetTeacherExamResponse {
 export interface CreateTeacherExamPayload {
   title: string;
   duration: number;
+  startAt?: string;
   questions: {
     type: 'MCQ' | 'ESSAY';
     points: number;
@@ -66,6 +68,7 @@ export interface CreateTeacherExamPayload {
 export interface UpdateTeacherExamPayload {
   title?: string;
   duration?: number;
+  startAt?: string;
   questions?: {
     type: 'MCQ' | 'ESSAY';
     points: number;

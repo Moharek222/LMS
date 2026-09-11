@@ -3,6 +3,7 @@ import { Award, Plus, Loader2, AlertTriangle, X, Trash2, HelpCircle, Check, Imag
 import { useCreateExam } from '../../hooks/useCreateExam';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import { compressImageFile } from '../../../../utils/imageCompressor';
 
 interface QuestionDraft {
   id: string;
@@ -30,6 +31,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
 
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState<number>(30);
+  const [startAt, setStartAt] = useState<string>('');
   const [questions, setQuestions] = useState<QuestionDraft[]>([
     {
       id: 'q_1',
@@ -46,6 +48,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
   const resetForm = () => {
     setTitle('');
     setDuration(30);
+    setStartAt('');
     setQuestions([
       {
         id: `q_${Date.now()}`,
@@ -62,15 +65,15 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
 
   const handleCloseModal = () => {
     if (createExamMutation.isPending) return;
+    resetForm();
     onClose();
-    setValidationError('');
   };
 
   const handleAddQuestion = () => {
     setQuestions((prev) => [
       ...prev,
       {
-        id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         type: 'MCQ',
         points: 1,
         question: '',
@@ -83,7 +86,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
 
   const handleRemoveQuestion = (qId: string) => {
     if (questions.length <= 1) {
-      setValidationError('الامتحان يجب أن يحتوي على سؤال واحد على الأقل');
+      toast.warning('يجب أن يحتوي الامتحان على سؤال واحد على الأقل');
       return;
     }
     setQuestions((prev) => prev.filter((q) => q.id !== qId));
@@ -107,24 +110,20 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
     );
   };
 
-  const handleImageFileSelect = (qId: string, file: File) => {
+  const handleImageFileSelect = async (qId: string, file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 5 ميجابايت');
-      return;
+
+    try {
+      toast.info('جاري ضغط وتحسين الصورة لتناسب المنصة... ⏳');
+      const compressedDataUrl = await compressImageFile(file, 800, 800, 0.65);
+      handleQuestionImageChange(qId, compressedDataUrl);
+      toast.success('تم تحميل وضغـط الصورة بنجاح 🖼️');
+    } catch {
+      toast.error('حدث خطأ أثناء معالجة الصورة، يرجى المحاولة مرة أخرى');
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (result) {
-        handleQuestionImageChange(qId, result);
-        toast.success('تم تحميل الصورة بنجاح 🖼️');
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleQuestionTextChange = (qId: string, text: string) => {
@@ -231,14 +230,23 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
       answer: q.type === 'MCQ' ? q.answer.trim() : undefined,
     }));
 
+    const payload = {
+      title: title.trim(),
+      duration: numDuration,
+      startAt: startAt ? new Date(startAt).toISOString() : undefined,
+      questions: formattedQuestions,
+    };
+
+    const payloadSize = JSON.stringify(payload).length;
+    if (payloadSize > 95 * 1024) {
+      setValidationError('حجم بيانات الامتحان وصوره كبير جداً بالنسبة لـ JSON الباك إند (أكبر من 95KB). يرجى إزالة بعض الصور الكبيرة أو تقليل أبعادها أو استخدام روابط صور بدلاً من الرفع المباشر.');
+      return;
+    }
+
     createExamMutation.mutate(
       {
         courseId: selectedCourseId,
-        payload: {
-          title: title.trim(),
-          duration: numDuration,
-          questions: formattedQuestions,
-        },
+        payload,
       },
       {
         onSuccess: () => {
@@ -268,7 +276,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
             <div>
               <h3 className="text-lg font-extrabold text-slate-800">إضافة امتحان شامل جديد</h3>
               <p className="text-xs text-slate-500 font-semibold">
-                إضافة امتحان جديد وتحديد المدة والأسئلة (اختيار من متعدد ومقالي وصور الأسئلة)
+                إضافة امتحان جديد وتحديد المدة والأسئلة وموعد البدء المجدول (اختياري)
               </p>
             </div>
           </div>
@@ -283,7 +291,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
 
         <form onSubmit={handleCreateSubmit} className="space-y-6 overflow-y-auto flex-1 pr-1">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-1">
               <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
                 عنوان الامتحان الشامل *
               </label>
@@ -308,6 +316,19 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
                 onChange={(e) => setDuration(Number(e.target.value))}
                 disabled={createExamMutation.isPending}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
+                موعد البدء (اختياري / جدول للامتحان)
+              </label>
+              <input
+                type="datetime-local"
+                value={startAt}
+                onChange={(e) => setStartAt(e.target.value)}
+                disabled={createExamMutation.isPending}
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition"
               />
             </div>
           </div>

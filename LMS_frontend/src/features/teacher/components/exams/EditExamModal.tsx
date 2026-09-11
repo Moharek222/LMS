@@ -4,6 +4,7 @@ import { useTeacherExam } from '../../hooks/useTeacherExam';
 import { useUpdateExam } from '../../hooks/useUpdateExam';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import { compressImageFile } from '../../../../utils/imageCompressor';
 
 interface QuestionDraft {
   id: string;
@@ -87,7 +88,7 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
 
   const handleEditRemoveQuestion = (qId: string) => {
     if (editQuestions.length <= 1) {
-      setEditValidationError('الامتحان يجب أن يحتوي على سؤال واحد على الأقل');
+      toast.warning('الامتحان يجب أن يحتوي على سؤال واحد على الأقل');
       return;
     }
     setEditQuestions((prev) => prev.filter((q) => q.id !== qId));
@@ -153,30 +154,26 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
     );
   };
 
-  const handleEditSetAnswer = (qId: string, selectedAnswer: string) => {
+  const handleEditAnswerSelect = (qId: string, answerText: string) => {
     setEditQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, answer: selectedAnswer } : q))
+      prev.map((q) => (q.id === qId ? { ...q, answer: answerText } : q))
     );
   };
 
-  const handleImageFileSelect = (qId: string, file: File) => {
+  const handleImageFileSelect = async (qId: string, file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 5 ميجابايت');
-      return;
+
+    try {
+      toast.info('جاري ضغط وتحسين الصورة لتناسب المنصة... ⏳');
+      const compressedDataUrl = await compressImageFile(file, 800, 800, 0.65);
+      handleEditQuestionImageChange(qId, compressedDataUrl);
+      toast.success('تم تحميل وضغط الصورة بنجاح 🖼️');
+    } catch {
+      toast.error('حدث خطأ أثناء معالجة الصورة، يرجى المحاولة مرة أخرى');
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (result) {
-        handleEditQuestionImageChange(qId, result);
-        toast.success('تم تحميل الصورة بنجاح 🖼️');
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -232,15 +229,23 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
       answer: q.type === 'MCQ' ? q.answer.trim() : undefined,
     }));
 
+    const payload = {
+      title: editTitle.trim(),
+      duration: numDuration,
+      questions: formattedEditQuestions,
+    };
+
+    const payloadSize = JSON.stringify(payload).length;
+    if (payloadSize > 95 * 1024) {
+      setEditValidationError('حجم بيانات الامتحان وصوره كبير جداً بالنسبة لـ JSON الباك إند (أكبر من 95KB). يرجى إزالة بعض الصور الكبيرة أو تقليل أبعادها أو استخدام روابط صور بدلاً من الرفع المباشر.');
+      return;
+    }
+
     updateExamMutation.mutate(
       {
         courseId: selectedCourseId,
         examId: editingExamId,
-        payload: {
-          title: editTitle.trim(),
-          duration: numDuration,
-          questions: formattedEditQuestions,
-        },
+        payload,
       },
       {
         onSuccess: () => {
@@ -483,7 +488,7 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (opt.trim()) handleEditSetAnswer(q.id, opt);
+                                  if (opt.trim()) handleEditAnswerSelect(q.id, opt);
                                 }}
                                 title={isCorrect ? 'الإجابة الصحيحة المحددة' : 'تحديد كإجابة صحيحة'}
                                 className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 border transition ${

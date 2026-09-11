@@ -12,6 +12,8 @@ import {
   Award,
   HelpCircle,
   ShieldCheck,
+  Save,
+  Calendar,
 } from 'lucide-react';
 import { useStudentExam } from '../hooks/useStudentExam';
 import { useSubmitExam } from '../hooks/useSubmitExam';
@@ -35,42 +37,141 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [untilStartLeft, setUntilStartLeft] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [submissionResult, setSubmissionResult] = useState<ExamSubmissionResult | null>(null);
-
   const [submitErrorMessage, setSubmitErrorMessage] = useState<string | null>(null);
   const [timeExpiredNoAnswers, setTimeExpiredNoAnswers] = useState<boolean>(false);
+  const [isAutoSubmitted, setIsAutoSubmitted] = useState<boolean>(false);
+  const [saveIndicator, setSaveIndicator] = useState<boolean>(false);
 
   const isSubmittingRef = useRef<boolean>(false);
   const isAutoSubmittedRef = useRef<boolean>(false);
   const userAnswersRef = useRef<Record<string, string>>(userAnswers);
 
+  const sessionStartKey = `lms_exam_session_start_${examId}`;
+  const draftAnswersKey = `lms_exam_draft_answers_${examId}`;
+
   useEffect(() => {
     userAnswersRef.current = userAnswers;
   }, [userAnswers]);
 
-  const handleDoSubmit = () => {
-    const answersPayload = (exam?.questions || [])
-      .map((q) => {
-        const ans = userAnswersRef.current[q._id];
-        if (!ans || !ans.trim()) return null;
-        return {
-          questionID: q._id,
-          type: q.type || 'MCQ',
-          studentAnswer: ans.trim(),
-        };
-      })
-      .filter((item): item is { questionID: string; type: 'MCQ' | 'ESSAY'; studentAnswer: string } => item !== null);
+  // Load draft answers from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem(draftAnswersKey);
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && typeof parsed === 'object') {
+          setUserAnswers(parsed);
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [draftAnswersKey]);
 
-    if (answersPayload.length === 0) {
+  // Check scheduled start time (startAt)
+  useEffect(() => {
+    if (!exam || !exam.startAt) {
+      setUntilStartLeft(null);
+      return;
+    }
+
+    const startMs = new Date(exam.startAt).getTime();
+    const nowMs = Date.now();
+    const diffSeconds = Math.floor((startMs - nowMs) / 1000);
+
+    if (diffSeconds > 0) {
+      setUntilStartLeft(diffSeconds);
+      const interval = setInterval(() => {
+        const remaining = Math.floor((startMs - Date.now()) / 1000);
+        if (remaining <= 0) {
+          setUntilStartLeft(null);
+          clearInterval(interval);
+        } else {
+          setUntilStartLeft(remaining);
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setUntilStartLeft(null);
+    }
+  }, [exam]);
+
+  // Initialize and persist exam session timer
+  useEffect(() => {
+    if (!exam || typeof exam.duration !== 'number' || exam.duration <= 0 || submissionResult || timeExpiredNoAnswers) {
+      return;
+    }
+
+    // Do not initialize session if exam startAt is still in the future
+    if (untilStartLeft !== null && untilStartLeft > 0) {
+      return;
+    }
+
+    const totalSeconds = exam.duration * 60;
+    let sessionStartMs = Date.now();
+
+    try {
+      const storedStart = localStorage.getItem(sessionStartKey);
+      if (storedStart) {
+        sessionStartMs = Number(storedStart);
+      } else {
+        localStorage.setItem(sessionStartKey, sessionStartMs.toString());
+      }
+    } catch {
+      // Ignore storage errors
+    }
+
+    const elapsedSeconds = Math.floor((Date.now() - sessionStartMs) / 1000);
+    const remaining = Math.max(0, totalSeconds - elapsedSeconds);
+    setTimeLeft(remaining);
+  }, [exam, untilStartLeft, submissionResult, timeExpiredNoAnswers, sessionStartKey]);
+
+  const cleanupLocalStorage = () => {
+    try {
+      localStorage.removeItem(sessionStartKey);
+      localStorage.removeItem(draftAnswersKey);
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handleDoSubmit = (isAuto = false) => {
+    const answeredCount = (exam?.questions || []).filter((q) => {
+      const ans = userAnswersRef.current[q._id];
+      return Boolean(ans && ans.trim());
+    }).length;
+
+    if (answeredCount === 0) {
       setShowConfirmModal(false);
+      if (isAuto) {
+        setTimeExpiredNoAnswers(true);
+        cleanupLocalStorage();
+        return;
+      }
       setSubmitErrorMessage('يجب الإجابة على سؤال واحد على الأقل قبل تسليم الامتحان.');
       return;
     }
 
+    // Send non-empty studentAnswer for all questions to pass backend Mongoose validation
+    const answersPayload = (exam?.questions || []).map((q) => {
+      const ans = userAnswersRef.current[q._id];
+      const validAns = ans && ans.trim() ? ans.trim() : 'لم تتم الإجابة';
+      return {
+        questionID: q._id,
+        type: (q.type || 'MCQ') as 'MCQ' | 'ESSAY',
+        studentAnswer: validAns,
+      };
+    });
+
     setSubmitErrorMessage(null);
     isSubmittingRef.current = true;
     setShowConfirmModal(false);
+    if (isAuto) {
+      setIsAutoSubmitted(true);
+    }
 
     submitExamMutation.mutate(
       {
@@ -81,6 +182,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
       {
         onSuccess: (result) => {
           setSubmissionResult(result);
+          cleanupLocalStorage();
         },
         onError: () => {
           isSubmittingRef.current = false;
@@ -94,52 +196,68 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     handleDoSubmitRef.current = handleDoSubmit;
   });
 
-  
-  if (exam && typeof exam.duration === 'number' && exam.duration > 0 && timeLeft === null && !submissionResult && !timeExpiredNoAnswers) {
-    setTimeLeft(exam.duration * 60);
-  }
-
-  
+  // Active countdown timer & Auto-submit on timeout
   useEffect(() => {
-    if (timeLeft === null || submissionResult || timeExpiredNoAnswers || submitExamMutation.isPending) return;
+    if (timeLeft === null || submissionResult || timeExpiredNoAnswers || submitExamMutation.isPending || (untilStartLeft !== null && untilStartLeft > 0)) {
+      return;
+    }
 
     if (timeLeft <= 0) {
       if (!isAutoSubmittedRef.current && !isSubmittingRef.current) {
         isAutoSubmittedRef.current = true;
-        const validAnswers = Object.entries(userAnswersRef.current).filter(
-          ([, answer]) => Boolean(answer && answer.trim())
-        );
-
-        if (validAnswers.length === 0) {
-          setShowConfirmModal(false);
-          setTimeExpiredNoAnswers(true);
-          return;
-        }
-
-        handleDoSubmitRef.current();
+        handleDoSubmitRef.current(true);
       }
       return;
     }
 
     const timerId = setInterval(() => {
-      setTimeLeft((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+      setTimeLeft((prev) => {
+        if (prev === null || prev <= 1) {
+          if (!isAutoSubmittedRef.current && !isSubmittingRef.current) {
+            isAutoSubmittedRef.current = true;
+            handleDoSubmitRef.current(true);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [timeLeft, submissionResult, timeExpiredNoAnswers, submitExamMutation.isPending]);
+  }, [timeLeft, submissionResult, timeExpiredNoAnswers, submitExamMutation.isPending, untilStartLeft]);
 
   const handleSelectOption = (questionId: string, selectedAnswer: string) => {
-    if (submissionResult || timeExpiredNoAnswers || submitExamMutation.isPending) return;
+    if (submissionResult || timeExpiredNoAnswers || submitExamMutation.isPending || (timeLeft !== null && timeLeft <= 0)) {
+      return;
+    }
+
     setSubmitErrorMessage(null);
-    setUserAnswers((prev) => ({
-      ...prev,
-      [questionId]: selectedAnswer,
-    }));
+    setUserAnswers((prev) => {
+      const updated = {
+        ...prev,
+        [questionId]: selectedAnswer,
+      };
+      try {
+        localStorage.setItem(draftAnswersKey, JSON.stringify(updated));
+      } catch {
+        // Ignore storage write error
+      }
+      return updated;
+    });
+
+    // Briefly trigger visual save indicator
+    setSaveIndicator(true);
+    setTimeout(() => setSaveIndicator(false), 1500);
   };
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -224,7 +342,57 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     );
   }
 
- 
+  // Waiting screen for scheduled start time
+  if (untilStartLeft !== null && untilStartLeft > 0) {
+    const formattedStartDate = exam.startAt
+      ? new Date(exam.startAt).toLocaleString('ar-EG', {
+          dateStyle: 'full',
+          timeStyle: 'short',
+        })
+      : '';
+
+    return (
+      <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-xs text-center space-y-6 max-w-xl mx-auto">
+        <div className="w-20 h-20 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-xs">
+          <Calendar size={42} />
+        </div>
+
+        <div className="space-y-2">
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+            <Clock size={16} />
+            <span>امتحان مجدول</span>
+          </span>
+          <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
+          <p className="text-xs text-slate-500 font-semibold max-w-md mx-auto">
+            لم يحل موعد بدء الامتحان بعد. سينفتح الامتحان تلقائياً عند حلول موعده.
+          </p>
+        </div>
+
+        {formattedStartDate && (
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs font-bold text-slate-700">
+            موعد البداية المحدد: {formattedStartDate}
+          </div>
+        )}
+
+        <div className="p-5 rounded-2xl bg-slate-900 text-white space-y-2">
+          <span className="text-xs font-bold text-slate-400 block">الوقت المتبقي لفتح الامتحان:</span>
+          <span className="font-mono text-2xl font-black text-amber-400">
+            {formatTime(untilStartLeft)}
+          </span>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+        >
+          <ArrowRight size={16} />
+          <span>العودة للامتحانات</span>
+        </button>
+      </div>
+    );
+  }
+
+  // Submission Result View
   if (submissionResult) {
     const isPendingGrade = submissionResult.status === 'PENDING';
     const score = submissionResult.score ?? 0;
@@ -266,13 +434,14 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           </span>
           <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
           <p className="text-xs text-slate-500 font-semibold">
-            {isPendingGrade
+            {isAutoSubmitted
+              ? 'انتهى الوقت المحدد للامتحان وتم حفظ وتأكيد إجاباتك المسجلة تلقائياً في النظام.'
+              : isPendingGrade
               ? 'تم تسليم إجاباتك بنجاح وفي انتظار تقييم المعلم للأسئلة المقالية.'
               : 'تم تسجيل نتيجتك وحفظها في النظام'}
           </p>
         </div>
 
-        
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80">
             <span className="text-[11px] text-slate-400 font-bold block">درجة الطالب الحالية</span>
@@ -317,7 +486,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           </span>
           <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
           <p className="text-xs text-slate-600 font-semibold max-w-md mx-auto leading-relaxed">
-            انتهت المدة الزمنية المحددة للامتحان دون اختيار أي إجابات، ولذلك لم يتم تسليم أية محاولة للنظام.
+            انتهت المدة الزمنية المحددة للامتحان دون اختيار أية إجابات، ولذلك لم يتم تسجيل إجابات بالنظام.
           </p>
         </div>
 
@@ -334,41 +503,85 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     );
   }
 
-  
   const questions = exam.questions;
   const currentQuestion = questions[currentQuestionIndex];
   const totalQuestions = questions.length;
-  const answeredCount = Object.keys(userAnswers).length;
+  const answeredCount = Object.keys(userAnswers).filter(k => Boolean(userAnswers[k] && userAnswers[k].trim())).length;
+  const progressPercent = Math.round((answeredCount / Math.max(1, totalQuestions)) * 100);
   const currentAnswer = userAnswers[currentQuestion._id] || '';
+
+  // Timer status theme
+  const isUrgent = timeLeft !== null && timeLeft <= 60; // <= 1 min
+  const isWarning = timeLeft !== null && timeLeft <= 300 && !isUrgent; // <= 5 min
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      
-      <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center shrink-0 border border-teal-100">
-            <ShieldCheck size={22} />
+      {/* Top Header Card */}
+      <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center shrink-0 border border-teal-100">
+              <ShieldCheck size={22} />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-800 line-clamp-1">{exam.title}</h3>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-slate-400 font-semibold">
+                  السؤال {currentQuestionIndex + 1} من {totalQuestions}
+                </span>
+                {saveIndicator && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200 animate-fade-in">
+                    <Save size={10} />
+                    <span>تم حفظ الإجابة تلقائياً 💾</span>
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-extrabold text-slate-800 line-clamp-1">{exam.title}</h3>
-            <span className="text-xs text-slate-400 font-semibold">
-              السؤال {currentQuestionIndex + 1} من {totalQuestions}
-            </span>
-          </div>
+
+          {/* Timer Display */}
+          {timeLeft !== null && (
+            <div
+              className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl border shadow-xs transition-all shrink-0 self-end sm:self-auto ${
+                isUrgent
+                  ? 'bg-rose-950 text-rose-200 border-rose-800 animate-pulse'
+                  : isWarning
+                  ? 'bg-amber-950 text-amber-200 border-amber-800'
+                  : 'bg-slate-900 text-white border-slate-800'
+              }`}
+            >
+              <Clock
+                size={18}
+                className={isUrgent ? 'text-rose-400 animate-spin' : isWarning ? 'text-amber-400 animate-bounce' : 'text-teal-400'}
+              />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 leading-none">
+                  {isUrgent ? 'تنبيه حرج! الوقت ينتهي:' : isWarning ? 'تنبيه! متبقي أقل من 5 دقائق:' : 'الوقت المتبقي:'}
+                </span>
+                <span className={`font-mono text-sm font-black ${isUrgent ? 'text-rose-400' : isWarning ? 'text-amber-400' : 'text-white'}`}>
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-       
-        {timeLeft !== null && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 text-white border border-slate-800 shadow-xs shrink-0 self-end sm:self-auto">
-            <Clock size={18} className={timeLeft <= 300 ? 'text-rose-400 animate-pulse' : 'text-teal-400'} />
-            <span className="text-xs font-bold text-slate-300">الوقت المتبقي:</span>
-            <span className={`font-mono text-sm font-black ${timeLeft <= 300 ? 'text-rose-400' : 'text-white'}`}>
-              {formatTime(timeLeft)}
-            </span>
+        {/* Answer Progress Bar */}
+        <div className="space-y-1.5 pt-2 border-t border-slate-100">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+            <span>تقدم الحل: تمت الإجابة على {answeredCount} من أصل {totalQuestions} سؤالاً</span>
+            <span className="text-[#0D8A82] font-black">{progressPercent}%</span>
           </div>
-        )}
+          <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div
+              className="h-full bg-[#0D8A82] transition-all duration-300 rounded-full"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
       </div>
 
+      {/* Main Question Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
         {submitErrorMessage && (
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center justify-between gap-3">
@@ -385,6 +598,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           </div>
         )}
 
+        {/* Question Header */}
         <div className="flex items-start gap-3.5 pb-4 border-b border-slate-100">
           <span className="w-9 h-9 rounded-xl bg-[#0D8A82] text-white font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
             {currentQuestionIndex + 1}
@@ -477,7 +691,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           </div>
         )}
 
-        
+        {/* Footer Actions */}
         <div className="flex items-center justify-between gap-3 pt-6 border-t border-slate-100 flex-wrap">
           <button
             onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
@@ -515,7 +729,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
         </div>
       </div>
 
-      
+      {/* Submit Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-xl space-y-5 text-center">
@@ -549,7 +763,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
                 إلغاء
               </button>
               <button
-                onClick={handleDoSubmit}
+                onClick={() => handleDoSubmit(false)}
                 disabled={submitExamMutation.isPending || answeredCount === 0}
                 className="w-1/2 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >

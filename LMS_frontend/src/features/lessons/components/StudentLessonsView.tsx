@@ -1,10 +1,12 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, Video, BookOpen } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Video, BookOpen, Lock } from 'lucide-react';
 import type { Lesson } from '../types/lesson';
 import { LessonVideoPlayer } from './LessonVideoPlayer';
 import { QuizList } from '../../quizzes/components/QuizList';
 import { StudentQuizPreview } from '../../quizzes/components/StudentQuizPreview';
 import { QuizRunner } from '../../quizzes/components/QuizRunner';
+import { useStudentQuizHistory } from '../../student/hooks/useStudentQuizHistory';
+import { useToast } from '../../../context/ToastContext';
 
 export interface CoursePillItem {
   _id: string;
@@ -70,6 +72,40 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
   refetchLessons,
   onSelectLesson,
 }) => {
+  const toast = useToast();
+  const { data: quizHistoryData } = useStudentQuizHistory({ page: 1, limit: 100 });
+
+  const passedQuizSubmissions = React.useMemo(() => {
+    if (!quizHistoryData?.data) return [];
+    return quizHistoryData.data.filter((sub) => sub.isPassed);
+  }, [quizHistoryData]);
+
+  const isLessonUnlocked = (index: number): boolean => {
+    if (index === 0) return true;
+
+    for (let i = 0; i < index; i++) {
+      const prevLesson = sortedLessons[i];
+      const isPrevCompleted = completedLessonIds.includes(prevLesson._id);
+
+      const hasPassedQuiz = passedQuizSubmissions.some((sub) => {
+        if (!sub.isPassed) return false;
+        return true;
+      });
+
+      if (prevLesson.requiresPassing) {
+        if (!isPrevCompleted && !hasPassedQuiz && passedQuizSubmissions.length === 0) {
+          return false;
+        }
+      } else {
+        if (!isPrevCompleted && passedQuizSubmissions.length === 0 && index > 1) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+
   return (
     <div className="space-y-6">
       
@@ -157,7 +193,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
         </div>
       )}
 
-     
+      
       {!selectedCourseId ? (
         <div className="bg-white rounded-2xl p-8 border border-slate-200/90 shadow-xs text-center space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100">
@@ -193,30 +229,44 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {sortedLessons.map((lesson) => {
+          {sortedLessons.map((lesson, index) => {
+            const isUnlocked = isLessonUnlocked(index);
             const isSelected = selectedLessonId === lesson._id;
             const isCompleted = completedLessonIds.includes(lesson._id);
+
+            const handleLessonClick = () => {
+              if (!isUnlocked) {
+                toast.error('هذه المحاضرة مغلقة 🔒. يجب مشاهدة المحاضرة السابقة واجتياز كويز التقييم بنجاح بنسبة النجاح المطلوبة لفتح هذه المحاضرة.');
+                return;
+              }
+              onSelectLesson(lesson._id);
+            };
+
             return (
               <div
                 key={lesson._id}
-                onClick={() => onSelectLesson(lesson._id)}
-                className={`rounded-2xl p-4 border shadow-xs flex items-center justify-between gap-4 transition cursor-pointer ${
-                  isSelected
-                    ? 'bg-teal-50/60 border-[#0D8A82] ring-1 ring-[#0D8A82]'
-                    : 'bg-white border-slate-200/90 hover:border-teal-200 hover:bg-slate-50/50'
+                onClick={handleLessonClick}
+                className={`rounded-2xl p-4 border shadow-xs flex items-center justify-between gap-4 transition ${
+                  !isUnlocked
+                    ? 'bg-slate-50/80 border-slate-200 opacity-75 cursor-not-allowed'
+                    : isSelected
+                    ? 'bg-teal-50/60 border-[#0D8A82] ring-1 ring-[#0D8A82] cursor-pointer'
+                    : 'bg-white border-slate-200/90 hover:border-teal-200 hover:bg-slate-50/50 cursor-pointer'
                 }`}
               >
                 <div className="flex items-center gap-3.5">
                   <div
                     className={`w-10 h-10 rounded-xl font-black text-xs flex items-center justify-center shrink-0 border ${
-                      isSelected
+                      !isUnlocked
+                        ? 'bg-slate-200 text-slate-400 border-slate-300'
+                        : isSelected
                         ? 'bg-[#0D8A82] text-white border-[#0D8A82]'
                         : isCompleted
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                         : 'bg-slate-100 text-slate-700 border-slate-200'
                     }`}
                   >
-                    {lesson.order}
+                    {!isUnlocked ? <Lock size={18} /> : lesson.order}
                   </div>
                   <div className="text-right space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -226,7 +276,12 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                           تمت المشاهدة
                         </span>
                       )}
-                      {lesson.requiresPassing && (
+                      {!isUnlocked && (
+                        <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200">
+                          مغلق 🔒 يتطلب اجتياز كويز الدرس السابق
+                        </span>
+                      )}
+                      {lesson.requiresPassing && isUnlocked && (
                         <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">
                           يتطلب اجتياز اختبار
                         </span>
@@ -241,13 +296,24 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                 <div className="shrink-0 flex items-center gap-2">
                   <span
                     className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold border ${
-                      isSelected
+                      !isUnlocked
+                        ? 'bg-slate-100 text-slate-400 border-slate-200'
+                        : isSelected
                         ? 'bg-[#0D8A82] text-white border-[#0D8A82]'
                         : 'bg-teal-50 text-[#0D8A82] border-teal-100'
                     }`}
                   >
-                    <Video size={14} />
-                    <span>{isSelected ? 'جاري العرض' : 'تشغيل المحاضرة'}</span>
+                    {!isUnlocked ? (
+                      <>
+                        <Lock size={14} />
+                        <span>مغلق</span>
+                      </>
+                    ) : (
+                      <>
+                        <Video size={14} />
+                        <span>{isSelected ? 'جاري العرض' : 'تشغيل المحاضرة'}</span>
+                      </>
+                    )}
                   </span>
                 </div>
               </div>

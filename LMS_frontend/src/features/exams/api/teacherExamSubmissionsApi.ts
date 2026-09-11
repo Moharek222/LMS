@@ -73,11 +73,23 @@ export const getExamStatistics = async (
   return response.data.data;
 };
 
+export const deleteExamSubmission = async (
+  courseId: string,
+  examId: string,
+  submissionId: string
+): Promise<{ message: string }> => {
+  const response = await apiClient.delete<{ message: string }>(
+    `/api/courses/${courseId}/exams/${examId}/submissions/${submissionId}`
+  );
+  return response.data;
+};
+
 export const teacherExamSubmissionsApi = {
   getTeacherExamSubmissions,
   getTeacherExamSubmissionDetails,
   gradeEssayQuestions,
   getExamStatistics,
+  deleteExamSubmission,
 };
 
 export default teacherExamSubmissionsApi;

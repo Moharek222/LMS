@@ -62,12 +62,14 @@ export interface PaginatedTeacherExamSubmissionsResponse {
 export interface DetailedAnswerItem {
   questionID: string;
   type: 'MCQ' | 'ESSAY';
+  studentAnswer?: string;
   questionText?: string;
   selectedAnswer?: string;
   correctAnswer?: string;
   essayAnswerText?: string;
   score: number;
   maxScore?: number;
+  isCorrect?: boolean;
   teacherFeedback?: string;
 }
 

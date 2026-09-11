@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Mail, Lock, User, Loader2, CheckCircle2, AlertCircle, UserCheck } from 'lucide-react';
-import { addTeacher, addAdmin } from '../api/adminUserApi';
+import { ShieldCheck, Mail, Lock, User, Loader2, CheckCircle2, AlertCircle} from 'lucide-react';
+import { addAdmin } from '../api/adminUserApi';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
 
 export const AdminUserManagement: React.FC = () => {
   const toast = useToast();
-  const [role, setRole] = useState<'teacher' | 'admin'>('teacher');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,19 +23,14 @@ export const AdminUserManagement: React.FC = () => {
     setErrorMsg(null);
 
     try {
-      if (role === 'teacher') {
-        const res = await addTeacher({ name: name.trim(), email: email.trim(), password: password.trim() });
-        toast.success(res.message || 'تم إنشاء حساب المعلم بنجاح! 👨‍🏫');
-      } else {
-        const res = await addAdmin({ name: name.trim(), email: email.trim(), password: password.trim() });
-        toast.success(res.message || 'تم إنشاء حساب المدير بنجاح! 🛡️');
-      }
+      const res = await addAdmin({ name: name.trim(), email: email.trim(), password: password.trim() });
+      toast.success(res.message || 'تم إنشاء حساب مدير النظام بنجاح! 🛡️');
 
       setName('');
       setEmail('');
       setPassword('');
     } catch (err) {
-      const msg = toArabicErrorMessage(err, 'فشل إنشاء الحساب الجديد');
+      const msg = toArabicErrorMessage(err, 'فشل إنشاء حساب المدير الجديد');
       setErrorMsg(msg);
     } finally {
       setIsLoading(false);
@@ -45,61 +39,30 @@ export const AdminUserManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
-            <UserCheck size={24} />
-          </div>
-          <div>
-            <h3 className="text-base font-extrabold text-slate-800">إدارة طاقم المعلمين والمدراء 👨‍🏫</h3>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              تزويد وإضافة حسابات جديدة للمدرسين ومدراء النظام وتحديد الصلاحيات
-            </p>
-          </div>
-        </div>
-      </div>
+      
 
-      {/* Account Creation Form */}
+     
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 max-w-2xl">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
             <ShieldCheck size={18} className="text-[#0D8A82]" />
-            <span>إضافة حساب طاقم جديد</span>
+            <span>إضافة حساب مدير نظام جديد (Admin)</span>
           </h4>
 
-          {/* Role Selector Pills */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200" role="group" aria-label="نوع الحساب">
-            <button
-              type="button"
-              onClick={() => setRole('teacher')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                role === 'teacher' ? 'bg-[#0D8A82] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              مدرس (Teacher)
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('admin')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                role === 'admin' ? 'bg-[#0D8A82] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              مدير (Admin)
-            </button>
-          </div>
+          <span className="px-3 py-1 rounded-xl bg-teal-50 text-[#0D8A82] text-xs font-bold border border-teal-100">
+            صلاحيات مدير النظام
+          </span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">الاسم بالكامل</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">اسم المدير بالكامل</label>
             <div className="relative">
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="أدخل الاسم الثلاثي..."
+                placeholder="أدخل اسم المدير..."
                 className="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-200 text-sm font-semibold focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition"
               />
               <User size={18} className="absolute right-3.5 top-3.5 text-slate-400" />
@@ -113,7 +76,7 @@ export const AdminUserManagement: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="teacher@platform.com"
+                placeholder="admin@platform.com"
                 className="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-200 text-sm font-semibold focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition dir-ltr text-right"
               />
               <Mail size={18} className="absolute right-3.5 top-3.5 text-slate-400" />
@@ -149,12 +112,12 @@ export const AdminUserManagement: React.FC = () => {
             {isLoading ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
-                <span>جاري إنشاء الحساب...</span>
+                <span>جاري إنشاء حساب المدير...</span>
               </>
             ) : (
               <>
                 <CheckCircle2 size={16} />
-                <span>إنشاء حساب {role === 'teacher' ? 'المعلم' : 'المدير'}</span>
+                <span>إنشاء حساب مدير النظام (Admin)</span>
               </>
             )}
           </button>

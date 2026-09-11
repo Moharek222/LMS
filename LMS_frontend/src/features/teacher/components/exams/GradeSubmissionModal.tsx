@@ -242,7 +242,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                           <div className="space-y-1">
                             <span className="text-[11px] font-bold text-slate-500 block">إجابة الطالب النصية:</span>
                             <div className="p-3 bg-white rounded-xl border border-slate-200/80 text-xs font-semibold text-slate-800 whitespace-pre-wrap leading-relaxed">
-                              {ans.essayAnswerText || ans.selectedAnswer || 'لم يقدم الطالب إجابة نصية'}
+                              {ans.studentAnswer || ans.essayAnswerText || ans.selectedAnswer || 'لم يقدم الطالب إجابة نصية'}
                             </div>
                           </div>
 
@@ -291,25 +291,28 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                   </h4>
 
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {mcqAnswers.map((ans, idx) => (
-                      <div
-                        key={ans.questionID || idx}
-                        className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs"
-                      >
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2
-                            size={16}
-                            className={ans.score > 0 ? 'text-emerald-600' : 'text-slate-300'}
-                          />
-                          <span className="font-bold text-slate-800">
-                            سؤال اختيار #{idx + 1}: {ans.selectedAnswer || 'بدون إجابة'}
+                    {mcqAnswers.map((ans, idx) => {
+                      const studentAnsText = ans.studentAnswer || ans.selectedAnswer || 'بدون إجابة';
+                      return (
+                        <div
+                          key={ans.questionID || idx}
+                          className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2
+                              size={16}
+                              className={ans.score > 0 || ans.isCorrect ? 'text-emerald-600' : 'text-rose-500'}
+                            />
+                            <span className="font-bold text-slate-800">
+                              سؤال اختيار #{idx + 1}: {studentAnsText}
+                            </span>
+                          </div>
+                          <span className="font-extrabold text-slate-700">
+                            الدرجة: {ans.score}
                           </span>
                         </div>
-                        <span className="font-extrabold text-slate-700">
-                          الدرجة: {ans.score}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

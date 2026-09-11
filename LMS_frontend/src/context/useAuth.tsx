@@ -9,6 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   loginTeacher: (credentials: TeacherLoginCredentials) => Promise<void>;
   loginStudent: (credentials: StudentLoginCredentials) => Promise<void>;
+  updateUser: (partial: Partial<UserProfile>) => void;
   logout: () => Promise<void>;
 }
 
@@ -52,11 +53,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateUser = (partial: Partial<UserProfile>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...partial };
+      localStorage.setItem('lms_user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const logout = async () => {
     setIsLoading(true);
     try {
       await logoutApi().catch(() => {});
     } finally {
+      if (user?.id) {
+        sessionStorage.removeItem(`lms_code_verified_${user.id}`);
+        localStorage.removeItem(`lms_code_verified_${user.id}`);
+      }
       setUser(null);
       localStorage.removeItem('lms_user');
       setIsLoading(false);
@@ -71,6 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading,
         loginTeacher,
         loginStudent,
+        updateUser,
         logout,
       }}
     >

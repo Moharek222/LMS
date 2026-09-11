@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/useAuth';
 import {
-  useStudentAttendanceStats,
+  useMyAttendanceStats,
   useGroupAttendanceSheets,
 } from '../hooks/useStudentAttendance';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
@@ -28,7 +28,7 @@ export const StudentAttendanceCard: React.FC = () => {
     isError: isErrorStats,
     error: errorStats,
     refetch: refetchStats,
-  } = useStudentAttendanceStats(groupId, studentId);
+  } = useMyAttendanceStats(groupId);
 
   const {
     data: sheetsData,

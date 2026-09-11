@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
-import { KeyRound, X, CheckCircle2, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { KeyRound, X, CheckCircle2, AlertCircle, Loader2, Sparkles, LogOut, ShieldAlert } from 'lucide-react';
 import { useVerifyAccessCode } from '../hooks/useVerifyAccessCode';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/useAuth';
 
 interface RedeemAccessCodeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  isMandatory?: boolean;
+  onSuccessVerified?: () => void;
 }
 
 export const RedeemAccessCodeModal: React.FC<RedeemAccessCodeModalProps> = ({
   isOpen,
   onClose,
+  isMandatory = false,
+  onSuccessVerified,
 }) => {
   const toast = useToast();
+  const { user, updateUser, logout } = useAuth();
   const [code, setCode] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -30,7 +36,14 @@ export const RedeemAccessCodeModal: React.FC<RedeemAccessCodeModalProps> = ({
     verifyMutation.mutate(code.trim(), {
       onSuccess: (res) => {
         toast.success(res.message || 'تم تفعيل كود الوصول والاشتراك بنجاح! 🎉');
+        if (user?.id) {
+          sessionStorage.setItem(`lms_code_verified_${user.id}`, 'true');
+        }
+        updateUser({ hasActiveSubscription: true });
         setCode('');
+        if (onSuccessVerified) {
+          onSuccessVerified();
+        }
         onClose();
       },
       onError: (err) => {
@@ -41,28 +54,46 @@ export const RedeemAccessCodeModal: React.FC<RedeemAccessCodeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-150">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+        isMandatory
+          ? 'bg-slate-950/85 backdrop-blur-md'
+          : 'bg-slate-900/60 backdrop-blur-xs'
+      }`}
+    >
+      <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-150 relative">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200">
-              <KeyRound size={24} />
+            <div
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center border ${
+                isMandatory
+                  ? 'bg-rose-50 text-rose-600 border-rose-200'
+                  : 'bg-amber-50 text-amber-600 border-amber-200'
+              }`}
+            >
+              {isMandatory ? <ShieldAlert size={24} /> : <KeyRound size={24} />}
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-slate-800">تفعيل كود الوصول 🔑</h3>
+              <h3 className="text-base font-extrabold text-slate-800">
+                {isMandatory ? 'تفعيل كود الاشتراك مطلوب 🔒' : 'تفعيل كود الوصول 🔑'}
+              </h3>
               <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                أدخل الكود الموفر لك من المعلم للانضمام للدورة
+                {isMandatory
+                  ? 'يرجى إدخال كود الاشتراك الخاص بك لبدء استخدام المنصة'
+                  : 'أدخل الكود الموفر لك من المعلم للانضمام للدورة'}
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-          >
-            <X size={20} />
-          </button>
+          {!isMandatory && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -90,13 +121,21 @@ export const RedeemAccessCodeModal: React.FC<RedeemAccessCodeModalProps> = ({
             </div>
           )}
 
-          <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 text-xs text-amber-900 font-semibold space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-amber-800">
+          <div
+            className={`p-4 rounded-2xl border text-xs font-semibold space-y-1 ${
+              isMandatory
+                ? 'bg-rose-50/70 border-rose-200/80 text-rose-900'
+                : 'bg-amber-50/60 border-amber-200/80 text-amber-900'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 font-bold">
               <Sparkles size={15} />
-              <span>تعليمات تفعيل الكود:</span>
+              <span>{isMandatory ? 'تنبيه هام للوصول:' : 'تعليمات تفعيل الكود:'}</span>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-600">
-              تأكد من كتابة أحرف الكود بدقة كما حصلت عليها من المعلم. تفعيل الكود يتيح لك الوصول المباشر للمحتوى التعليمي والامتحانات.
+              {isMandatory
+                ? 'لا يمكنك تصفح الدروس أو إجراء الاختبارات حتى يتم تفعيل كود الاشتراك الخطي الصادر لك من المعلم.'
+                : 'تأكد من كتابة أحرف الكود بدقة كما حصلت عليها من المعلم. تفعيل الكود يتيح لك الوصول المباشر للمحتوى التعليمي والامتحانات.'}
             </p>
           </div>
 
@@ -104,7 +143,7 @@ export const RedeemAccessCodeModal: React.FC<RedeemAccessCodeModalProps> = ({
             <button
               type="submit"
               disabled={verifyMutation.isPending || !code.trim()}
-              className="flex-1 py-3 px-4 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition cursor-pointer flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3 px-4 rounded-xl bg-[#0D8A82] text-white font-bold text-xs hover:bg-[#0B766F] transition cursor-pointer flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {verifyMutation.isPending ? (
                 <>
@@ -114,17 +153,28 @@ export const RedeemAccessCodeModal: React.FC<RedeemAccessCodeModalProps> = ({
               ) : (
                 <>
                   <CheckCircle2 size={16} />
-                  <span>تفعيل الكود الآن</span>
+                  <span>تفعيل الكود ودخول المنصة</span>
                 </>
               )}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="py-3 px-4 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition cursor-pointer"
-            >
-              إلغاء
-            </button>
+            {isMandatory ? (
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="py-3 px-4 rounded-xl bg-slate-100 text-rose-600 font-bold text-xs hover:bg-rose-50 transition cursor-pointer flex items-center gap-1.5"
+              >
+                <LogOut size={15} />
+                <span>تسجيل الخروج</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onClose}
+                className="py-3 px-4 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition cursor-pointer"
+              >
+                إلغاء
+              </button>
+            )}
           </div>
         </form>
       </div>

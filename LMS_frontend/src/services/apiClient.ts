@@ -11,7 +11,17 @@ export const apiClient = axios.create({
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const url = error.config?.url || '';
+    const isPublicAuthRoute =
+      url.includes('/api/auth/') ||
+      url.includes('/api/groups');
+
+    const skipRedirect =
+      error.config?.headers?.['X-Skip-Auth-Redirect'] === 'true' ||
+      error.config?.headers?.['x-skip-auth-redirect'] === 'true' ||
+      isPublicAuthRoute;
+
+    if (error.response && error.response.status === 401 && !skipRedirect) {
       localStorage.removeItem('lms_user');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

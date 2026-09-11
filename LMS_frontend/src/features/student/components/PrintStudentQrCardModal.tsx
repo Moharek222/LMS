@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { QrCode, Printer, X, GraduationCap, ShieldCheck, Phone, Users } from 'lucide-react';
+import { QrCode, Printer, X, ShieldCheck, Phone, Users } from 'lucide-react';
 import { generateQRMatrix } from '../utils/qrGenerator';
 
 interface PrintStudentQrCardModalProps {
@@ -92,9 +92,20 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
 
           {/* Card Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-[#0D8A82] text-white flex items-center justify-center font-bold shadow-md">
-                <GraduationCap size={22} />
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 p-1 flex items-center justify-center shadow-md overflow-hidden shrink-0">
+                <img
+                  src="/logo.png"
+                  alt="شعار منصة الصادق"
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    // Fallback to GraduationCap if image fails
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.parentElement) {
+                      e.currentTarget.parentElement.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-graduation-cap text-teal-300"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>';
+                    }
+                  }}
+                />
               </div>
               <div>
                 <h4 className="text-sm font-extrabold tracking-wide text-teal-300">منصة الصادق التعليمية</h4>

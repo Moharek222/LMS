@@ -2,8 +2,8 @@ import apiClient from '../../../services/apiClient';
 
 export interface UpdateStudentProfilePayload {
   name?: string;
+  phone?: string;
   parentPhone?: string;
-  password?: string;
 }
 
 export interface UpdateStudentProfileResponse {

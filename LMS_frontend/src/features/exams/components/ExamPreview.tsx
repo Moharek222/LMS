@@ -117,9 +117,21 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
 
   const questionsCount = exam.questions?.length ?? 0;
 
+  const isScheduledInFuture = Boolean(
+    exam?.startAt && new Date(exam.startAt).getTime() > Date.now()
+  );
+
+  const formattedStartTime = exam?.startAt
+    ? new Date(exam.startAt).toLocaleString('ar-EG', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+      })
+    : '';
+
   return (
     <div className="space-y-6">
-      
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-3.5">
@@ -137,7 +149,11 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
                 <span className="px-2.5 py-0.5 rounded-md bg-teal-50 text-[#0D8A82] text-[11px] font-bold border border-teal-100">
                   امتحان شامل
                 </span>
-                {exam.isActive ? (
+                {isScheduledInFuture ? (
+                  <span className="px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-300">
+                    مجدول (يبدأ {formattedStartTime})
+                  </span>
+                ) : exam.isActive ? (
                   <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200">
                     نشط ومتاح
                   </span>
@@ -162,17 +178,17 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
             )}
             <button
               onClick={onStartSolving}
-              disabled={!exam.isActive}
+              disabled={!exam.isActive || isScheduledInFuture}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition enabled:cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play size={16} />
-              <span>ابدأ الحل</span>
+              <span>{isScheduledInFuture ? `يبدأ في ${formattedStartTime}` : 'ابدأ الحل'}</span>
             </button>
           </div>
         </div>
 
-       
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
               <Clock size={22} />
@@ -188,88 +204,66 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
               <HelpCircle size={22} />
             </div>
             <div>
-              <span className="text-[11px] text-slate-400 font-bold block">إجمالي أسئلة الامتحان</span>
+              <span className="text-[11px] text-slate-400 font-bold block">إجمالي الأسئلة</span>
               <span className="text-base font-extrabold text-slate-800">{questionsCount} أسئلة</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-white text-amber-600 flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
+              <Award size={22} />
+            </div>
+            <div>
+              <span className="text-[11px] text-slate-400 font-bold block">الدرجة الإجمالية</span>
+              <span className="text-base font-extrabold text-slate-800">
+                {exam.questions?.reduce((sum, q) => sum + (q.points || 1), 0) || 0} درجة
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-     
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-            <Award size={18} className="text-[#0D8A82]" />
-            <span>معاينة هيكل أسئلة الامتحان</span>
+      {/* Guidelines & Rules Card (Replaces Questions Leak) */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
+        <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
+          <Award size={20} className="text-[#0D8A82]" />
+          <h3 className="text-base font-extrabold text-slate-800">
+            تعليمات وضوابط الامتحان الشامل
           </h3>
-          <span className="text-xs font-bold text-slate-400">
-            عدد الأسئلة: {questionsCount}
-          </span>
         </div>
 
-        {questionsCount === 0 ? (
-          <div className="py-8 text-center space-y-2">
-            <p className="text-xs font-bold text-slate-500">لا توجد أسئلة مضافة في هذا الامتحان بعد.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-4 rounded-2xl bg-teal-50/40 border border-teal-100 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-black text-[#0D8A82]">
+              <Clock size={16} />
+              <span>بدء وحساب الوقت</span>
+            </div>
+            <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+              يبدأ العداد التنازلي للامتحان فور الضغط على زر "ابدأ الحل"، ولا يمكن إيقاف العداد بعد البدء.
+            </p>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {exam.questions.map((q, idx) => (
-              <div
-                key={q._id || idx}
-                className="rounded-2xl p-5 border border-slate-200/90 bg-slate-50/40 space-y-3"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="w-7 h-7 rounded-lg bg-teal-100 text-[#0D8A82] font-black text-xs flex items-center justify-center shrink-0 border border-teal-200">
-                    {idx + 1}
-                  </span>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-50 text-[#0D8A82] border border-teal-200">
-                        {q.type === 'ESSAY' ? 'سؤال مقالي' : 'اختيار من متعدد'}
-                      </span>
-                      {typeof q.points === 'number' && (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200">
-                          {q.points} {q.points === 1 ? 'درجة' : 'درجات'}
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-800 leading-relaxed">
-                      {q.question}
-                    </h4>
-                  </div>
-                </div>
 
-                {q.questionImage?.trim() && (
-                  <div className="mr-10 p-2 bg-white rounded-xl border border-slate-200/80 w-fit max-w-xs">
-                    <img
-                      src={q.questionImage.trim()}
-                      alt={`صورة السؤال ${idx + 1}`}
-                      className="max-h-40 object-contain rounded-lg"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
-
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pr-10">
-                  {(q.options || []).map((opt, optIdx) => (
-                    <div
-                      key={optIdx}
-                      className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 flex items-center gap-2"
-                    >
-                      <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-500 font-bold text-[11px] flex items-center justify-center border border-slate-200/80">
-                        {String.fromCharCode(65 + optIdx)}
-                      </span>
-                      <span>{opt}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="p-4 rounded-2xl bg-amber-50/40 border border-amber-100 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-black text-amber-800">
+              <AlertTriangle size={16} />
+              <span>الحفظ والتسليم التلقائي</span>
+            </div>
+            <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+              تُحفظ إجاباتك تلقائياً أثناء الحل. عند انتهاء الوقت المحدد، سيقوم النظام بتسليم الإجابات تلقائياً.
+            </p>
           </div>
-        )}
+        </div>
+
+        <div className="pt-2 text-center">
+          <button
+            onClick={onStartSolving}
+            disabled={!exam.isActive || isScheduledInFuture}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-[#0D8A82] text-white text-sm font-extrabold hover:bg-teal-700 active:scale-[0.99] transition cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Play size={18} />
+            <span>{isScheduledInFuture ? `يبدأ في ${formattedStartTime}` : 'ابدأ حل الامتحان الآن'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

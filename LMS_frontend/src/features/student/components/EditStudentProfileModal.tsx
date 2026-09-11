@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Lock, Phone, X, CheckCircle2, AlertCircle, Loader2, Edit3 } from 'lucide-react';
+import { User, Phone, X, CheckCircle2, AlertCircle, Loader2, Edit3 } from 'lucide-react';
 import { useUpdateStudentProfile } from '../hooks/useUpdateStudentProfile';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
@@ -8,6 +8,7 @@ interface EditStudentProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentName?: string;
+  currentPhone?: string;
   currentParentPhone?: string;
 }
 
@@ -15,12 +16,13 @@ export const EditStudentProfileModal: React.FC<EditStudentProfileModalProps> = (
   isOpen,
   onClose,
   currentName = '',
+  currentPhone = '',
   currentParentPhone = '',
 }) => {
   const toast = useToast();
   const [name, setName] = useState(currentName);
+  const [phone, setPhone] = useState(currentPhone);
   const [parentPhone, setParentPhone] = useState(currentParentPhone);
-  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const updateMutation = useUpdateStudentProfile();
@@ -31,10 +33,16 @@ export const EditStudentProfileModal: React.FC<EditStudentProfileModalProps> = (
     e.preventDefault();
     setErrorMsg(null);
 
-    const payload: { name?: string; parentPhone?: string; password?: string } = {};
-    if (name.trim() && name !== currentName) payload.name = name.trim();
+    const trimmedName = name.trim();
+    if (trimmedName && trimmedName.length < 3) {
+      setErrorMsg('يجب أن يتكون الاسم من 3 أحرف على الأقل.');
+      return;
+    }
+
+    const payload: { name?: string; phone?: string; parentPhone?: string } = {};
+    if (trimmedName && trimmedName !== currentName) payload.name = trimmedName;
+    if (phone.trim() && phone !== currentPhone) payload.phone = phone.trim();
     if (parentPhone.trim() && parentPhone !== currentParentPhone) payload.parentPhone = parentPhone.trim();
-    if (password.trim()) payload.password = password.trim();
 
     if (Object.keys(payload).length === 0) {
       toast.info('لم تقم بتعديل أية بيانات.');
@@ -66,7 +74,7 @@ export const EditStudentProfileModal: React.FC<EditStudentProfileModalProps> = (
             <div>
               <h3 className="text-base font-extrabold text-slate-800">تعديل البيانات الشخصية ✏️</h3>
               <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                تحديث الاسم أو رقم هاتف ولي الأمر أو كلمة المرور
+                تحديث الاسم أو رقم الهاتف أو رقم ولي الأمر
               </p>
             </div>
           </div>
@@ -95,6 +103,20 @@ export const EditStudentProfileModal: React.FC<EditStudentProfileModalProps> = (
           </div>
 
           <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">رقم هاتف الطالب</label>
+            <div className="relative">
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="01xxxxxxxx"
+                className="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition dir-ltr text-right"
+              />
+              <Phone size={18} className="absolute right-3.5 top-3.5 text-slate-400" />
+            </div>
+          </div>
+
+          <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">رقم هاتف ولي الأمر</label>
             <div className="relative">
               <input
@@ -105,22 +127,6 @@ export const EditStudentProfileModal: React.FC<EditStudentProfileModalProps> = (
                 className="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition dir-ltr text-right"
               />
               <Phone size={18} className="absolute right-3.5 top-3.5 text-slate-400" />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              كلمة المرور الجديدة <span className="text-slate-400 font-normal">(اختياري)</span>
-            </label>
-            <div className="relative">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="أدخل كلمة مرور جديدة للتغيير..."
-                className="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition"
-              />
-              <Lock size={18} className="absolute right-3.5 top-3.5 text-slate-400" />
             </div>
           </div>
 

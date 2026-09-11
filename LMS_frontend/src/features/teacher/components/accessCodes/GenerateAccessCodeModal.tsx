@@ -35,7 +35,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
   const [generatedResult, setGeneratedResult] = useState<GeneratedAccessCodeResult | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Step 1: Load active groups
+ 
   const {
     data: groupsData,
     isLoading: isLoadingGroups,
@@ -46,7 +46,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
 
   const activeGroups = (groupsData?.data || []).filter((g) => g.isActive !== false);
 
-  // Step 2: Load students for selected group
+  
   const {
     data: students,
     isLoading: isLoadingStudents,
@@ -114,7 +114,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
         onError: (err: unknown) => {
           let msg = toArabicErrorMessage(err, 'حدث خطأ أثناء إنشاء كود التفعيل');
           
-          // Check for 400 active code constraint error from backend
+         
           const errorObj = err as { response?: { status?: number; data?: { message?: string } } };
           if (errorObj?.response?.status === 400) {
             msg = errorObj?.response?.data?.message || 'الطالب لديه كود تفعيل نشط بالفعل ولا يمكن إنشاء كود جديد له حالياً.';
@@ -166,7 +166,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6">
-        {/* Modal Header */}
+        
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -190,7 +190,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
           </button>
         </div>
 
-        {/* Success View after Code Generation */}
+       
         {generatedResult ? (
           <div className="space-y-5 text-center py-2">
             <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200">
@@ -205,15 +205,18 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
             </div>
 
             {/* Generated Code Box */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-              <div className="font-mono text-xl font-black tracking-widest text-[#0D8A82] dir-ltr">
-                {generatedResult.code}
+            <div className="p-5 rounded-2xl bg-teal-50/90 border-2 border-teal-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+              <div className="flex items-center gap-3">
+                <KeyRound size={26} className="text-[#0D8A82] shrink-0" />
+                <div className="font-mono text-2xl sm:text-3xl font-black tracking-widest text-[#0D8A82] dir-ltr select-all">
+                  {generatedResult.code}
+                </div>
               </div>
 
               <button
                 type="button"
                 onClick={handleCopyCode}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
               >
                 {copied ? (
                   <>
@@ -240,9 +243,9 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
             </div>
           </div>
         ) : (
-          /* Step-by-Step Form View */
+         
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Step 1: Select Group */}
+          
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700">
                 المجموعة الدراسية <span className="text-rose-500">*</span>
@@ -287,7 +290,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
               )}
             </div>
 
-            {/* Step 2: Select Student */}
+           
             {selectedGroupId && (
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700">
@@ -349,7 +352,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
               </div>
             )}
 
-            {/* Form Actions */}
+           
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
               <button
                 type="button"
