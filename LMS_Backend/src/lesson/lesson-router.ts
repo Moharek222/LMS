@@ -14,33 +14,33 @@ import quizRouter from "../quiz/quiz-router";
 
 const router = Router({ mergeParams: true });
 
-// router.use(isAuthenticated);
+router.use(isAuthenticated);
 
 router.use("/:lessonID/quizzes", quizRouter);
 
 router.post("/generate-upload-url",
-    // isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     generateUploadUrlValidation,
     handleValidationErrors,
     generateUploadUrl
 );
 
 router.post("/:courseID",
-    // isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     addLessonValidation,
     handleValidationErrors,
     createLesson
 );
 
 router.put("/:lessonID",
-    // isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     updateLessonValidation,
     handleValidationErrors,
     updateLesson
 );
 
 router.delete("/:lessonID",
-    // isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     deleteLesson
 );
 

@@ -6,10 +6,13 @@ import { getStudentAttendancePercentage } from "./attendace-controllers/get-stud
 import { isAuthorized } from "../middlewares/isAuthorized.middleware";
 import { Role } from "../user/user-model";
 import { getMyAttendancePercentage } from "./attendace-controllers/get-my-attendance-percentage";
+import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
 
 
 
 const router = Router({ mergeParams: true });
+
+router.use(isAuthenticated);
 
 router.post("/",scanStudentAttendance);
 
