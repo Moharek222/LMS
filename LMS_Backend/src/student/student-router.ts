@@ -17,7 +17,9 @@ router.use(isAuthenticated);
 
 
 
-router.get("/", getStudents);
+router.get("/",
+    isAuthorized(Role.Admin, Role.Teacher),
+    getStudents);
 
 router.get("/me", getProfile);
 

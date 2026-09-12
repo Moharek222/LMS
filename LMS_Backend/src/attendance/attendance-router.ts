@@ -7,6 +7,7 @@ import { isAuthorized } from "../middlewares/isAuthorized.middleware";
 import { Role } from "../user/user-model";
 import { getMyAttendancePercentage } from "./attendace-controllers/get-my-attendance-percentage";
 import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
+import { requireActiveSubscription } from "../middlewares/is-active-code";
 
 
 
@@ -14,19 +15,26 @@ const router = Router({ mergeParams: true });
 
 router.use(isAuthenticated);
 
-router.post("/",scanStudentAttendance);
+router.post("/",
+    isAuthorized(Role.Admin, Role.Teacher),
+    scanStudentAttendance);
 
-router.get("/sheets",getGroupAttendance);
+router.get("/sheets",
+    isAuthorized(Role.Admin, Role.Teacher),
+    getGroupAttendance);
 
-router.get("/sheet/:attendanceID",getAttendanceById);
+router.get("/sheet/:attendanceID",
+    isAuthorized(Role.Admin, Role.Teacher),
+    getAttendanceById);
 
 
 router.get("/student-percentage/:studentID",
-    // isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     getStudentAttendancePercentage
 );
 router.get("/my-percentage",
-    // isAuthorized(Role.Student),
+    isAuthorized(Role.Student),
+    requireActiveSubscription,
     getMyAttendancePercentage
 );
 

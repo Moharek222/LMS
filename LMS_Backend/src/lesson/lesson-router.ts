@@ -45,10 +45,12 @@ router.delete("/:lessonID",
 );
 
 router.get("/:lessonID/video",
+    isAuthorized(Role.Student,Role.Admin, Role.Teacher),
     getLessonById
 );
 
 router.get("/:courseID",
+    isAuthorized(Role.Student,Role.Admin, Role.Teacher),
     getCourseLessons
 );
 

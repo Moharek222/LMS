@@ -10,6 +10,7 @@ import { getSubmissionDetails } from "./exam-submission-controllers/get-submissi
 import { getSubmissionResult } from "./exam-submission-controllers/get-submission-result";
 import { gradeEssayQuestions } from "./exam-submission-controllers/grade-essay";
 import { deleteSubmission } from "./exam-submission-controllers/delete-submission";
+import { requireActiveSubscription } from "../middlewares/is-active-code";
 
 const router = Router({ mergeParams: true });
 
@@ -28,6 +29,7 @@ router.get("/",
 
 router.post("/",
     isAuthorized(Role.Student),
+    requireActiveSubscription,
     submitExam
 );
 
@@ -38,12 +40,14 @@ router.put("/:submissionID/grade",
 
 
 router.get("/:submissionID/details",
-    isAuthorized(Role.Admin, Role.Teacher),
+    isAuthorized(Role.Student,Role.Admin, Role.Teacher),
+    requireActiveSubscription,
     getSubmissionDetails
 );
 
 router.get("/:submissionID/result",
     isAuthorized(Role.Student),
+    requireActiveSubscription,
     getSubmissionResult
 );
 router.delete("/:submissionID",

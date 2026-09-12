@@ -19,29 +19,35 @@ router.use(isAuthenticated)
 router.use("/:courseID/exams", examRouter);
 
 
-router.get("/student", getStudentCourses);
+router.get("/student",
+    isAuthorized(Role.Admin, Role.Teacher, Role.Student),
+    getStudentCourses);
 
 router.post("/",
+    isAuthorized(Role.Admin, Role.Teacher),
     addCourseValidation,
     handleValidationErrors,
     addCourse
 );
 
 router.get("/",
+    isAuthorized(Role.Admin, Role.Teacher),
     getCourses
 );
-
 router.get("/:courseID",
+    isAuthorized(Role.Student,Role.Admin, Role.Teacher),
     getCourseById
 );
 
 router.put("/:courseID",
+    isAuthorized(Role.Admin, Role.Teacher),
     updateCourseValidation,
     handleValidationErrors,
     updateCourse
 );
 
 router.delete("/:courseID",
+    isAuthorized(Role.Admin, Role.Teacher),
     deleteCourse
 );
 

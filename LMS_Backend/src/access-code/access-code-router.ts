@@ -31,7 +31,7 @@ router.get("/student/:id",
     getAccessCodes
 );
 
-// Student routes
+
 router.post("/verify",
     isAuthorized(Role.Student),
     verifyCodeValidation,

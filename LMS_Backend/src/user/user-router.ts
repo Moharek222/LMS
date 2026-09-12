@@ -11,8 +11,8 @@ const router = Router();
 
 router.use(isAuthenticated, isAuthorized(Role.Teacher));
 
-router.post("/teacher", addTeacher);
-router.post("/admin", addAdmin);
+router.post("/teacher",addTeacher);
+router.post("/admin",addAdmin);
 router.delete("/:id", deleteAdmin);
 
 export default router;

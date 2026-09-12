@@ -12,6 +12,7 @@ import { getExamForAdmin } from "./exam-controllers/get-teacher-exam";
 import { updateExam, updateExamValidation } from "./exam-controllers/update-exam";
 import { upload } from "../middlewares/upload";
 import { uploadQuestionImage } from "./exam-controllers/upload-question-image";
+import { requireActiveSubscription } from "../middlewares/is-active-code";
 
 const router = Router({ mergeParams: true });
 
@@ -21,6 +22,7 @@ router.use("/:examID/submissions", examSubmissionRouter);
 
 router.get("/",
     isAuthorized(Role.Admin, Role.Teacher, Role.Student),
+    requireActiveSubscription,
     getCourseExams
 );
 
@@ -39,6 +41,7 @@ router.post("/",
 
 router.get("/:examID/student",
     isAuthorized(Role.Student),
+    requireActiveSubscription,
     getExamForStudent
 );
 

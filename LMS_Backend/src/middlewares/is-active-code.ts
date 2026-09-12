@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
 import { AccessCode, Status } from "../access-code/access-code-model";
+import { Role } from "../user/user-model";
 
 export const requireActiveSubscription: RequestHandler = async (req, res, next) => {
     try {
@@ -9,6 +10,9 @@ export const requireActiveSubscription: RequestHandler = async (req, res, next) 
             return res.status(StatusCodes.UNAUTHORIZED).json({ 
                 message: "Unauthorized, please login first" 
             });
+        }
+        if (req.user?.role === Role.Admin || req.user?.role === Role.Teacher) {
+            return next();
         }
 
         const activeCode = await AccessCode.findOne({

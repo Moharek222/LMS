@@ -16,10 +16,11 @@ import attendanceRouter from "../attendance/attendance-router";
 const router = Router();
 
 
-router.use("/:groupID/attendance",isAuthenticated,attendanceRouter);
+router.use("/:groupID/attendance",attendanceRouter);
 
 router.post("/",
     isAuthenticated,
+    isAuthorized(Role.Admin, Role.Teacher),
     addGroupValidation,
     handleValidationErrors,
     createGroup
@@ -27,6 +28,7 @@ router.post("/",
 
 router.put("/move-student/:studentID",
     isAuthenticated,
+    isAuthorized(Role.Admin, Role.Teacher),
     moveStudentValidation,
     handleValidationErrors,
     moveStudent
@@ -34,6 +36,7 @@ router.put("/move-student/:studentID",
 
 router.put("/:groupID",
     isAuthenticated,
+    isAuthorized(Role.Admin, Role.Teacher),
     updateGroupValidation,
     handleValidationErrors,
     updateGroup
@@ -43,11 +46,15 @@ router.get("/", getGroups);
 
 router.get("/:groupID", getGroupById);
 
+router.delete("/:groupID",
+    isAuthenticated,
+    isAuthorized(Role.Admin, Role.Teacher),
+    deleteGroup);
 
-
-router.delete("/:groupID",isAuthenticated, deleteGroup);
-
-router.get("/:groupID/students",isAuthenticated, getGroupStudents);
+router.get("/:groupID/students",
+    isAuthenticated,
+    isAuthorized(Role.Admin, Role.Teacher),
+    getGroupStudents);
 
 export default router;
 
