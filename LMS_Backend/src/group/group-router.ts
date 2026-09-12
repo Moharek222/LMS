@@ -15,9 +15,8 @@ import attendanceRouter from "../attendance/attendance-router";
 
 const router = Router();
 
-router.use(isAuthenticated, isAuthorized(Role.Admin, Role.Teacher));
 
-router.use("/:groupID/attendance",attendanceRouter);
+router.use("/:groupID/attendance",isAuthenticated,attendanceRouter);
 
 router.post("/",
     isAuthenticated,
