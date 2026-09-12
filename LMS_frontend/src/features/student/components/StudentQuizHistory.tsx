@@ -89,22 +89,43 @@ export const StudentQuizHistory: React.FC = () => {
     );
   }
 
+  const passedCount = historyItems.filter((item) => item.isPassed).length;
+  const passRate = totalItems > 0 ? Math.round((passedCount / totalItems) * 100) : 0;
+
   return (
     <div className="space-y-4">
-      {/* Header Bar */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
-            <History size={20} />
+      {/* Header & Stats Bar */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
+              <History size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-800">سجل تقييمات الكويزات القصيرة</h3>
+              <p className="text-xs text-slate-500 font-medium">متابعة نتائج وتقييمات الاختبارات القصيرة للدروس</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-extrabold text-slate-800">سجل الاختبارات القصيرة</h3>
-            <p className="text-xs text-slate-500 font-medium">عرض نتائج وتقييمات الاختبارات السابقة</p>
+          <span className="text-xs font-bold text-[#0D8A82] bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-100">
+            إجمالي التسليمات: {totalItems}
+          </span>
+        </div>
+
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
+            <span className="text-[11px] text-slate-500 font-bold block mb-1">المحاولات</span>
+            <span className="text-lg font-black text-slate-800">{totalItems}</span>
+          </div>
+          <div className="bg-emerald-50/60 rounded-xl p-3 border border-emerald-100">
+            <span className="text-[11px] text-emerald-700 font-bold block mb-1">المجتازة 🏆</span>
+            <span className="text-lg font-black text-emerald-800">{passedCount}</span>
+          </div>
+          <div className="bg-teal-50/60 rounded-xl p-3 border border-teal-100">
+            <span className="text-[11px] text-[#0D8A82] font-bold block mb-1">نسبة النجاح</span>
+            <span className="text-lg font-black text-[#0D8A82]">{passRate}%</span>
           </div>
         </div>
-        <span className="text-xs font-bold text-[#0D8A82] bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-100">
-          إجمالي المحاولات: {totalItems}
-        </span>
       </div>
 
       {/* History Grid */}

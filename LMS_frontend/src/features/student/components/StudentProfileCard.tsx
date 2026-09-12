@@ -8,20 +8,24 @@ import {
   AlertTriangle,
   GraduationCap,
   ShieldCheck,
-  KeyRound,
   Edit3,
 } from 'lucide-react';
 import { useAuth } from '../../../context/useAuth';
 import { getGroupsApi, FALLBACK_GROUPS } from '../../../services/groupService';
+import { getMyStudentProfile } from '../api/studentProfileApi';
 import { StudentQRCode } from './StudentQRCode';
 import { StudentGradebookCard } from './StudentGradebookCard';
-import { RedeemAccessCodeModal } from './RedeemAccessCodeModal';
 import { EditStudentProfileModal } from './EditStudentProfileModal';
 
 export const StudentProfileCard: React.FC = () => {
   const { user } = useAuth();
-  const [isRedeemCodeOpen, setIsRedeemCodeOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
+  const { data: myProfile } = useQuery({
+    queryKey: ['my-student-profile'],
+    queryFn: getMyStudentProfile,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const { data: groups } = useQuery({
     queryKey: ['active-groups-profile'],
@@ -29,28 +33,35 @@ export const StudentProfileCard: React.FC = () => {
     staleTime: 1000 * 60 * 10,
   });
 
-  const name = user?.name || 'غير متوفر';
-  const phone = user?.phone || 'غير متوفر';
-  const hasActiveSubscription = user?.hasActiveSubscription ?? false;
+  const name = myProfile?.name || user?.name || 'غير متوفر';
+  const phone = myProfile?.phone || user?.phone || 'غير متوفر';
+  const hasActiveSubscription = myProfile?.hasActiveSubscription ?? user?.hasActiveSubscription ?? false;
 
   const getResolvedGroupName = (): string => {
-    if (!user?.groupId) return 'غير متوفر';
-    if (typeof user.groupId === 'object' && (user.groupId as { name?: string })?.name) {
-      return (user.groupId as { name: string }).name;
-    }
-    const rawId = String(user.groupId);
-
-    const matchedApiGroup = groups?.find((g) => g._id === rawId);
-    if (matchedApiGroup) return matchedApiGroup.name;
-
-    const matchedFallbackGroup = FALLBACK_GROUPS.find((g) => g._id === rawId);
-    if (matchedFallbackGroup) return matchedFallbackGroup.name;
-
-    if (/^[0-9a-fA-F]{24}$/.test(rawId)) {
-      return 'المجموعة الدراسية الأولى';
+    if (myProfile?.groupID) {
+      if (typeof myProfile.groupID === 'object' && myProfile.groupID.name) {
+        return myProfile.groupID.name;
+      }
+      if (typeof myProfile.groupID === 'string') {
+        const matched = groups?.find((g) => g._id === myProfile.groupID);
+        if (matched) return matched.name;
+      }
     }
 
-    return rawId;
+    if (user?.groupId) {
+      if (typeof user.groupId === 'object' && (user.groupId as { name?: string })?.name) {
+        return (user.groupId as { name: string }).name;
+      }
+      const rawId = String(user.groupId);
+
+      const matchedApiGroup = groups?.find((g) => g._id === rawId);
+      if (matchedApiGroup) return matchedApiGroup.name;
+
+      const matchedFallbackGroup = FALLBACK_GROUPS.find((g) => g._id === rawId);
+      if (matchedFallbackGroup) return matchedFallbackGroup.name;
+    }
+
+    return 'غير متوفر';
   };
 
   const groupName = getResolvedGroupName();
@@ -80,15 +91,6 @@ export const StudentProfileCard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-end">
-            <button
-              type="button"
-              onClick={() => setIsRedeemCodeOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
-            >
-              <KeyRound size={15} />
-              <span>تفعيل كود الوصول 🔑</span>
-            </button>
-
             <button
               type="button"
               onClick={() => setIsEditProfileOpen(true)}
@@ -177,12 +179,6 @@ export const StudentProfileCard: React.FC = () => {
 
       
       <StudentGradebookCard />
-
-      
-      <RedeemAccessCodeModal
-        isOpen={isRedeemCodeOpen}
-        onClose={() => setIsRedeemCodeOpen(false)}
-      />
 
    
       <EditStudentProfileModal

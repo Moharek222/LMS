@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useStudentQuiz } from '../hooks/useStudentQuiz';
 import { useSubmitQuiz } from '../hooks/useSubmitQuiz';
+import { useStudentQuizHistory } from '../../student/hooks/useStudentQuizHistory';
 import type { StudentQuiz } from '../types/quiz';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
@@ -28,13 +29,16 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   lessonId,
   quizId,
   onClose,
+  onPassed,
 }) => {
   const toast = useToast();
   const { data: quizData, isLoading: isLoadingQuiz, isError: isQuizError } = useStudentQuiz(lessonId, quizId);
   const submitQuizMutation = useSubmitQuiz();
+  const { data: quizHistoryData } = useStudentQuizHistory({ page: 1, limit: 100 });
 
   
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isRetrying, setIsRetrying] = useState<boolean>(false);
   
   
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
@@ -44,6 +48,27 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
   const quiz: StudentQuiz | undefined = quizData;
   const questions = quiz?.questions || [];
+
+  const existingSubmissionFromHistory = React.useMemo(() => {
+    if (!quizHistoryData?.data) return null;
+    return quizHistoryData.data.find((sub) => {
+      const subQuizId = typeof sub.quizID === 'string' ? sub.quizID : sub.quizID?._id;
+      return subQuizId && String(subQuizId).trim() === String(quizId).trim();
+    });
+  }, [quizHistoryData, quizId]);
+
+  React.useEffect(() => {
+    if (!isRetrying && existingSubmissionFromHistory && !submissionResult) {
+      setSubmissionResult({
+        score: existingSubmissionFromHistory.score,
+        totalQuestions: questions.length || 1,
+        isPassed: existingSubmissionFromHistory.isPassed,
+      });
+      if (existingSubmissionFromHistory.isPassed) {
+        onPassed?.();
+      }
+    }
+  }, [existingSubmissionFromHistory, submissionResult, questions.length, onPassed, isRetrying]);
 
   const handleSelectOption = (questionId: string, optionText: string) => {
     setAnswers((prev) => ({
@@ -89,6 +114,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         onSuccess: (data) => {
           setSubmissionResult(data);
           if (data.isPassed) {
+            onPassed?.();
             toast.success(`أحسنت يا بطل! تم اجتياز الاختبار بنجاح بنسبة ${Math.round((data.score / data.totalQuestions) * 100)}% 🏆✨`);
           } else {
             toast.warning(`تم تسليم الاختبار. حصلت على ${data.score} من ${data.totalQuestions}. يمكنك المراجعة والمحاولة مجدداً 💪`);
@@ -102,6 +128,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
               isPassed: true,
             };
             setSubmissionResult(fallbackResult);
+            onPassed?.();
             toast.info('تم تسليم هذا الاختبار سابقاً بنجاح.');
           } else {
             toast.error(toArabicErrorMessage(err, 'حصلت مشكلة أثناء تسليم الاختبار، حاول مرة تانية.'));
@@ -205,7 +232,20 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
           </p>
         )}
 
-        <div className="pt-2">
+        <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
+          {!isPassed && (
+            <button
+              onClick={() => {
+                setIsRetrying(true);
+                setSubmissionResult(null);
+                setAnswers({});
+              }}
+              className="px-6 py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition cursor-pointer shadow-sm"
+            >
+              إعادة محاولة حل الاختبار 🔄
+            </button>
+          )}
+
           <button
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm"

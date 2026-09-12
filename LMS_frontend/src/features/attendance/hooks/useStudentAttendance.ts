@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../../../context/useAuth';
 import {
   getStudentAttendanceStats,
   getMyAttendanceStats,
@@ -15,18 +16,26 @@ export const useStudentAttendanceStats = (
   groupId?: string,
   studentId?: string
 ) => {
+  const { user } = useAuth();
+  const isStudent = user?.role === 'student';
+
   return useQuery<StudentAttendanceStats, Error>({
     queryKey: ['attendance', 'stats', groupId, studentId],
     queryFn: () => getStudentAttendanceStats(groupId!, studentId!),
-    enabled: Boolean(groupId && studentId),
+    enabled: Boolean(groupId && studentId && !isStudent),
+    retry: false,
   });
 };
 
 export const useMyAttendanceStats = (groupId?: string) => {
+  const { user } = useAuth();
+  const isStudent = user?.role === 'student';
+
   return useQuery<StudentAttendanceStats, Error>({
     queryKey: ['attendance', 'my-stats', groupId],
     queryFn: () => getMyAttendanceStats(groupId!),
-    enabled: Boolean(groupId),
+    enabled: Boolean(groupId && !isStudent),
+    retry: false,
   });
 };
 
@@ -35,10 +44,14 @@ export const useGroupAttendanceSheets = (
   page: number = 1,
   limit: number = 10
 ) => {
+  const { user } = useAuth();
+  const isStudent = user?.role === 'student';
+
   return useQuery<PaginatedAttendanceSheetsResponse, Error>({
     queryKey: ['group-attendance-sheets', groupId, page, limit],
     queryFn: () => getGroupAttendanceSheets(groupId!, page, limit),
-    enabled: Boolean(groupId),
+    enabled: Boolean(groupId && !isStudent),
+    retry: false,
   });
 };
 

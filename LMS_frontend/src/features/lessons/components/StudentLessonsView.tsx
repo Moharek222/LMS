@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle2, AlertTriangle, Video, BookOpen, Lock } from 'lucide-react';
+import { useQueries } from '@tanstack/react-query';
 import type { Lesson } from '../types/lesson';
 import { LessonVideoPlayer } from './LessonVideoPlayer';
 import { QuizList } from '../../quizzes/components/QuizList';
@@ -7,6 +8,7 @@ import { StudentQuizPreview } from '../../quizzes/components/StudentQuizPreview'
 import { QuizRunner } from '../../quizzes/components/QuizRunner';
 import { useStudentQuizHistory } from '../../student/hooks/useStudentQuizHistory';
 import { useToast } from '../../../context/ToastContext';
+import { getLessonQuizzes } from '../../quizzes/api/quizzesApi';
 
 export interface CoursePillItem {
   _id: string;
@@ -75,35 +77,81 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
   const toast = useToast();
   const { data: quizHistoryData } = useStudentQuizHistory({ page: 1, limit: 100 });
 
-  const passedQuizSubmissions = React.useMemo(() => {
-    if (!quizHistoryData?.data) return [];
-    return quizHistoryData.data.filter((sub) => sub.isPassed);
-  }, [quizHistoryData]);
+  const [passedQuizIdsSession, setPassedQuizIdsSession] = React.useState<Set<string>>(() => new Set());
 
-  const isLessonUnlocked = (index: number): boolean => {
-    if (index === 0) return true;
+  const handleQuizPassed = (quizId: string) => {
+    setPassedQuizIdsSession((prev) => {
+      const next = new Set(prev);
+      next.add(String(quizId).trim());
+      return next;
+    });
+  };
 
-    for (let i = 0; i < index; i++) {
-      const prevLesson = sortedLessons[i];
-      const isPrevCompleted = completedLessonIds.includes(prevLesson._id);
+  const lessonQuizzesQueries = useQueries({
+    queries: sortedLessons.map((lesson) => ({
+      queryKey: ['lesson-quizzes', lesson._id],
+      queryFn: () => getLessonQuizzes(lesson._id),
+      enabled: Boolean(lesson._id),
+    })),
+  });
 
-      const hasPassedQuiz = passedQuizSubmissions.some((sub) => {
-        if (!sub.isPassed) return false;
-        return true;
-      });
+  const isLessonUnlocked = React.useCallback(
+    (index: number): boolean => {
+      if (index === 0) return true;
 
-      if (prevLesson.requiresPassing) {
-        if (!isPrevCompleted && !hasPassedQuiz && passedQuizSubmissions.length === 0) {
-          return false;
-        }
-      } else {
-        if (!isPrevCompleted && passedQuizSubmissions.length === 0 && index > 1) {
-          return false;
+      for (let i = 0; i < index; i++) {
+        const prevLesson = sortedLessons[i];
+        if (!prevLesson) continue;
+
+        const prevQuizzes = lessonQuizzesQueries[i]?.data || [];
+        const hasQuizzes = prevQuizzes.length > 0;
+        const isPrevCompleted = completedLessonIds.includes(prevLesson._id);
+
+        if (hasQuizzes) {
+          const hasPassedQuiz = prevQuizzes.some((quiz) => {
+            const qIdStr = String(quiz._id).trim();
+            if (passedQuizIdsSession.has(qIdStr)) return true;
+
+            if (!quizHistoryData?.data) return false;
+            return quizHistoryData.data.some((sub) => {
+              if (!sub.isPassed) return false;
+              const subQuizId = typeof sub.quizID === 'string' ? sub.quizID : sub.quizID?._id;
+              if (!subQuizId) return false;
+              return String(subQuizId).trim() === qIdStr;
+            });
+          });
+
+          if (!hasPassedQuiz) {
+            return false;
+          }
+        } else {
+          if (!isPrevCompleted) {
+            return false;
+          }
         }
       }
-    }
 
-    return true;
+      return true;
+    },
+    [sortedLessons, lessonQuizzesQueries, completedLessonIds, quizHistoryData, passedQuizIdsSession]
+  );
+
+  const selectedLessonIndex = React.useMemo(() => {
+    if (!selectedLessonId) return -1;
+    return sortedLessons.findIndex((l) => l._id === selectedLessonId);
+  }, [sortedLessons, selectedLessonId]);
+
+  const isCurrentSelectedUnlocked = selectedLessonIndex !== -1 ? isLessonUnlocked(selectedLessonIndex) : true;
+
+  const handleNextLessonWithLockCheck = () => {
+    if (selectedLessonIndex !== -1 && selectedLessonIndex + 1 < sortedLessons.length) {
+      const nextIndex = selectedLessonIndex + 1;
+      if (isLessonUnlocked(nextIndex)) {
+        onNextLesson();
+      } else {
+        toast.error('المحاضرة التالية مغلقة 🔒. يجب مشاهدة المحاضرة السابقة واجتياز كويز التقييم الخاص بها بنجاح بنسبة النجاح المطلوبة.');
+      }
+    }
   };
 
   return (
@@ -150,19 +198,42 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
 
       
       {selectedLessonId && (
-        <LessonVideoPlayer
-          lessonId={selectedLessonId}
-          lessonTitle={selectedLesson?.title}
-          lessonDescription={selectedLesson?.description}
-          lessonOrder={selectedLesson?.order}
-          requiresPassing={selectedLesson?.requiresPassing}
-          onPreviousLesson={onPreviousLesson}
-          onNextLesson={onNextLesson}
-          hasPrevious={hasPreviousLesson}
-          hasNext={hasNextLesson}
-          onVideoEnded={onVideoEnded}
-          isCompletedSession={completedLessonIds.includes(selectedLessonId)}
-        />
+        !isCurrentSelectedUnlocked ? (
+          <div className="bg-slate-900 text-white rounded-3xl p-8 border border-slate-800 shadow-xl text-center space-y-4 my-4">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20">
+              <Lock size={32} />
+            </div>
+            <div className="space-y-1.5 max-w-md mx-auto">
+              <h3 className="text-lg font-black text-white">هذه المحاضرة مغلقة 🔒</h3>
+              <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                لا يمكنك مشاهدة هذه المحاضرة إلا بعد اجتياز كويز المحاضرة السابقة بنجاح وتحقيق نسبة النجاح المطلوبة.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const firstUnlocked = sortedLessons.find((_, idx) => isLessonUnlocked(idx));
+                if (firstUnlocked) onSelectLesson(firstUnlocked._id);
+              }}
+              className="px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-600 transition shadow-sm cursor-pointer"
+            >
+              الانتقال إلى أول درس متاح
+            </button>
+          </div>
+        ) : (
+          <LessonVideoPlayer
+            lessonId={selectedLessonId}
+            lessonTitle={selectedLesson?.title}
+            lessonDescription={selectedLesson?.description}
+            lessonOrder={selectedLesson?.order}
+            requiresPassing={selectedLesson?.requiresPassing}
+            onPreviousLesson={onPreviousLesson}
+            onNextLesson={handleNextLessonWithLockCheck}
+            hasPrevious={hasPreviousLesson}
+            hasNext={hasNextLesson}
+            onVideoEnded={onVideoEnded}
+            isCompletedSession={completedLessonIds.includes(selectedLessonId)}
+          />
+        )
       )}
 
       
@@ -180,6 +251,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                 lessonId={selectedLessonId}
                 quizId={selectedQuizId}
                 onClose={() => setIsSolvingQuiz(false)}
+                onPassed={() => handleQuizPassed(selectedQuizId)}
               />
             ) : (
               <StudentQuizPreview
@@ -234,6 +306,19 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
             const isSelected = selectedLessonId === lesson._id;
             const isCompleted = completedLessonIds.includes(lesson._id);
 
+            const lessonQuizzes = lessonQuizzesQueries[index]?.data || [];
+            const hasLessonQuiz = lessonQuizzes.length > 0;
+            const hasPassedCurrentQuiz = lessonQuizzes.some((quiz) => {
+              const qIdStr = String(quiz._id).trim();
+              if (passedQuizIdsSession.has(qIdStr)) return true;
+              if (!quizHistoryData?.data) return false;
+              return quizHistoryData.data.some((sub) => {
+                if (!sub.isPassed) return false;
+                const subQuizId = typeof sub.quizID === 'string' ? sub.quizID : sub.quizID?._id;
+                return subQuizId && String(subQuizId).trim() === qIdStr;
+              });
+            });
+
             const handleLessonClick = () => {
               if (!isUnlocked) {
                 toast.error('هذه المحاضرة مغلقة 🔒. يجب مشاهدة المحاضرة السابقة واجتياز كويز التقييم بنجاح بنسبة النجاح المطلوبة لفتح هذه المحاضرة.');
@@ -242,11 +327,23 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
               onSelectLesson(lesson._id);
             };
 
+            const handleStartQuizClick = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              if (!isUnlocked) {
+                toast.error('هذه المحاضرة مغلقة 🔒.');
+                return;
+              }
+              onSelectLesson(lesson._id);
+              if (lessonQuizzes.length > 0) {
+                onSelectQuiz(lessonQuizzes[0]._id);
+              }
+            };
+
             return (
               <div
                 key={lesson._id}
                 onClick={handleLessonClick}
-                className={`rounded-2xl p-4 border shadow-xs flex items-center justify-between gap-4 transition ${
+                className={`rounded-2xl p-4 sm:p-5 border shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition ${
                   !isUnlocked
                     ? 'bg-slate-50/80 border-slate-200 opacity-75 cursor-not-allowed'
                     : isSelected
@@ -256,7 +353,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
               >
                 <div className="flex items-center gap-3.5">
                   <div
-                    className={`w-10 h-10 rounded-xl font-black text-xs flex items-center justify-center shrink-0 border ${
+                    className={`w-11 h-11 rounded-2xl font-black text-xs flex items-center justify-center shrink-0 border shadow-2xs ${
                       !isUnlocked
                         ? 'bg-slate-200 text-slate-400 border-slate-300'
                         : isSelected
@@ -268,23 +365,31 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                   >
                     {!isUnlocked ? <Lock size={18} /> : lesson.order}
                   </div>
-                  <div className="text-right space-y-1">
+                  <div className="text-right space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-bold text-slate-800">{lesson.title}</h4>
+                      <h4 className="text-sm font-extrabold text-slate-800">{lesson.title}</h4>
                       {isCompleted && (
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                          تمت المشاهدة
+                        <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200 inline-flex items-center gap-1">
+                          <CheckCircle2 size={12} />
+                          <span>تمت المشاهدة</span>
                         </span>
                       )}
                       {!isUnlocked && (
-                        <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200">
-                          مغلق 🔒 يتطلب اجتياز كويز الدرس السابق
+                        <span className="px-2.5 py-0.5 rounded-lg bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200 inline-flex items-center gap-1">
+                          <Lock size={11} />
+                          <span>مغلق 🔒 يتطلب كويز الدرس السابق</span>
                         </span>
                       )}
-                      {lesson.requiresPassing && isUnlocked && (
-                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">
-                          يتطلب اجتياز اختبار
-                        </span>
+                      {hasLessonQuiz && isUnlocked && (
+                        hasPassedCurrentQuiz ? (
+                          <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200 inline-flex items-center gap-1">
+                            🏆 <span>تم اجتياز الكويز (100%)</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200 inline-flex items-center gap-1">
+                            📝 <span>يتطلب اجتياز كويز</span>
+                          </span>
+                        )
                       )}
                     </div>
                     {lesson.description && (
@@ -293,14 +398,23 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                   </div>
                 </div>
 
-                <div className="shrink-0 flex items-center gap-2">
+                <div className="shrink-0 flex items-center gap-2.5 self-end sm:self-auto">
+                  {hasLessonQuiz && isUnlocked && !hasPassedCurrentQuiz && (
+                    <button
+                      onClick={handleStartQuizClick}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition shadow-2xs cursor-pointer"
+                    >
+                      <span>حل الكويز 📝</span>
+                    </button>
+                  )}
+
                   <span
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold border ${
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border ${
                       !isUnlocked
                         ? 'bg-slate-100 text-slate-400 border-slate-200'
                         : isSelected
                         ? 'bg-[#0D8A82] text-white border-[#0D8A82]'
-                        : 'bg-teal-50 text-[#0D8A82] border-teal-100'
+                        : 'bg-teal-50 text-[#0D8A82] border-teal-100 hover:bg-teal-100'
                     }`}
                   >
                     {!isUnlocked ? (

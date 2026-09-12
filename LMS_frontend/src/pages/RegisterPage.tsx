@@ -272,6 +272,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                       <ChevronDown size={14} />
                     </div>
                   </div>
+                  <p className="text-[11px] text-slate-400 font-semibold mt-0.5">
+                    💡 تتيح لك المنصة اختيار صفك الدراسي، ويمكن للمدرس نقل وتأكيد مجموعتك الدراسية في أي وقت.
+                  </p>
                   {errors.groupId && (
                     <p className="text-xs font-semibold text-red-600 mt-0.5">{errors.groupId.message}</p>
                   )}

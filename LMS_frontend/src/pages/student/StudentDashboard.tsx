@@ -28,6 +28,8 @@ import {
   CalendarCheck,
   Home,
   User,
+  History,
+  Award,
 } from 'lucide-react';
 
 import StudentLessonsView from '../../features/lessons/components/StudentLessonsView';
@@ -79,7 +81,8 @@ export const StudentDashboard: React.FC = () => {
   };
 
   const handleSelectCourse = (courseId: string) => {
-    const nextParams: Record<string, string> = { tab: 'lessons', courseId };
+    const targetTab = (activeTab === 'home' || activeTab === 'courses') ? 'lessons' : activeTab;
+    const nextParams: Record<string, string> = { tab: targetTab, courseId };
     setSearchParams(nextParams);
     setIsSolvingQuiz(false);
     setCompletedLessonIds([]);
@@ -122,6 +125,7 @@ export const StudentDashboard: React.FC = () => {
   const [isSolvingQuiz, setIsSolvingQuiz] = useState<boolean>(false);
   const [isSolvingExam, setIsSolvingExam] = useState<boolean>(false);
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
+  const [assessmentSubTab, setAssessmentSubTab] = useState<'exams' | 'quizzes-history' | 'exams-history'>('exams');
 
   const {
     data: coursesData,
@@ -137,6 +141,17 @@ export const StudentDashboard: React.FC = () => {
   } = useCourseLessons(selectedCourseId);
 
   const effectiveCourses: Array<{ _id: string; title: string }> = coursesData || [];
+
+  React.useEffect(() => {
+    if (effectiveCourses.length > 0 && !selectedCourseId && (activeTab === 'lessons' || activeTab === 'courses' || activeTab === 'quizzes')) {
+      const defaultCourseId = effectiveCourses[0]._id;
+      const nextParams: Record<string, string> = { tab: activeTab, courseId: defaultCourseId };
+      if (selectedLessonId) nextParams.lessonId = selectedLessonId;
+      if (selectedQuizId) nextParams.quizId = selectedQuizId;
+      if (selectedExamId) nextParams.examId = selectedExamId;
+      setSearchParams(nextParams);
+    }
+  }, [effectiveCourses, selectedCourseId, activeTab, setSearchParams, selectedLessonId, selectedQuizId, selectedExamId]);
 
   const effectiveLessons = React.useMemo<Lesson[]>(() => {
   return lessonsData || [];
@@ -263,13 +278,55 @@ const sortedLessons = React.useMemo(() => {
             />
           )
         ) : (
-          <div className="space-y-8">
-            <ExamList
-              courseId={selectedCourseId}
-              onSelectExam={(exam) => handleSelectExam(exam._id)}
-            />
-            <StudentQuizHistory />
-            <StudentExamHistory />
+          <div className="space-y-6">
+            {/* Sub-tabs header */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs">
+              <button
+                onClick={() => setAssessmentSubTab('exams')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  assessmentSubTab === 'exams'
+                    ? 'bg-[#0D8A82] text-white shadow-xs'
+                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <FileText size={16} />
+                <span>الامتحانات الشاملة</span>
+              </button>
+              <button
+                onClick={() => setAssessmentSubTab('quizzes-history')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  assessmentSubTab === 'quizzes-history'
+                    ? 'bg-[#0D8A82] text-white shadow-xs'
+                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <History size={16} />
+                <span>سجل تقييمات الكويزات</span>
+              </button>
+              <button
+                onClick={() => setAssessmentSubTab('exams-history')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  assessmentSubTab === 'exams-history'
+                    ? 'bg-[#0D8A82] text-white shadow-xs'
+                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Award size={16} />
+                <span>سجل الامتحانات الشاملة</span>
+              </button>
+            </div>
+
+            {/* Sub-tab Content */}
+            {assessmentSubTab === 'exams' && (
+              <ExamList
+                courseId={selectedCourseId}
+                courses={effectiveCourses}
+                onSelectCourse={handleSelectCourse}
+                onSelectExam={(exam) => handleSelectExam(exam._id)}
+              />
+            )}
+            {assessmentSubTab === 'quizzes-history' && <StudentQuizHistory />}
+            {assessmentSubTab === 'exams-history' && <StudentExamHistory />}
           </div>
         )
       )}
