@@ -56,14 +56,14 @@ function AppRoutes() {
   return (
     <Suspense fallback={<PageFallback />}>
       <Routes>
-        {/* Root Redirect */}
+        
         <Route path="/" element={<RootRedirect />} />
 
-        {/* Public Routes */}
+       
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Protected Student Routes */}
+        
         <Route
           path="/student/dashboard"
           element={
@@ -73,7 +73,7 @@ function AppRoutes() {
           }
         />
 
-        {/* Protected Teacher Routes */}
+       
         <Route
           path="/teacher/dashboard"
           element={
@@ -83,7 +83,7 @@ function AppRoutes() {
           }
         />
 
-        {/* Fallback */}
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

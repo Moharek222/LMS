@@ -67,35 +67,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (verifiedRef.current) return;
     verifiedRef.current = true;
 
-    let isMounted = true;
-
     getMeApi()
       .then((updatedProfile) => {
-        if (!isMounted) return;
         if (updatedProfile) {
           setUser((prev) => {
-            const merged = { ...prev, ...updatedProfile };
+            const hasActiveSubscription =
+              updatedProfile.hasActiveSubscription !== undefined
+                ? updatedProfile.hasActiveSubscription
+                : prev?.hasActiveSubscription;
+
+            const merged = {
+              ...prev,
+              ...updatedProfile,
+              ...(hasActiveSubscription !== undefined ? { hasActiveSubscription } : {}),
+            };
             localStorage.setItem('lms_user', JSON.stringify(merged));
             return merged;
           });
         }
       })
       .catch((error: unknown) => {
-        if (!isMounted) return;
         if (axios.isAxiosError(error) && error.response?.status === 401) {
           setUser(null);
           localStorage.removeItem('lms_user');
         }
       })
       .finally(() => {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   const loginTeacher = async (credentials: TeacherLoginCredentials) => {
