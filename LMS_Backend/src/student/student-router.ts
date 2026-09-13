@@ -26,11 +26,12 @@ router.get("/me",
     isAuthorized(Role.Admin, Role.Teacher, Role.Student),
     getProfile);
 
-router.post("/reset-password",
+router.post("/reset-password/studentID",
     isAuthorized(Role.Admin, Role.Teacher),
     resetPasswordValidation,
     handleValidationErrors,
-    resetStudentPassword);
+    resetStudentPassword
+);
 
 router.put("/profile",
     updateProfileValidation,
