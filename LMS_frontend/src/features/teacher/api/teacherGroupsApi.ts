@@ -55,6 +55,17 @@ export const moveStudent = async (
   return response.data.data;
 };
 
+export const resetStudentPassword = async (
+  studentId: string,
+  password: string
+): Promise<{ message: string }> => {
+  const response = await apiClient.post<{ message: string }>(
+    '/api/students/reset-password',
+    { password, studentID: studentId }
+  );
+  return response.data;
+};
+
 export const teacherGroupsApi = {
   getTeacherGroups,
   getGroupStudents,
@@ -62,6 +73,7 @@ export const teacherGroupsApi = {
   updateGroup,
   deleteGroup,
   moveStudent,
+  resetStudentPassword,
 };
 
 export default teacherGroupsApi;

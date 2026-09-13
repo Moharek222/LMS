@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, User, Phone, ArrowLeftRight, Loader2, AlertTriangle, RefreshCw, X } from 'lucide-react';
+import { Users, User, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { useGroupStudents } from '../../hooks/useGroupStudents';
 import type { Group, GroupStudent } from '../../types/groupManagement';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
@@ -9,6 +9,7 @@ interface GroupStudentsModalProps {
   onClose: () => void;
   group: Group | null;
   onMoveStudent: (student: GroupStudent, currentGroup: Group) => void;
+  onResetPassword?: (student: GroupStudent, currentGroup: Group) => void;
 }
 
 export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
@@ -16,6 +17,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   onClose,
   group,
   onMoveStudent,
+  onResetPassword,
 }) => {
   const groupId = group?._id || '';
   const { data: students, isLoading, isError, error, refetch } = useGroupStudents(groupId);
@@ -113,14 +115,27 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => onMoveStudent(student, group)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer shrink-0"
-                  >
-                    <ArrowLeftRight size={14} />
-                    <span>نقل الطالب</span>
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {onResetPassword && (
+                      <button
+                        type="button"
+                        onClick={() => onResetPassword(student, group)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200/80 text-xs font-bold transition cursor-pointer"
+                        title="تعيين كلمة مرور جديدة للطالب"
+                      >
+                        <KeyRound size={13} />
+                        <span>كلمة السر</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onMoveStudent(student, group)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer"
+                    >
+                      <ArrowLeftRight size={13} />
+                      <span>نقل</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -16,6 +16,7 @@ import { EditGroupModal } from './groups/EditGroupModal';
 import { DeactivateGroupModal } from './groups/DeactivateGroupModal';
 import { GroupStudentsModal } from './groups/GroupStudentsModal';
 import { MoveStudentModal } from './groups/MoveStudentModal';
+import { ResetStudentPasswordModal } from './groups/ResetStudentPasswordModal';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
 export const TeacherGroupManager: React.FC = () => {
@@ -30,6 +31,10 @@ export const TeacherGroupManager: React.FC = () => {
   } | null>(null);
   const [viewingStudentsGroup, setViewingStudentsGroup] = useState<Group | null>(null);
   const [movingStudentData, setMovingStudentData] = useState<{
+    student: GroupStudent;
+    currentGroup: Group;
+  } | null>(null);
+  const [resettingPasswordStudentData, setResettingPasswordStudentData] = useState<{
     student: GroupStudent;
     currentGroup: Group;
   } | null>(null);
@@ -187,6 +192,9 @@ export const TeacherGroupManager: React.FC = () => {
         onMoveStudent={(student, currentGroup) =>
           setMovingStudentData({ student, currentGroup })
         }
+        onResetPassword={(student, currentGroup) =>
+          setResettingPasswordStudentData({ student, currentGroup })
+        }
       />
 
       <MoveStudentModal
@@ -194,6 +202,13 @@ export const TeacherGroupManager: React.FC = () => {
         onClose={() => setMovingStudentData(null)}
         student={movingStudentData?.student || null}
         currentGroup={movingStudentData?.currentGroup || null}
+      />
+
+      <ResetStudentPasswordModal
+        isOpen={Boolean(resettingPasswordStudentData)}
+        onClose={() => setResettingPasswordStudentData(null)}
+        student={resettingPasswordStudentData?.student || null}
+        groupName={resettingPasswordStudentData?.currentGroup.name}
       />
     </div>
   );
