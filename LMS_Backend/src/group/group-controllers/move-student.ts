@@ -49,7 +49,7 @@ export const moveStudent: RequestHandler<{ studentID: string }, IResponse, IRequ
             });
         }
 
-        if (student.groupID.toString() === newGroupID) {
+        if (student.groupID?.toString() === newGroupID) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Student is already in this group"
             });

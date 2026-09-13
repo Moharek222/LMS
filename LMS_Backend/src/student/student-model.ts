@@ -3,14 +3,14 @@ import { Role } from "../user/user-model";
 
 
 interface IStudent extends mongoose.Document {
-    groupID: mongoose.Types.ObjectId;
+    groupID?: mongoose.Types.ObjectId;
     name: string;
     phone: string;
     password:string;
     parentPhone?: string;
     role:Role;
     isActive: boolean;
-    activeToken?: string;
+    activeToken?: string | null;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -19,7 +19,7 @@ const studentSchema = new mongoose.Schema<IStudent>({
     groupID: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Group",
-        required: true
+        required: false
     },
     name: {
         type: String,

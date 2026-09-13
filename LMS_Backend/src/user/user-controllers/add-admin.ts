@@ -21,10 +21,11 @@ export const addAdmin: RequestHandler = async (req, res, next) => {
             role: Role.Admin, 
             isActive: true
         });
+        const {password:_ , ...adminWithoutPassword} = admin.toObject();
 
         return res.status(StatusCodes.CREATED).json({ 
             message: "admin account created successfully",
-            admin
+            adminWithoutPassword
         });
     } catch (err) {
         console.error(err);

@@ -25,7 +25,7 @@ export const getExamSubmission: RequestHandler<{ examID: string }> = async (req,
 
         const [examSubmissions, total] = await Promise.all([
             ExamSubmission.find(findObj)
-                .select("-answer")
+                .select("-answers")
                 .sort({ createdAt: -1 })
                 .populate([
                     { path: "examID", select: "title" },

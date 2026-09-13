@@ -4,6 +4,7 @@ import { teacherLogin, loginValidation as teacherLoginValidation } from "./teach
 import { studentLogin, loginValidation as studentLoginValidation } from "./student-login";
 import { registerHandler, registerValidation } from "./register";
 import { logout } from "./logout";
+import { refreshSession } from "./refresh-token";
 // import { forgotPassword } from "./forget-password";
 
 const router = Router();
@@ -17,6 +18,8 @@ router.post('/student-login',
     studentLoginValidation,
     handleValidationErrors,
     studentLogin);
+
+    router.post("/refresh", refreshSession);
 
 router.post('/register',
     registerValidation,

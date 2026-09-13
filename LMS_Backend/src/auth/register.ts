@@ -8,7 +8,7 @@ export const registerValidation = [
         body("name")
                 .trim()
                 .notEmpty().withMessage("Name is required")
-                .isLength({ min: 2 }).withMessage("Name must be at least 2 characters long"),
+                .isLength({ min: 3 }).withMessage("Name must be at least 2 characters long"),
         body("password")
                 .notEmpty().withMessage("Password is required")
                 .isLength({ min: 4 }).withMessage("Password must be at least 4 characters long"),

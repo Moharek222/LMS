@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
 import { Course } from "../course-model";
+import { Lesson } from "../../lesson/lesson-model";
 
 
 
@@ -13,6 +14,12 @@ export const deleteCourse:RequestHandler<{courseID:string}> = async (req,res,nex
         if(!mongoose.Types.ObjectId.isValid(courseID)){
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid course ID format"
+            });
+        }
+        const lessons = await Lesson.find({courseID}).lean().exec();
+        if(lessons.length > 0){
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Cannot delete course with active lessons"
             });
         }
         const course = await Course.findByIdAndUpdate(

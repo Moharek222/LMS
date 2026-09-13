@@ -41,7 +41,7 @@ export const deleteLesson: RequestHandler<{ lessonID: string }, any, any> = asyn
         }
 
         lesson.isActive = false;
-        lesson.contentUrl = "";
+        lesson.contentUrl = "Deleted";
         
         await lesson.save();
 
