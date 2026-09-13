@@ -1,14 +1,29 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import StudentDashboard from './pages/student/StudentDashboard';
-import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/useAuth';
 import { ToastProvider } from './context/ToastContext';
 
-const queryClient = new QueryClient();
+const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
+const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
+
+const PageFallback = () => (
+  <div dir="rtl" className="h-screen w-full flex flex-col items-center justify-center bg-[#091523] text-white">
+    <div className="w-12 h-12 border-4 border-[#0D8A82] border-t-transparent rounded-full animate-spin mb-4"></div>
+    <p className="text-slate-300 font-semibold text-sm">جاري تحميل المنصة...</p>
+  </div>
+);
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
 
 function RootRedirect() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -39,37 +54,39 @@ function RootRedirect() {
 
 function AppRoutes() {
   return (
-    <Routes>
-      
-      <Route path="/" element={<RootRedirect />} />
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        {/* Root Redirect */}
+        <Route path="/" element={<RootRedirect />} />
 
-      
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+        {/* Public Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-      
-      <Route
-        path="/student/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['student']}>
-            <StudentDashboard />
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected Student Routes */}
+        <Route
+          path="/student/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      
-      <Route
-        path="/teacher/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['teacher', 'admin']}>
-            <TeacherDashboard />
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected Teacher Routes */}
+        <Route
+          path="/teacher/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+              <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-     
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 
