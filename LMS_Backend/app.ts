@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import mongoSanitize from "express-mongo-sanitize";
+// import mongoSanitize from "express-mongo-sanitize";
 
 // Routers
 import authRouter from "./src/auth/auth-router";
@@ -19,7 +19,7 @@ import studentRouter from "./src/student/student-router";
 
 dotenv.config();
 const app = express();
-app.set("trust proxy", 1);
+// app.set("trust proxy", 1);
 
 const PORT = Number(process.env.PORT) || 3000;
 const URI = process.env.DB_URL;
@@ -73,7 +73,7 @@ app.use(
 app.use(cookieParser());
 app.use(express.static("public"));
 app.use(express.json());
-app.use(mongoSanitize());
+// app.use(mongoSanitize());
 
 // API Routes
 app.use("/api/auth", authRouter);
