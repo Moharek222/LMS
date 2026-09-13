@@ -51,9 +51,6 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
   courses,
   selectedCourseId,
   onSelectCourse,
-  totalLessonsCount,
-  completedLessonsCount,
-  courseProgressPercentage,
   selectedLessonId,
   selectedLesson,
   onPreviousLesson,
@@ -136,6 +133,37 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
     [sortedLessons, lessonQuizzesQueries, completedLessonIds, quizHistoryData, passedQuizIdsSession]
   );
 
+  const effectiveCompletedLessonsCount = React.useMemo(() => {
+    if (sortedLessons.length === 0) return 0;
+
+    return sortedLessons.filter((lesson, idx) => {
+      if (completedLessonIds.includes(lesson._id)) return true;
+
+      const quizzes = lessonQuizzesQueries[idx]?.data || [];
+      if (quizzes.length > 0) {
+        return quizzes.some((quiz) => {
+          const qIdStr = String(quiz._id).trim();
+          if (passedQuizIdsSession.has(qIdStr)) return true;
+
+          if (!quizHistoryData?.data) return false;
+          return quizHistoryData.data.some((sub) => {
+            if (!sub.isPassed) return false;
+            const subQuizId = typeof sub.quizID === 'string' ? sub.quizID : sub.quizID?._id;
+            if (!subQuizId) return false;
+            return String(subQuizId).trim() === qIdStr;
+          });
+        });
+      }
+
+      return false;
+    }).length;
+  }, [sortedLessons, completedLessonIds, lessonQuizzesQueries, passedQuizIdsSession, quizHistoryData]);
+
+  const effectiveProgressPercentage = React.useMemo(() => {
+    if (sortedLessons.length === 0) return 0;
+    return Math.round((effectiveCompletedLessonsCount / sortedLessons.length) * 100);
+  }, [effectiveCompletedLessonsCount, sortedLessons.length]);
+
   const selectedLessonIndex = React.useMemo(() => {
     if (!selectedLessonId) return -1;
     return sortedLessons.findIndex((l) => l._id === selectedLessonId);
@@ -176,21 +204,25 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
       )}
 
       
-      {selectedCourseId && totalLessonsCount > 0 && (
+      {selectedCourseId && (
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-2.5">
           <div className="flex items-center justify-between text-xs font-bold">
             <span className="text-slate-700 flex items-center gap-1.5">
               <CheckCircle2 size={16} className="text-[#0D8A82]" />
               <span>نسبة الإنجاز في هذا المقرر</span>
             </span>
-            <span className="text-[#0D8A82]">
-              {completedLessonsCount} من {totalLessonsCount} دروس ({courseProgressPercentage}%)
-            </span>
+            {isLessonsLoading ? (
+              <span className="text-slate-400 text-xs font-semibold animate-pulse">جاري حساب الإنجاز...</span>
+            ) : (
+              <span className="text-[#0D8A82]">
+                {effectiveCompletedLessonsCount} من {sortedLessons.length} دروس ({effectiveProgressPercentage}%)
+              </span>
+            )}
           </div>
           <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
             <div
               className="h-full bg-[#0D8A82] rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${courseProgressPercentage}%` }}
+              style={{ width: `${effectiveProgressPercentage}%` }}
             />
           </div>
         </div>

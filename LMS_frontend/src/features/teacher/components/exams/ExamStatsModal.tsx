@@ -55,7 +55,7 @@ export const ExamStatsModal: React.FC<ExamStatsModalProps> = ({
         className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 sm:p-8 space-y-6 relative my-8 text-right"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -80,7 +80,7 @@ export const ExamStatsModal: React.FC<ExamStatsModalProps> = ({
           </button>
         </div>
 
-        {/* Content Body */}
+        
         {isLoading ? (
           <div className="py-16 flex flex-col items-center justify-center text-center space-y-3">
             <Loader2 size={36} className="animate-spin text-[#0D8A82]" />
@@ -103,9 +103,9 @@ export const ExamStatsModal: React.FC<ExamStatsModalProps> = ({
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Main KPI Grid */}
+           
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {/* Total Submissions */}
+              
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-1">
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-[11px] font-bold">إجمالي المحاولات</span>
@@ -115,7 +115,7 @@ export const ExamStatsModal: React.FC<ExamStatsModalProps> = ({
                 <span className="text-[10px] font-semibold text-slate-400 block">طالب قام بالتسليم</span>
               </div>
 
-              {/* Average Score */}
+              
               <div className="bg-teal-50/60 rounded-2xl p-4 border border-teal-100 space-y-1">
                 <div className="flex items-center justify-between text-[#0D8A82]">
                   <span className="text-[11px] font-bold">متوسط الدرجات</span>
@@ -125,7 +125,7 @@ export const ExamStatsModal: React.FC<ExamStatsModalProps> = ({
                 <span className="text-[10px] font-semibold text-teal-700/70 block">درجة للمحاولات المصححة</span>
               </div>
 
-              {/* Highest Score */}
+              
               <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-100 space-y-1">
                 <div className="flex items-center justify-between text-amber-700">
                   <span className="text-[11px] font-bold">أعلى درجة</span>
@@ -135,7 +135,7 @@ export const ExamStatsModal: React.FC<ExamStatsModalProps> = ({
                 <span className="text-[10px] font-semibold text-amber-700/70 block">أعلى نتيجة تم تسجيلها</span>
               </div>
 
-              {/* Pending Grading */}
+             
               <div className="bg-rose-50/50 rounded-2xl p-4 border border-rose-100 space-y-1">
                 <div className="flex items-center justify-between text-rose-600">
                   <span className="text-[11px] font-bold">قيد التصحيح</span>
@@ -146,14 +146,14 @@ export const ExamStatsModal: React.FC<ExamStatsModalProps> = ({
               </div>
             </div>
 
-            {/* Visual Breakdown Bar */}
+           
             <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200 space-y-4">
               <h4 className="text-xs font-extrabold text-slate-800 flex items-center justify-between">
                 <span>توزيع حالة تصحيح المحاولات:</span>
                 <span className="text-[11px] text-slate-400 font-bold">{graded} مصحح من أصل {total}</span>
               </h4>
 
-              {/* Progress Bar Container */}
+              
               <div className="h-4 rounded-full bg-slate-200 overflow-hidden flex dir-ltr">
                 <div
                   style={{ width: `${gradedPercent}%` }}
@@ -167,7 +167,7 @@ export const ExamStatsModal: React.FC<ExamStatsModalProps> = ({
                 />
               </div>
 
-              {/* Legend */}
+              
               <div className="flex items-center justify-around text-xs font-bold pt-1">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-[#0D8A82]" />
@@ -188,7 +188,7 @@ export const ExamStatsModal: React.FC<ExamStatsModalProps> = ({
           </div>
         )}
 
-        {/* Footer */}
+       
         <div className="pt-4 border-t border-slate-100 flex justify-end">
           <button
             type="button"

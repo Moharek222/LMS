@@ -124,7 +124,26 @@ export const StudentDashboard: React.FC = () => {
 
   const [isSolvingQuiz, setIsSolvingQuiz] = useState<boolean>(false);
   const [isSolvingExam, setIsSolvingExam] = useState<boolean>(false);
-  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
+
+  const storageKey = user?.id ? `lms_completed_lessons_${user.id}` : 'lms_completed_lessons_guest';
+
+  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(completedLessonIds));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [completedLessonIds, storageKey]);
+
   const [assessmentSubTab, setAssessmentSubTab] = useState<'exams' | 'quizzes-history' | 'exams-history'>('exams');
 
   const {

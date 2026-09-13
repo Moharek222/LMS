@@ -149,7 +149,7 @@ export const TeacherDashboard: React.FC = () => {
         <div className="space-y-6">
           <ChemistryBanner quote="الكيمياء ليست مجرد معادلات، بل هي لغة الطبيعة" />
 
-          {/* KPI Stat Cards */}
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiStatCard
               title="إجمالي الطلاب"
@@ -181,7 +181,7 @@ export const TeacherDashboard: React.FC = () => {
             />
           </div>
 
-          {/* Widgets Grid */}
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <RecentStudentsWidget
               students={recentStudents}

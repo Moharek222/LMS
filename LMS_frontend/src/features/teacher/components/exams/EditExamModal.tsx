@@ -417,7 +417,7 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
                         />
                       </div>
 
-                      {/* Image Upload or URL field */}
+                      
                       <div className="space-y-1.5">
                         <label className="block text-[11px] font-bold text-slate-500 flex items-center gap-1">
                           <ImageIcon size={14} className="text-[#0D8A82]" />
@@ -475,7 +475,7 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
                       </div>
                     </div>
 
-                    {/* MCQ Options rendering */}
+                  
                     {q.type === 'MCQ' ? (
                       <div className="space-y-2.5 pr-2 pt-1">
                         <label className="block text-[11px] font-bold text-slate-500">

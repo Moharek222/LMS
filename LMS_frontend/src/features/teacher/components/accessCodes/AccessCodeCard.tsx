@@ -17,7 +17,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(accessCode.code);
       } else {
-        // Fallback for non-secure contexts
+        
         const textArea = document.createElement('textarea');
         textArea.value = accessCode.code;
         document.body.appendChild(textArea);
@@ -33,7 +33,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
     }
   };
 
-  // Safe Student Info Resolution
+  
   const studentName =
     typeof accessCode.studentID === 'object' && accessCode.studentID !== null
       ? accessCode.studentID.name
@@ -44,7 +44,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
       ? accessCode.studentID.phone
       : null;
 
-  // Safe Status Badge Translation
+  
   const getStatusBadge = (status: string) => {
     const lower = (status || '').toLowerCase();
     if (lower === 'active') {
@@ -68,7 +68,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
     );
   };
 
-  // Safe Date Formatting
+  
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '—';
     try {
@@ -86,7 +86,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
 
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-      {/* Code & Student Details */}
+      
       <div className="space-y-3 w-full md:w-auto">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="px-4 py-2 rounded-2xl bg-teal-50/90 text-[#0D8A82] border-2 border-teal-200/90 flex items-center gap-2.5 font-mono font-black text-base sm:text-lg tracking-widest shadow-2xs select-all">
@@ -130,7 +130,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
         </div>
       </div>
 
-      {/* Expiration and Dates */}
+      
       <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 w-full md:w-auto justify-between md:justify-end shrink-0">
         <div className="flex items-center gap-1.5">
           <Calendar size={14} className="text-slate-400" />

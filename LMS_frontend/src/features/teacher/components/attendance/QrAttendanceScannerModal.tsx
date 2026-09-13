@@ -54,7 +54,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   const scanningRef = useRef<boolean>(false);
   const cooldownRef = useRef<boolean>(false);
 
-  // Audio Beep generator using Web Audio API
+ 
   const playBeep = () => {
     if (!soundEnabled) return;
     try {
@@ -76,7 +76,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     }
   };
 
-  // Helper to extract studentId from raw input or JSON string {"studentId":"..."}
+  
   const extractStudentId = (raw: string): string => {
     const trimmed = raw.trim();
     if (!trimmed) return '';
@@ -91,7 +91,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     return trimmed;
   };
 
-  // Process attendance recording
+  
   const processAttendance = (rawId: string) => {
     const studentId = extractStudentId(rawId);
     if (!studentId || recordAttendanceMutation.isPending || cooldownRef.current) return;
@@ -120,7 +120,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
           setScannedInput('');
 
-          // 2.5 second cooldown per scan to prevent rapid duplicate scans
+          
           setTimeout(() => {
             cooldownRef.current = false;
             setLastScannedId(null);
@@ -139,7 +139,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     );
   };
 
-  // Handle camera stream setup & cleanup
+  
   useEffect(() => {
     if (!isOpen || mode !== 'camera') {
       stopCamera();
@@ -193,14 +193,14 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     setIsCameraActive(false);
   };
 
-  // QR BarcodeDetector Loop
+  
   const startQrDetectionLoop = () => {
     scanningRef.current = true;
 
     const BarcodeDetectorClass = (window as unknown as { BarcodeDetector?: new (options?: { formats: string[] }) => { detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue: string }>> } }).BarcodeDetector;
 
     if (!BarcodeDetectorClass) {
-      // Fallback if BarcodeDetector API is not supported in browser
+      
       setCameraError('الماسح النمطي التلقائي يعمل في وضع القارئ السريع. يرجى تمرير الكارت أمام القارئ.');
       return;
     }
@@ -243,7 +243,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-        {/* Header */}
+       
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -276,7 +276,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         </div>
 
-        {/* Mode Selector Tabs */}
+        
         <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200/80 shrink-0">
           <button
             type="button"
@@ -301,7 +301,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </button>
         </div>
 
-        {/* Camera View Mode */}
+        
         {mode === 'camera' ? (
           <div className="space-y-4 flex-1 overflow-y-auto">
             <div className="relative rounded-2xl bg-slate-950 p-2 border-2 border-slate-800 flex flex-col items-center justify-center min-h-64 overflow-hidden">
@@ -334,7 +334,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
                 </div>
               )}
 
-              {/* Scanning Laser Focus Frame Overlay */}
+              
               {isCameraActive && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="w-48 h-48 rounded-2xl border-2 border-dashed border-[#0D8A82] relative flex items-center justify-center shadow-2xl">
@@ -349,7 +349,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
             </p>
           </div>
         ) : (
-          /* Hardware Scanner / Manual Input Mode */
+          
           <form onSubmit={handleManualSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700">
@@ -388,7 +388,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </form>
         )}
 
-        {/* Instant Feedback & Error Banners */}
+       
         {errorMsg && (
           <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 flex items-center gap-2 shrink-0">
             <AlertCircle size={16} className="shrink-0" />
@@ -408,7 +408,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-        {/* Live Session Scan Log */}
+        
         {sessionLog.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-slate-100 shrink-0">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700">
@@ -438,7 +438,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-        {/* Footer */}
+       
         <div className="pt-2 border-t border-slate-100 flex justify-end shrink-0">
           <button
             type="button"

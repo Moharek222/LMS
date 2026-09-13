@@ -45,7 +45,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
 
   const submission = data?.data;
 
-  // Local state for essay grades input
+  
   const [essayGrades, setEssayGrades] = useState<Record<string, { score: number; feedback: string }>>({});
 
   useEffect(() => {
@@ -119,7 +119,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] flex flex-col">
-        {/* Modal Header */}
+       
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -141,7 +141,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Body Content */}
+        
         <div className="overflow-y-auto flex-1 space-y-6 pr-1">
           {isLoading ? (
             <div className="py-16 flex flex-col items-center justify-center text-center space-y-3">
@@ -161,7 +161,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
             </div>
           ) : (
             <>
-              {/* Student & Score Banner */}
+              
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
@@ -203,7 +203,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                 </div>
               </div>
 
-              {/* Essay Questions Section for Teacher Grading */}
+              
               <div className="space-y-4">
                 <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2">
                   <MessageSquare size={18} className="text-[#0D8A82]" />
@@ -246,7 +246,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                             </div>
                           </div>
 
-                          {/* Grading Inputs */}
+                          
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                             <div>
                               <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -282,7 +282,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                 )}
               </div>
 
-              {/* MCQ Auto-Graded Summary Section */}
+              
               {mcqAnswers.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2">
@@ -320,7 +320,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
           )}
         </div>
 
-        {/* Modal Footer Actions */}
+       
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between shrink-0">
           <button
             type="button"

@@ -97,7 +97,7 @@ export const EditCourseModal: React.FC<EditCourseModalProps> = ({
         className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full p-6 sm:p-8 space-y-6 relative my-8 text-right"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
@@ -119,7 +119,7 @@ export const EditCourseModal: React.FC<EditCourseModalProps> = ({
           </button>
         </div>
 
-        {/* Loading details state */}
+       
         {isLoading ? (
           <div className="p-8 flex flex-col items-center justify-center text-center space-y-2">
             <Loader2 size={32} className="animate-spin text-[#0D8A82]" />

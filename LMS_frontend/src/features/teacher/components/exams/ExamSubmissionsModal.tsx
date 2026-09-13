@@ -79,7 +79,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
     <>
       <div className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
         <div className="bg-white rounded-3xl max-w-4xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 max-h-[88vh] flex flex-col">
-          {/* Header */}
+         
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -103,7 +103,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
             </button>
           </div>
 
-          {/* Filter Bar */}
+          
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-2 flex-1">
               <div className="relative flex-1 max-w-xs">
@@ -136,7 +136,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
             </span>
           </div>
 
-          {/* Content Body */}
+          
           <div className="overflow-y-auto flex-1 space-y-3 pr-1">
             {isLoading ? (
               <div className="py-16 flex flex-col items-center justify-center text-center space-y-3">
@@ -217,7 +217,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
             )}
           </div>
 
-          {/* Footer & Server Pagination */}
+          
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold shrink-0">
             <button
               type="button"
@@ -246,7 +246,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
         </div>
       </div>
 
-      {/* Grade Submission Modal */}
+     
       {selectedSubmissionId && (
         <GradeSubmissionModal
           isOpen={Boolean(selectedSubmissionId)}
