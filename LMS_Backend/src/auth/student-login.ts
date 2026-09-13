@@ -16,7 +16,7 @@ interface IRequest {
 interface IResponse {
     message: string;
     data?: any;
-    errors?: any;
+    // errors?: any;
 }
 
 export const loginValidation = [

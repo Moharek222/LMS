@@ -4,6 +4,11 @@ import mongoose from "mongoose";
 import { Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import mongoSanitize from "express-mongo-sanitize";
+
+// Routers
 import authRouter from "./src/auth/auth-router";
 import groupRouter from "./src/group/group-router";
 import accessCodeRouter from "./src/access-code/access-code-router";
@@ -14,36 +19,63 @@ import studentRouter from "./src/student/student-router";
 
 dotenv.config();
 const app = express();
+app.set("trust proxy", 1);
+
 const PORT = Number(process.env.PORT) || 3000;
 const URI = process.env.DB_URL;
 const DB_NAME = process.env.DB_NAME;
+
+if (!URI || !DB_NAME) {
+    console.error("FATAL ERROR: DB_URL or DB_NAME is not defined in .env");
+    process.exit(1);
+}
+
 mongoose
-    .connect(`${URI}/${DB_NAME}`)
-    .then(() => console.log("MongoDB connected"))
+    .connect(URI, {
+        dbName: DB_NAME
+    })
+    .then(() => console.log("MongoDB connected successfully"))
     .catch((err) => {
         console.error("MongoDB connection error:", err);
-
         process.exit(1);
     });
 
-// mongoose.connection.on("connected", () => {
-//     console.log("Connected to database:", mongoose.connection.name);
-//     console.log("Host:", mongoose.connection.host);
-// });
-// const allowedOrigins = process.env.FRONTEND_URL
-//     ? [process.env.FRONTEND_URL, "http://localhost:5173"]
-//     : (origin: any, callback: any) => callback(null, true);
+app.use(helmet());
 
-// app.use(
-//     cors({
-//         // origin: allowedOrigins,
-//         credentials: true
-//     })
-// );
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: "Too many requests from this IP, please try again after 15 minutes",
+    standardHeaders: true, 
+    legacyHeaders: false,
+});
+app.use("/api", globalLimiter);
+
+const allowedOrigins = process.env.FRONTEND_URL 
+    ? [process.env.FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"]
+    : ["http://localhost:5173", "http://localhost:3000"];
+    
+app.use(
+    cors({
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allowedHeaders: ["Content-Type", "Authorization"]
+    })
+);
 
 app.use(cookieParser());
 app.use(express.static("public"));
 app.use(express.json());
+app.use(mongoSanitize());
+
+// API Routes
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/access-codes", accessCodeRouter);
@@ -56,11 +88,24 @@ app.use("/api/lessons", lessonRouter);
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     console.error("Global Error Handler:", err);
 
-    res.status(500).json({
-        message: err.message || "Internal Server Error",
+    res.status(err.status || 500).json({
+        message: process.env.NODE_ENV === "production" 
+            ? "Internal Server Error" 
+            : err.message,
     });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`✅ Server is running on http://localhost:${PORT}`);
+});
+
+
+process.on("SIGTERM", async () => {
+    console.log("SIGTERM received. Shutting down gracefully...");
+    server.close(async () => {
+        console.log("HTTP server closed.");
+        await mongoose.connection.close();
+        console.log("MongoDB connection closed.");
+        process.exit(0);
+    });
 });

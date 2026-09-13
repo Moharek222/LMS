@@ -10,6 +10,7 @@ import { handleValidationErrors } from "../middlewares/handleValidationErrors";
 import { isAuthorized } from "../middlewares/isAuthorized.middleware";
 import { Role } from "../user/user-model";
 import { getStudents } from "./student-controllers/get-students";
+import { resetPasswordValidation, resetStudentPassword } from "./student-controllers/reset-student-password";
 
 const router = Router();
 
@@ -21,7 +22,15 @@ router.get("/",
     isAuthorized(Role.Admin, Role.Teacher),
     getStudents);
 
-router.get("/me", getProfile);
+router.get("/me",
+    isAuthorized(Role.Admin, Role.Teacher, Role.Student),
+    getProfile);
+
+router.post("/reset-password",
+    isAuthorized(Role.Admin, Role.Teacher),
+    resetPasswordValidation,
+    handleValidationErrors,
+    resetStudentPassword);
 
 router.put("/profile",
     updateProfileValidation,

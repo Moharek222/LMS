@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { scanStudentAttendance } from "./attendace-controllers/scan-student-attendance";
+import { scanAttendanceValidation, scanStudentAttendance } from "./attendace-controllers/scan-student-attendance";
 import { getGroupAttendance } from "./attendace-controllers/get-group-attendance";
 import { getAttendanceById } from "./attendace-controllers/get-attendance-by-id";
 import { getStudentAttendancePercentage } from "./attendace-controllers/get-student-attendance-percentage";
@@ -8,6 +8,7 @@ import { Role } from "../user/user-model";
 import { getMyAttendancePercentage } from "./attendace-controllers/get-my-attendance-percentage";
 import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
 import { requireActiveSubscription } from "../middlewares/is-active-code";
+import { handleValidationErrors } from "../middlewares/handleValidationErrors";
 
 
 
@@ -17,6 +18,8 @@ router.use(isAuthenticated);
 
 router.post("/",
     isAuthorized(Role.Admin, Role.Teacher),
+    scanAttendanceValidation,
+    handleValidationErrors,
     scanStudentAttendance);
 
 router.get("/sheets",

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { isAuthorized } from "../middlewares/isAuthorized.middleware";
 import { Role } from "../user/user-model";
-import { submitExam } from "./exam-submission-controllers/submit-exam";
+import { submitExam, submitExamValidation } from "./exam-submission-controllers/submit-exam";
 import { isAuthenticated } from "../middlewares/isAuthenticated.middleware";
 import { getMySubmissions } from "./exam-submission-controllers/get-my-submission";
 import { getExamSubmission } from "./exam-submission-controllers/get-exam-submission";
@@ -11,6 +11,7 @@ import { getSubmissionResult } from "./exam-submission-controllers/get-submissio
 import { gradeEssayQuestions } from "./exam-submission-controllers/grade-essay";
 import { deleteSubmission } from "./exam-submission-controllers/delete-submission";
 import { requireActiveSubscription } from "../middlewares/is-active-code";
+import { handleValidationErrors } from "../middlewares/handleValidationErrors";
 
 const router = Router({ mergeParams: true });
 
@@ -29,7 +30,8 @@ router.get("/",
 
 router.post("/",
     isAuthorized(Role.Student),
-    requireActiveSubscription,
+    submitExamValidation,
+    handleValidationErrors,
     submitExam
 );
 
@@ -40,7 +42,7 @@ router.put("/:submissionID/grade",
 
 
 router.get("/:submissionID/details",
-    isAuthorized(Role.Student,Role.Admin, Role.Teacher),
+    isAuthorized(Role.Admin, Role.Teacher),
     requireActiveSubscription,
     getSubmissionDetails
 );

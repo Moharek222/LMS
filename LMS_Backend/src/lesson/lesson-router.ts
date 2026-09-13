@@ -11,6 +11,7 @@ import { getLessonById } from "./lesson-controllers/get-lesson-by-id";
 import { getCourseLessons } from "./lesson-controllers/get-course-lessons";
 import { generateUploadUrl, generateUploadUrlValidation } from "./lesson-controllers/upload-controller";
 import quizRouter from "../quiz/quiz-router";
+import { requireActiveSubscription } from "../middlewares/is-active-code";
 
 const router = Router({ mergeParams: true });
 
@@ -46,11 +47,13 @@ router.delete("/:lessonID",
 
 router.get("/:lessonID/video",
     isAuthorized(Role.Student,Role.Admin, Role.Teacher),
+    requireActiveSubscription,
     getLessonById
 );
 
 router.get("/:courseID",
     isAuthorized(Role.Student,Role.Admin, Role.Teacher),
+    requireActiveSubscription,
     getCourseLessons
 );
 

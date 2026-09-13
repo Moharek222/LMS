@@ -15,6 +15,16 @@ export const deleteGroup: RequestHandler<{ groupID: string }> = async (req, res)
             });
             return;
         }
+        const studentsGroup = await Student.find({groupID, isActive: true})
+        .lean()
+        .exec();
+
+        if (studentsGroup.length !== 0) {
+            res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Group has students and cannot be deleted"
+            });
+            return;
+        }
         const deletedGroup = await Group.findOneAndUpdate(
             { _id: groupID, isActive: true },
             { $set: { isActive: false } },
@@ -27,23 +37,10 @@ export const deleteGroup: RequestHandler<{ groupID: string }> = async (req, res)
             });
             return;
         }
-        const studentsResult = await Student.updateMany(
-            { 
-                groupID: groupID,
-                isActive: true
-            },
-            { 
-                $set: { isActive: false },
-                $unset: { groupID: "" }
-            }
-        );
 
         res.status(StatusCodes.OK).json({
             message: "Group archived and its students have been deactivated successfully",
-            data: {
-                group: deletedGroup,
-                affectedStudentsCount: studentsResult.modifiedCount
-            }
+            data : deletedGroup
         });
     } catch (err) {
         console.log("Delete Group Error:", err);

@@ -4,6 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import { body } from "express-validator";
 import { Attendance } from "../attendance-model";
 import { Group } from "../../group/group-model";
+import { Student } from "../../student/student-model";
 
 export const scanAttendanceValidation = [
     body("studentID")
@@ -24,7 +25,14 @@ export const scanStudentAttendance: RequestHandler<{ groupID: string }, {}, { st
         if (!groupExists) {
             return res.status(StatusCodes.NOT_FOUND).json({ message: "Group not found" });
         }
+        const student = await Student.findById(studentID).exec();
+        if (!student || !student.isActive) {
+            return res.status(StatusCodes.NOT_FOUND).json({ message: "Student not found" });
+        }
 
+        if (student.groupID?.toString() !== groupID) {
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Student does not belong to this group" });
+        }
         const today = new Date(new Date().setHours(0, 0, 0, 0));
 
         const attendance = await Attendance.findOneAndUpdate(
