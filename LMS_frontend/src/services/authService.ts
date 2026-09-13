@@ -56,7 +56,6 @@ export const registerStudentApi = async (credentials: StudentRegisterCredentials
     phone: credentials.phone,
     password: credentials.password,
     groupID: credentials.groupId,
-    // groupId: credentials.groupId,
   };
 
   const response = await apiClient.post<StudentRegisterResponse>('/api/auth/register', payload);
@@ -68,10 +67,28 @@ export const logoutApi = async (): Promise<LogoutResponse> => {
   return response.data;
 };
 
+export const getMeApi = async (): Promise<UserProfile | null> => {
+  const response = await apiClient.get<{ message: string; data?: any; user?: any }>('/api/students/me');
+  const backendData = response.data?.data || response.data?.user;
+  if (!backendData) return null;
+
+  return {
+    id: backendData._id || backendData.id,
+    name: backendData.name,
+    email: backendData.email,
+    phone: backendData.phone,
+    role: backendData.role || (backendData.email ? 'teacher' : 'student'),
+    groupId: typeof backendData.groupID === 'object' ? backendData.groupID?._id : backendData.groupID,
+    isActive: backendData.isActive !== false,
+    hasActiveSubscription: backendData.hasActiveSubscription,
+  };
+};
+
 export const authService = {
   loginTeacher: loginTeacherApi,
   loginStudent: loginStudentApi,
   registerStudent: registerStudentApi,
+  getMe: getMeApi,
   logout: logoutApi,
 };
 

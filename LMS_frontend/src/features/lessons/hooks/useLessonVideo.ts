@@ -9,6 +9,8 @@ export const useLessonVideo = (lessonId: string) => {
     queryKey: [...LESSON_VIDEO_QUERY_KEY, lessonId],
     queryFn: () => getLessonVideo(lessonId),
     enabled: Boolean(lessonId),
+    staleTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
   });
 };
 

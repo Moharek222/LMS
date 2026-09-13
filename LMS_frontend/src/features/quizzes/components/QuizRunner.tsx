@@ -37,14 +37,49 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   const { data: quizHistoryData } = useStudentQuizHistory({ page: 1, limit: 100 });
 
   
+  const draftAnswersKey = `lms_quiz_draft_answers_${quizId}`;
+
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isRetrying, setIsRetrying] = useState<boolean>(false);
-  
-  
+
+  // Restore draft answers safely on mount or when quizId changes
+  React.useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem(draftAnswersKey);
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          setAnswers(parsed);
+        } else {
+          localStorage.removeItem(draftAnswersKey);
+        }
+      } else {
+        setAnswers({});
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [quizId, draftAnswersKey]);
+
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [showExitModal, setShowExitModal] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string>('');
   const [submissionResult, setSubmissionResult] = useState<QuizSubmissionData | null>(null);
+
+  React.useEffect(() => {
+    const hasUnsavedAnswers = Object.keys(answers).length > 0 && !submissionResult;
+    if (!hasUnsavedAnswers) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [answers, submissionResult]);
 
   const quiz: StudentQuiz | undefined = quizData;
   const questions = quiz?.questions || [];
@@ -71,10 +106,18 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   }, [existingSubmissionFromHistory, submissionResult, questions.length, onPassed, isRetrying]);
 
   const handleSelectOption = (questionId: string, optionText: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: optionText,
-    }));
+    setAnswers((prev) => {
+      const updated = {
+        ...prev,
+        [questionId]: optionText,
+      };
+      try {
+        localStorage.setItem(draftAnswersKey, JSON.stringify(updated));
+      } catch {
+        // Ignore storage write error
+      }
+      return updated;
+    });
     setValidationError('');
   };
 
@@ -95,8 +138,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
   const handleExecuteSubmission = () => {
     setShowConfirmModal(false);
-    
-    
+
     const selectedOptionPayload = Object.entries(answers).map(([qId, ans]) => ({
       QuestionId: qId,
       selectedAnswer: ans,
@@ -112,6 +154,11 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
       },
       {
         onSuccess: (data) => {
+          try {
+            localStorage.removeItem(draftAnswersKey);
+          } catch {
+            // Ignore storage errors
+          }
           setSubmissionResult(data);
           if (data.isPassed) {
             onPassed?.();
@@ -122,6 +169,11 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         },
         onError: (err) => {
           if (err.message?.includes('already submitted') || err.message?.includes('409') || err.message?.includes('CONFLICT')) {
+            try {
+              localStorage.removeItem(draftAnswersKey);
+            } catch {
+              // Ignore storage errors
+            }
             const fallbackResult: QuizSubmissionData = {
               score: Object.keys(answers).length,
               totalQuestions: questions.length,
@@ -239,6 +291,11 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
                 setIsRetrying(true);
                 setSubmissionResult(null);
                 setAnswers({});
+                try {
+                  localStorage.removeItem(draftAnswersKey);
+                } catch {
+                  // Ignore storage errors
+                }
               }}
               className="px-6 py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition cursor-pointer shadow-sm"
             >
@@ -458,7 +515,6 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         </div>
       )}
 
-     
       {showExitModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
@@ -467,21 +523,21 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
             </div>
             <h4 className="text-base font-extrabold text-slate-800">مغادرة الاختبار</h4>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              عند الرجوع سيتم فقدان إجاباتك الحالية، هل تريد المتابعة؟
+              لديك إجابات لم يتم تسليمها بعد. هل أنت متأكد أنك تريد الخروج؟
             </p>
 
             <div className="flex items-center gap-2 pt-2">
               <button
-                onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition cursor-pointer shadow-xs"
-              >
-                مغادرة الاختبار
-              </button>
-              <button
                 onClick={() => setShowExitModal(false)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
               >
                 متابعة الحل
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+              >
+                الخروج
               </button>
             </div>
           </div>

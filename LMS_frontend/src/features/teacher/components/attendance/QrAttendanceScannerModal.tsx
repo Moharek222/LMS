@@ -5,15 +5,11 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
-  Loader2,
-  Camera,
-  UserCheck,
   Volume2,
   VolumeX,
   Sparkles,
   RefreshCw,
   Clock,
-  Keyboard,
 } from 'lucide-react';
 import { useRecordStudentAttendance } from '../../../attendance/hooks/useStudentAttendance';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
@@ -41,8 +37,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   const toast = useToast();
   const recordAttendanceMutation = useRecordStudentAttendance();
 
-  const [mode, setMode] = useState<'camera' | 'manual'>('camera');
-  const [scannedInput, setScannedInput] = useState('');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastScannedId, setLastScannedId] = useState<string | null>(null);
@@ -54,7 +48,9 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   const playBeep = () => {
     if (!soundEnabled) return;
     try {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
@@ -96,10 +92,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
     if (!isMongoId(studentId)) {
       playBeep();
-      const msg =
-        'معرف الطالب غير صحيح. يرجى إدخال كود الطالب (ID المكون من 24 عنصر) أو مسح كود الـ QR. (ملاحظة: أكواد الوصول مثل ' +
-        studentId +
-        ' هي أكواد تفعيل وليست ID الحضور)';
+      const msg = 'رمز الـ QR غير مجسد بشكل صحيح لحساب الطالب.';
       setErrorMsg(msg);
       toast.error(msg);
       return;
@@ -113,7 +106,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
         onSuccess: () => {
           playBeep();
           setLastScannedId(studentId);
-          toast.success(`تم تسجيل حضور الطالب بنجاح!`);
+          toast.success(`تم تسجيل حضور الطالب بنجاح! 🎉`);
 
           const nowTime = new Date().toLocaleTimeString('ar-EG', {
             hour: '2-digit',
@@ -125,8 +118,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
             { id: Math.random().toString(), studentId, timestamp: nowTime },
             ...prev,
           ]);
-
-          setScannedInput('');
 
           setTimeout(() => {
             cooldownRef.current = false;
@@ -148,16 +139,11 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
   if (!isOpen) return null;
 
-  const handleManualSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!scannedInput.trim()) return;
-    processAttendance(scannedInput);
-  };
-
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
         
+       
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -191,122 +177,54 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
         </div>
 
         
-        <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200/80 shrink-0">
-          <button
-            type="button"
-            onClick={() => setMode('camera')}
-            className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-              mode === 'camera' ? 'bg-[#0D8A82] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Camera size={15} />
-            <span>كاميرا مباشر (Live Scan)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMode('manual')}
-            className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-              mode === 'manual' ? 'bg-[#0D8A82] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Keyboard size={15} />
-            <span>قارئ يدوي</span>
-          </button>
-        </div>
-
-        
-        {mode === 'camera' ? (
-          <div className="space-y-4 flex-1 overflow-y-auto">
-            <div className="relative rounded-2xl bg-slate-950 p-2 border-2 border-slate-800 flex flex-col items-center justify-center min-h-64 overflow-hidden">
-              {cameraError ? (
-                <div className="flex flex-col items-center justify-center space-y-3 text-center p-6 bg-slate-900 w-full h-64 rounded-xl">
-                  <AlertCircle size={32} className="text-rose-500" />
-                  <p className="text-xs font-bold text-slate-300 max-w-xs">{cameraError}</p>
-                  <button
-                    type="button"
-                    onClick={() => setCameraError(null)}
-                    className="px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer flex items-center gap-1.5"
-                  >
-                    <RefreshCw size={14} />
-                    <span>إعادة المحاولة</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="w-full h-64 rounded-xl overflow-hidden">
-                  <Scanner
-                    onScan={(result) => {
-                      if (result && result.length > 0 && result[0].rawValue) {
-                        processAttendance(result[0].rawValue);
-                      }
-                    }}
-                    onError={(err) => {
-                      if (err) {
-                        const msg = typeof err === 'string' ? err : err.message || 'تعذر تشغيل كاميرا المسح الضوئي';
-                        setCameraError(msg);
-                      }
-                    }}
-                    components={{
-                      finder: true,
-                    }}
-                    constraints={{
-                      facingMode: 'environment',
-                    }}
-                    styles={{
-                      container: { width: '100%', height: '100%', borderRadius: '0.75rem', overflow: 'hidden' },
-                      video: { borderRadius: '0.75rem', objectFit: 'cover' },
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-
-            <p className="text-xs text-slate-500 font-semibold text-center leading-relaxed">
-              قم بوضع كارت الطالب الفيزيائي أو الـ QR الخاص بالطالب في منتصف المربع لتسجيل الحضور تلقائياً.
-            </p>
-          </div>
-        ) : (
-          
-          <form onSubmit={handleManualSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                امسح الكود بالقارئ الخارجي أو أدخل كود الطالب المكون من 24 عنصر
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  autoFocus
-                  value={scannedInput}
-                  onChange={(e) => setScannedInput(e.target.value)}
-                  placeholder="امسح كارت الـ QR بالقارئ الخارجي أو أدخل الـ ID (24 عنصر)..."
-                  className="w-full pl-4 pr-10 py-3.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition"
-                />
-                <QrCode size={18} className="absolute right-3.5 top-4 text-slate-400" />
+        <div className="space-y-4 flex-1 overflow-y-auto">
+          <div className="relative rounded-2xl bg-slate-950 p-2 border-2 border-slate-800 flex flex-col items-center justify-center min-h-64 overflow-hidden">
+            {cameraError ? (
+              <div className="flex flex-col items-center justify-center space-y-3 text-center p-6 bg-slate-900 w-full h-64 rounded-xl">
+                <AlertCircle size={32} className="text-rose-500" />
+                <p className="text-xs font-bold text-slate-300 max-w-xs">{cameraError}</p>
+                <button
+                  type="button"
+                  onClick={() => setCameraError(null)}
+                  className="px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <RefreshCw size={14} />
+                  <span>إعادة المحاولة</span>
+                </button>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium">
-                💡 الـ ID المكون من 24 عنصر يوجد في كود الـ QR للطالب أو صفحته الشخصية. (أكواد التفعيل مثل FHJ22U6V ليست ID حضور).
-              </p>
-            </div>
+            ) : (
+              <div className="w-full h-64 rounded-xl overflow-hidden">
+                <Scanner
+                  onScan={(result) => {
+                    if (result && result.length > 0 && result[0].rawValue) {
+                      processAttendance(result[0].rawValue);
+                    }
+                  }}
+                  onError={(err) => {
+                    if (err) {
+                      const msg = typeof err === 'string' ? err : err.message || 'تعذر تشغيل كاميرا المسح الضوئي';
+                      setCameraError(msg);
+                    }
+                  }}
+                  components={{
+                    finder: true,
+                  }}
+                  constraints={{
+                    facingMode: 'environment',
+                  }}
+                  styles={{
+                    container: { width: '100%', height: '100%', borderRadius: '0.75rem', overflow: 'hidden' },
+                    video: { borderRadius: '0.75rem', objectFit: 'cover' },
+                  }}
+                />
+              </div>
+            )}
+          </div>
 
-            <button
-              type="submit"
-              disabled={recordAttendanceMutation.isPending || !scannedInput.trim()}
-              className="w-full py-3 px-4 rounded-xl bg-[#0D8A82] text-white font-bold text-xs hover:bg-teal-700 transition cursor-pointer flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {recordAttendanceMutation.isPending ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>جاري تسجيل الحضور...</span>
-                </>
-              ) : (
-                <>
-                  <UserCheck size={16} />
-                  <span>تسجيل الحضور يدويّاً</span>
-                </>
-              )}
-            </button>
-          </form>
-        )}
+          <p className="text-xs text-slate-500 font-semibold text-center leading-relaxed">
+            قم بوضع كارت الطالب الفيزيائي أو الـ QR الخاص بالطالب في منتصف المربع لتسجيل الحضور تلقائياً.
+          </p>
+        </div>
 
        
         {errorMsg && (
@@ -316,6 +234,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
+        
         {lastScannedId && (
           <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2.5 shadow-2xs shrink-0 animate-in fade-in">
             <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
@@ -358,7 +277,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-       
+        
         <div className="pt-2 border-t border-slate-100 flex justify-end shrink-0">
           <button
             type="button"

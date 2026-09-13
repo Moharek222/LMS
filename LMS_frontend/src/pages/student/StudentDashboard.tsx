@@ -30,6 +30,7 @@ import {
   User,
   History,
   Award,
+  AlertTriangle,
 } from 'lucide-react';
 
 import StudentLessonsView from '../../features/lessons/components/StudentLessonsView';
@@ -54,13 +55,39 @@ export const StudentDashboard: React.FC = () => {
   const selectedQuizId = searchParams.get('quizId') || '';
   const selectedExamId = searchParams.get('examId') || '';
 
+  const [isSolvingQuiz, setIsSolvingQuiz] = useState<boolean>(false);
+  const [isSolvingExam, setIsSolvingExam] = useState<boolean>(false);
+  const [pendingNavAction, setPendingNavAction] = useState<(() => void) | null>(null);
+
+  const hasUnsentQuizAnswers = React.useCallback((): boolean => {
+    if (!isSolvingQuiz || !selectedQuizId) return false;
+    try {
+      const draft = localStorage.getItem(`lms_quiz_draft_answers_${selectedQuizId}`);
+      if (!draft) return false;
+      const parsed = JSON.parse(draft);
+      return Boolean(parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0);
+    } catch {
+      return false;
+    }
+  }, [isSolvingQuiz, selectedQuizId]);
+
+  const executeOrConfirmNav = (action: () => void) => {
+    if (hasUnsentQuizAnswers()) {
+      setPendingNavAction(() => action);
+    } else {
+      action();
+    }
+  };
+
   const handleSelectTab = (tabId: string) => {
-    const nextParams: Record<string, string> = { tab: tabId };
-    if (selectedCourseId) nextParams.courseId = selectedCourseId;
-    if (selectedLessonId) nextParams.lessonId = selectedLessonId;
-    if (selectedQuizId) nextParams.quizId = selectedQuizId;
-    if (selectedExamId) nextParams.examId = selectedExamId;
-    setSearchParams(nextParams);
+    executeOrConfirmNav(() => {
+      const nextParams: Record<string, string> = { tab: tabId };
+      if (selectedCourseId) nextParams.courseId = selectedCourseId;
+      if (selectedLessonId) nextParams.lessonId = selectedLessonId;
+      if (selectedQuizId) nextParams.quizId = selectedQuizId;
+      if (selectedExamId) nextParams.examId = selectedExamId;
+      setSearchParams(nextParams);
+    });
   };
 
   const handleSelectExam = (examId: string) => {
@@ -81,19 +108,23 @@ export const StudentDashboard: React.FC = () => {
   };
 
   const handleSelectCourse = (courseId: string) => {
-    const targetTab = (activeTab === 'home' || activeTab === 'courses') ? 'lessons' : activeTab;
-    const nextParams: Record<string, string> = { tab: targetTab, courseId };
-    setSearchParams(nextParams);
-    setIsSolvingQuiz(false);
-    setCompletedLessonIds([]);
+    executeOrConfirmNav(() => {
+      const targetTab = (activeTab === 'home' || activeTab === 'courses') ? 'lessons' : activeTab;
+      const nextParams: Record<string, string> = { tab: targetTab, courseId };
+      setSearchParams(nextParams);
+      setIsSolvingQuiz(false);
+      setCompletedLessonIds([]);
+    });
   };
 
   const handleSelectLesson = (lessonId: string) => {
-    const nextParams: Record<string, string> = { tab: activeTab };
-    if (selectedCourseId) nextParams.courseId = selectedCourseId;
-    if (lessonId) nextParams.lessonId = lessonId;
-    setSearchParams(nextParams);
-    setIsSolvingQuiz(false);
+    executeOrConfirmNav(() => {
+      const nextParams: Record<string, string> = { tab: activeTab };
+      if (selectedCourseId) nextParams.courseId = selectedCourseId;
+      if (lessonId) nextParams.lessonId = lessonId;
+      setSearchParams(nextParams);
+      setIsSolvingQuiz(false);
+    });
   };
 
   const handleSelectQuiz = (quizId: string) => {
@@ -121,9 +152,6 @@ export const StudentDashboard: React.FC = () => {
     setSearchParams(nextParams);
     setIsSolvingExam(false);
   };
-
-  const [isSolvingQuiz, setIsSolvingQuiz] = useState<boolean>(false);
-  const [isSolvingExam, setIsSolvingExam] = useState<boolean>(false);
 
   const storageKey = user?.id ? `lms_completed_lessons_${user.id}` : 'lms_completed_lessons_guest';
 
@@ -348,6 +376,38 @@ const sortedLessons = React.useMemo(() => {
             {assessmentSubTab === 'exams-history' && <StudentExamHistory />}
           </div>
         )
+      )}
+      {pendingNavAction !== null && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
+              <AlertTriangle size={26} />
+            </div>
+            <h4 className="text-base font-extrabold text-slate-800">مغادرة الاختبار</h4>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+              لديك إجابات لم يتم تسليمها بعد. هل أنت متأكد أنك تريد الخروج؟
+            </p>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                onClick={() => setPendingNavAction(null)}
+                className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
+              >
+                متابعة الحل
+              </button>
+              <button
+                onClick={() => {
+                  const action = pendingNavAction;
+                  setPendingNavAction(null);
+                  action?.();
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+              >
+                الخروج
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </DashboardLayout>
     </>

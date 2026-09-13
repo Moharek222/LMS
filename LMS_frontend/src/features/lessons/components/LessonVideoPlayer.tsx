@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   AlertTriangle,
   Video,
@@ -10,6 +10,7 @@ import {
   Minimize2,
   ShieldAlert,
   Lock,
+  RotateCw,
 } from 'lucide-react';
 import { useLessonVideo } from '../hooks/useLessonVideo';
 import { useAuth } from '../../../context/useAuth';
@@ -42,12 +43,25 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   isCompletedSession = false,
 }) => {
   const { user } = useAuth();
-  const { data: videoData, isLoading, isError } = useLessonVideo(lessonId);
+  const { data: videoData, isLoading, isError, refetch, isFetching } = useLessonVideo(lessonId);
   const [isCinemaMode, setIsCinemaMode] = useState<boolean>(false);
   const [watermarkPosIndex, setWatermarkPosIndex] = useState<number>(0);
   const [isWindowBlurred, setIsWindowBlurred] = useState<boolean>(false);
 
-  
+  const hasAutoRefetchedRef = useRef<boolean>(false);
+  const videoSrc = videoData?.videoUrl;
+
+  useEffect(() => {
+    hasAutoRefetchedRef.current = false;
+  }, [lessonId, videoSrc]);
+
+  const handleVideoError = () => {
+    if (!hasAutoRefetchedRef.current) {
+      hasAutoRefetchedRef.current = true;
+      refetch();
+    }
+  };
+
   const studentName = user?.name || 'طالب المنصة';
   const studentCode = user?.phone || user?.id?.slice(-6) || 'STD-USER';
   const watermarkText = `🔒 ${studentName} | كود: ${studentCode}`;
@@ -102,7 +116,6 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   }
 
   const displayTitle = videoData?.title || lessonTitle || 'مشاهدة الدرس';
-  const videoSrc = videoData?.videoUrl;
 
   
   const watermarkPositions = [
@@ -246,6 +259,16 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
             <AlertTriangle size={36} className="text-red-500" />
             <p className="text-xs font-bold text-slate-200">تعذر تحميل رابط الفيديو</p>
             <p className="text-[11px] text-slate-400">يرجى التأكد من صلاحية الاشتراك أو المحاولة لاحقاً</p>
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-xs"
+              title="إعادة المحاولة"
+              aria-label="إعادة المحاولة"
+            >
+              {isFetching ? <Loader2 size={14} className="animate-spin" /> : <RotateCw size={14} />}
+              <span>إعادة المحاولة</span>
+            </button>
           </div>
         ) : !videoSrc ? (
           <div className="flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-2">
@@ -261,6 +284,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
               disablePictureInPicture
               playsInline
               onEnded={onVideoEnded}
+              onError={handleVideoError}
               onContextMenu={(e) => e.preventDefault()}
               className="w-full h-full object-contain pointer-events-auto"
               src={videoSrc}

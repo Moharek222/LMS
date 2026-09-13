@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, ChevronLeft } from 'lucide-react';
+import { User } from 'lucide-react';
 
 export interface JoinedStudent {
   id: string;

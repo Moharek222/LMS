@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertTriangle, ArrowRight, ArrowLeft, Send, Loader2 } from 'lucide-react';
-import type { StudentExamQuestion } from '../types/studentExam';
+import type { StudentExamQuestion } from '../types/exam';
 
 interface ExamQuestionCardProps {
   currentQuestion: StudentExamQuestion;
@@ -101,7 +101,7 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {(currentQuestion.options || []).map((optionText, optIdx) => {
+          {(currentQuestion.options || []).map((optionText: string, optIdx: number) => {
             const isSelected = currentAnswer === optionText;
             return (
               <div
