@@ -82,15 +82,15 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
           </button>
         </div>
 
-        {/* Printable Physical ID Card Box */}
+        
         <div
           id="printable-student-card"
           className="bg-gradient-to-br from-slate-900 via-teal-950 to-slate-900 text-white rounded-3xl p-6 border-2 border-[#0D8A82]/50 shadow-xl space-y-5 relative overflow-hidden print:m-0 print:shadow-none print:border-2 print:border-black"
         >
-          {/* Decorative Background Glow */}
+          
           <div className="absolute -top-12 -right-12 w-36 h-36 bg-[#0D8A82]/20 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Card Header */}
+          
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 p-1 flex items-center justify-center shadow-md overflow-hidden shrink-0">
@@ -99,7 +99,7 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
                   alt="شعار منصة الصادق"
                   className="w-full h-full object-contain"
                   onError={(e) => {
-                    // Fallback to GraduationCap if image fails
+                    
                     e.currentTarget.style.display = 'none';
                     if (e.currentTarget.parentElement) {
                       e.currentTarget.parentElement.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-graduation-cap text-teal-300"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>';
@@ -117,7 +117,7 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
             </span>
           </div>
 
-          {/* Student Info & QR Code */}
+          
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-2.5 flex-1">
               <div>
@@ -140,7 +140,7 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
               )}
             </div>
 
-            {/* High Definition QR Code Canvas */}
+            
             <div className="p-2.5 bg-white rounded-2xl border-2 border-teal-400/40 shadow-md shrink-0 flex flex-col items-center justify-center">
               <canvas ref={canvasRef} className="rounded-lg block" />
               <span className="text-[9px] font-mono font-bold text-slate-800 mt-1 dir-ltr">
@@ -149,7 +149,7 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
             </div>
           </div>
 
-          {/* Card Footer Banner */}
+          
           <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-semibold">
             <div className="flex items-center gap-1">
               <ShieldCheck size={13} className="text-teal-400" />
@@ -162,7 +162,7 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
           </div>
         </div>
 
-        {/* Modal Buttons */}
+       
         <div className="flex items-center gap-3 pt-2 print:hidden">
           <button
             type="button"

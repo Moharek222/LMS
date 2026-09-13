@@ -187,7 +187,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
           </div>
         </div>
 
-        {/* Stats Grid */}
+       
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
@@ -223,7 +223,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
         </div>
       </div>
 
-      {/* Guidelines & Rules Card (Replaces Questions Leak) */}
+      
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
         <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
           <Award size={20} className="text-[#0D8A82]" />

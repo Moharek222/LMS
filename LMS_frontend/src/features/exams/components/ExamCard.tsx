@@ -32,7 +32,7 @@ export const ExamCard: React.FC<ExamCardProps> = ({ exam, onStart }) => {
   return (
     <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between space-y-5">
       <div className="space-y-3">
-        {/* Header Badges */}
+       
         <div className="flex items-center justify-between gap-2">
           <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
             <FileCheck size={22} />
@@ -52,14 +52,14 @@ export const ExamCard: React.FC<ExamCardProps> = ({ exam, onStart }) => {
           </div>
         </div>
 
-        {/* Title */}
+        
         <div>
           <h3 className="text-base font-extrabold text-slate-800 line-clamp-2 leading-snug">
             {exam.title}
           </h3>
         </div>
 
-        {/* Details */}
+        
         <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 flex-wrap pt-1">
           <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200/60">
             <Clock size={15} className="text-[#0D8A82]" />
@@ -80,7 +80,7 @@ export const ExamCard: React.FC<ExamCardProps> = ({ exam, onStart }) => {
         </div>
       </div>
 
-      {/* Footer Action */}
+      
       <div className="pt-2 border-t border-slate-100">
         <button
           onClick={() => onStart?.(exam)}

@@ -94,7 +94,7 @@ export const StudentQuizHistory: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Header & Stats Bar */}
+      
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
@@ -111,7 +111,7 @@ export const StudentQuizHistory: React.FC = () => {
           </span>
         </div>
 
-        {/* Quick Stats Grid */}
+        
         <div className="grid grid-cols-3 gap-3 text-center">
           <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
             <span className="text-[11px] text-slate-500 font-bold block mb-1">المحاولات</span>
@@ -128,7 +128,7 @@ export const StudentQuizHistory: React.FC = () => {
         </div>
       </div>
 
-      {/* History Grid */}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {historyItems.map((item) => {
           const quizTitle = item.quizID?.title || 'اختبار قصير';
@@ -138,7 +138,7 @@ export const StudentQuizHistory: React.FC = () => {
               className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:shadow-md transition-shadow space-y-3 flex flex-col justify-between"
             >
               <div className="space-y-2.5">
-                {/* Title & Status Badge */}
+              
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <FileText size={18} className="text-[#0D8A82] shrink-0" />
@@ -157,7 +157,7 @@ export const StudentQuizHistory: React.FC = () => {
                   )}
                 </div>
 
-                {/* Score section (Raw score ONLY, no percentage/totalQuestions invented) */}
+                
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
                     <Award size={15} className="text-amber-500" />
@@ -167,7 +167,7 @@ export const StudentQuizHistory: React.FC = () => {
                 </div>
               </div>
 
-              {/* Submission Date */}
+              
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-medium">
                 <span className="flex items-center gap-1">
                   <Calendar size={13} />
@@ -180,7 +180,7 @@ export const StudentQuizHistory: React.FC = () => {
         })}
       </div>
 
-      {/* Server Pagination Controls */}
+      
       {totalPages > 1 && (
         <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex items-center justify-between gap-3">
           <button

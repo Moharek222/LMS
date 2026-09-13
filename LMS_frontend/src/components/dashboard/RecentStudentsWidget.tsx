@@ -71,8 +71,8 @@ export const RecentStudentsWidget: React.FC<RecentStudentsWidgetProps> = ({
           onClick={onViewAll}
           className="w-full flex items-center justify-center gap-1 text-xs font-bold text-[#0D8A82] hover:text-teal-700 transition cursor-pointer"
         >
-          <span>عرض جميع الطلاب</span>
-          <ChevronLeft size={16} />
+          {/* <span>عرض جميع الطلاب</span> */}
+          {/* <ChevronLeft size={16} /> */}
         </button>
       </div>
     </div>

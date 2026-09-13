@@ -56,7 +56,6 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     userAnswersRef.current = userAnswers;
   }, [userAnswers]);
 
-  // Load draft answers from localStorage on mount
   useEffect(() => {
     try {
       const savedDraft = localStorage.getItem(draftAnswersKey);
@@ -71,7 +70,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     }
   }, [draftAnswersKey]);
 
-  // Check scheduled start time (startAt)
+
   useEffect(() => {
     if (!exam || !exam.startAt) {
       setUntilStartLeft(null);
@@ -99,13 +98,13 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     }
   }, [exam]);
 
-  // Initialize and persist exam session timer
+  
   useEffect(() => {
     if (!exam || typeof exam.duration !== 'number' || exam.duration <= 0 || submissionResult || timeExpiredNoAnswers) {
       return;
     }
 
-    // Do not initialize session if exam startAt is still in the future
+   
     if (untilStartLeft !== null && untilStartLeft > 0) {
       return;
     }
@@ -155,7 +154,6 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
       return;
     }
 
-    // Send non-empty studentAnswer for all questions to pass backend Mongoose validation
     const answersPayload = (exam?.questions || []).map((q) => {
       const ans = userAnswersRef.current[q._id];
       const validAns = ans && ans.trim() ? ans.trim() : 'لم تتم الإجابة';
@@ -196,7 +194,6 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     handleDoSubmitRef.current = handleDoSubmit;
   });
 
-  // Active countdown timer & Auto-submit on timeout
   useEffect(() => {
     if (timeLeft === null || submissionResult || timeExpiredNoAnswers || submitExamMutation.isPending || (untilStartLeft !== null && untilStartLeft > 0)) {
       return;
@@ -245,7 +242,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
       return updated;
     });
 
-    // Briefly trigger visual save indicator
+    
     setSaveIndicator(true);
     setTimeout(() => setSaveIndicator(false), 1500);
   };
@@ -342,7 +339,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     );
   }
 
-  // Waiting screen for scheduled start time
+  
   if (untilStartLeft !== null && untilStartLeft > 0) {
     const formattedStartDate = exam.startAt
       ? new Date(exam.startAt).toLocaleString('ar-EG', {
@@ -392,7 +389,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     );
   }
 
-  // Submission Result View
+  
   if (submissionResult) {
     const isPendingGrade = submissionResult.status === 'PENDING';
     const score = submissionResult.score ?? 0;
@@ -516,7 +513,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Top Header Card */}
+      
       <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -539,7 +536,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             </div>
           </div>
 
-          {/* Timer Display */}
+          
           {timeLeft !== null && (
             <div
               className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl border shadow-xs transition-all shrink-0 self-end sm:self-auto ${
@@ -566,7 +563,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           )}
         </div>
 
-        {/* Answer Progress Bar */}
+        
         <div className="space-y-1.5 pt-2 border-t border-slate-100">
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
             <span>تقدم الحل: تمت الإجابة على {answeredCount} من أصل {totalQuestions} سؤالاً</span>
@@ -581,7 +578,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
         </div>
       </div>
 
-      {/* Main Question Card */}
+      
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
         {submitErrorMessage && (
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center justify-between gap-3">
@@ -598,7 +595,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           </div>
         )}
 
-        {/* Question Header */}
+        
         <div className="flex items-start gap-3.5 pb-4 border-b border-slate-100">
           <span className="w-9 h-9 rounded-xl bg-[#0D8A82] text-white font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
             {currentQuestionIndex + 1}
@@ -620,7 +617,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           </div>
         </div>
 
-        {/* Question Image if present */}
+        
         {currentQuestion.questionImage?.trim() && (
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex items-center justify-center overflow-hidden">
             <img
@@ -634,7 +631,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           </div>
         )}
 
-        {/* Question Input Section */}
+        
         {currentQuestion.type === 'ESSAY' ? (
           <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-700">
@@ -691,7 +688,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           </div>
         )}
 
-        {/* Footer Actions */}
+        
         <div className="flex items-center justify-between gap-3 pt-6 border-t border-slate-100 flex-wrap">
           <button
             onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
@@ -729,7 +726,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
         </div>
       </div>
 
-      {/* Submit Confirmation Modal */}
+    
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-xl space-y-5 text-center">

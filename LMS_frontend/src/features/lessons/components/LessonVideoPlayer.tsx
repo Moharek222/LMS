@@ -47,12 +47,12 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const [watermarkPosIndex, setWatermarkPosIndex] = useState<number>(0);
   const [isWindowBlurred, setIsWindowBlurred] = useState<boolean>(false);
 
-  // Student Watermark Identifier
+  
   const studentName = user?.name || 'طالب المنصة';
   const studentCode = user?.phone || user?.id?.slice(-6) || 'STD-USER';
   const watermarkText = `🔒 ${studentName} | كود: ${studentCode}`;
 
-  // 1. Dynamic Watermark Position Interval (moves every 9 seconds)
+  
   useEffect(() => {
     const interval = setInterval(() => {
       setWatermarkPosIndex((prev) => (prev + 1) % 5);
@@ -60,14 +60,13 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // 2. Anti-DevTools & Anti-Screen Capture Key Listener & Window Focus Protection
+ 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isCinemaMode) {
         setIsCinemaMode(false);
       }
 
-      // Block F12, PrintScreen, Ctrl+Shift+I, Ctrl+U, Ctrl+S
       if (
         e.key === 'F12' ||
         e.key === 'PrintScreen' ||
@@ -105,7 +104,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const displayTitle = videoData?.title || lessonTitle || 'مشاهدة الدرس';
   const videoSrc = videoData?.videoUrl;
 
-  // Watermark Positioning Classes
+  
   const watermarkPositions = [
     'top-4 right-4',
     'bottom-12 left-4',
@@ -122,7 +121,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
           : 'bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-5 transition-all duration-300'
       }
     >
-      {/* Header Bar */}
+      
       <div
         className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b ${
           isCinemaMode ? 'border-slate-800' : 'border-slate-100'
@@ -172,7 +171,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
           </div>
         </div>
 
-        {/* Action Controls */}
+        
         <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
           <button
             onClick={() => setIsCinemaMode((prev) => !prev)}
@@ -228,7 +227,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
         </div>
       </div>
 
-      {/* Protected Video Container */}
+      
       <div
         onContextMenu={(e) => e.preventDefault()}
         className={
@@ -269,7 +268,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
               متصفحك لا يدعم تشغيل الفيديو المباشر.
             </video>
 
-            {/* Dynamic Floating Watermark Overlay */}
+            
             <div
               className={`absolute transition-all duration-700 ease-in-out pointer-events-none select-none z-30 ${
                 watermarkPositions[watermarkPosIndex]
@@ -281,7 +280,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
               </div>
             </div>
 
-            {/* Window Blur Security Overlay */}
+        
             {isWindowBlurred && (
               <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md z-40 flex flex-col items-center justify-center text-center p-6 space-y-3 animate-in fade-in duration-200">
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40">

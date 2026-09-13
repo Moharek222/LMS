@@ -43,15 +43,15 @@ export const DirectVideoUploader: React.FC<DirectVideoUploaderProps> = ({
     setErrorMsg(null);
 
     try {
-      // Step 1: Generate presigned upload URL from Backend
+      
       const { uploadUrl, fileKey } = await generateUploadUrl(selectedFile.type);
 
-      // Step 2: Upload file directly to Cloud R2/S3 storage with progress tracking
+      
       await uploadVideoFileToPresignedUrl(uploadUrl, selectedFile, (percent) => {
         setUploadProgress(percent);
       });
 
-      // Step 3: Success notification & callback to parent form
+    
       setUploadedKey(fileKey);
       onVideoUploaded(fileKey);
       toast.success('تم رفع فيديو الدرس بنجاح إلى السيرفر السحابي! 🎥');
@@ -89,7 +89,7 @@ export const DirectVideoUploader: React.FC<DirectVideoUploaderProps> = ({
         className="hidden"
       />
 
-      {/* Upload Box / Dropzone */}
+      
       {!selectedFile && !uploadedKey ? (
         <div
           onClick={() => fileInputRef.current?.click()}
@@ -106,7 +106,7 @@ export const DirectVideoUploader: React.FC<DirectVideoUploaderProps> = ({
           </div>
         </div>
       ) : (
-        /* Selected File or Upload Status Card */
+    
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -137,7 +137,7 @@ export const DirectVideoUploader: React.FC<DirectVideoUploaderProps> = ({
             )}
           </div>
 
-          {/* Upload Progress Bar */}
+          
           {isUploading && (
             <div className="space-y-1.5 pt-2 border-t border-slate-200/80">
               <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
@@ -156,7 +156,7 @@ export const DirectVideoUploader: React.FC<DirectVideoUploaderProps> = ({
             </div>
           )}
 
-          {/* Success Banner */}
+          
           {uploadedKey && !isUploading && (
             <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2">
               <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
@@ -164,7 +164,7 @@ export const DirectVideoUploader: React.FC<DirectVideoUploaderProps> = ({
             </div>
           )}
 
-          {/* Action Upload Trigger Button */}
+      
           {selectedFile && !uploadedKey && !isUploading && (
             <button
               type="button"

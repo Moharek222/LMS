@@ -32,7 +32,7 @@ export const StudentGradebookCard: React.FC = () => {
 
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
-      {/* Header */}
+      
       <div className="flex items-center justify-between pb-4 border-b border-slate-100 flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -61,9 +61,9 @@ export const StudentGradebookCard: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* KPI Cards */}
+          
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Exam KPI */}
+            
             <div className="bg-teal-50/60 rounded-2xl p-4 border border-teal-100 space-y-1">
               <div className="flex items-center justify-between text-[#0D8A82]">
                 <span className="text-[11px] font-bold">الامتحانات الشاملة</span>
@@ -76,7 +76,7 @@ export const StudentGradebookCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Quiz KPI */}
+           
             <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-100 space-y-1">
               <div className="flex items-center justify-between text-amber-700">
                 <span className="text-[11px] font-bold">الكويزات القصيرة</span>
@@ -89,7 +89,7 @@ export const StudentGradebookCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Overall Aggregate */}
+            
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-1">
               <div className="flex items-center justify-between text-slate-600">
                 <span className="text-[11px] font-bold">إجمالي التقييمات المسجلة</span>
@@ -103,7 +103,7 @@ export const StudentGradebookCard: React.FC = () => {
             </div>
           </div>
 
-          {/* Recent Exam Submissions List */}
+          
           {exams.length > 0 && (
             <div className="space-y-3">
               <h4 className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">

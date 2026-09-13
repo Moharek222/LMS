@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import {
   QrCode,
   X,
@@ -42,19 +43,14 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
   const [mode, setMode] = useState<'camera' | 'manual'>('camera');
   const [scannedInput, setScannedInput] = useState('');
-  const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastScannedId, setLastScannedId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sessionLog, setSessionLog] = useState<ScannedItemLog[]>([]);
 
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const scanningRef = useRef<boolean>(false);
   const cooldownRef = useRef<boolean>(false);
 
- 
   const playBeep = () => {
     if (!soundEnabled) return;
     try {
@@ -64,7 +60,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime); // 880Hz A5 note
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
       gain.gain.setValueAtTime(0.15, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
       osc.connect(gain);
@@ -72,11 +68,10 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
       osc.start();
       osc.stop(ctx.currentTime + 0.18);
     } catch {
-      // Ignore audio errors if blocked by browser policy
+      // Ignore audio errors
     }
   };
 
-  
   const extractStudentId = (raw: string): string => {
     const trimmed = raw.trim();
     if (!trimmed) return '';
@@ -91,13 +86,26 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     return trimmed;
   };
 
-  
+  const isMongoId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
+
   const processAttendance = (rawId: string) => {
     const studentId = extractStudentId(rawId);
     if (!studentId || recordAttendanceMutation.isPending || cooldownRef.current) return;
 
-    cooldownRef.current = true;
     setErrorMsg(null);
+
+    if (!isMongoId(studentId)) {
+      playBeep();
+      const msg =
+        'معرف الطالب غير صحيح. يرجى إدخال كود الطالب (ID المكون من 24 عنصر) أو مسح كود الـ QR. (ملاحظة: أكواد الوصول مثل ' +
+        studentId +
+        ' هي أكواد تفعيل وليست ID الحضور)';
+      setErrorMsg(msg);
+      toast.error(msg);
+      return;
+    }
+
+    cooldownRef.current = true;
 
     recordAttendanceMutation.mutate(
       { groupId, studentId },
@@ -120,7 +128,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
           setScannedInput('');
 
-          
           setTimeout(() => {
             cooldownRef.current = false;
             setLastScannedId(null);
@@ -139,99 +146,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     );
   };
 
-  
-  useEffect(() => {
-    if (!isOpen || mode !== 'camera') {
-      stopCamera();
-      return;
-    }
-
-    startCamera();
-
-    return () => {
-      stopCamera();
-    };
-  }, [isOpen, mode]);
-
-  const startCamera = async () => {
-    setCameraError(null);
-    setIsCameraActive(false);
-
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('متصفحك لا يدعم الوصول للكاميرا المباشرة.');
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-      });
-
-      mediaStreamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setIsCameraActive(true);
-        startQrDetectionLoop();
-      }
-    } catch (err: unknown) {
-      setIsCameraActive(false);
-      const msg = err instanceof Error ? err.message : 'تعذر تشغيل الكاميرا. يرجى التأكد من السماح بالصلاحيات.';
-      setCameraError(msg);
-    }
-  };
-
-  const stopCamera = () => {
-    scanningRef.current = false;
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      mediaStreamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setIsCameraActive(false);
-  };
-
-  
-  const startQrDetectionLoop = () => {
-    scanningRef.current = true;
-
-    const BarcodeDetectorClass = (window as unknown as { BarcodeDetector?: new (options?: { formats: string[] }) => { detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue: string }>> } }).BarcodeDetector;
-
-    if (!BarcodeDetectorClass) {
-      
-      setCameraError('الماسح النمطي التلقائي يعمل في وضع القارئ السريع. يرجى تمرير الكارت أمام القارئ.');
-      return;
-    }
-
-    const detector = new BarcodeDetectorClass({ formats: ['qr_code', 'code_128', 'ean_13'] });
-
-    const detectFrame = async () => {
-      if (!scanningRef.current || !videoRef.current) return;
-
-      try {
-        if (videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA && !cooldownRef.current) {
-          const barcodes = await detector.detect(videoRef.current);
-          if (barcodes && barcodes.length > 0) {
-            const rawVal = barcodes[0].rawValue;
-            if (rawVal) {
-              processAttendance(rawVal);
-            }
-          }
-        }
-      } catch {
-        // Ignore detection errors per frame
-      }
-
-      if (scanningRef.current) {
-        requestAnimationFrame(detectFrame);
-      }
-    };
-
-    requestAnimationFrame(detectFrame);
-  };
-
   if (!isOpen) return null;
 
   const handleManualSubmit = (e: React.FormEvent) => {
@@ -243,7 +157,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-       
+        
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -305,41 +219,44 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
         {mode === 'camera' ? (
           <div className="space-y-4 flex-1 overflow-y-auto">
             <div className="relative rounded-2xl bg-slate-950 p-2 border-2 border-slate-800 flex flex-col items-center justify-center min-h-64 overflow-hidden">
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                className={`w-full h-64 object-cover rounded-xl transition ${isCameraActive ? 'opacity-100' : 'opacity-0'}`}
-              />
-
-              {!isCameraActive && !cameraError && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center space-y-2 text-center p-4">
-                  <Loader2 size={32} className="animate-spin text-[#0D8A82]" />
-                  <span className="text-xs font-bold text-slate-300">جاري تشغيل الكاميرا...</span>
-                </div>
-              )}
-
-              {cameraError && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 text-center p-6 bg-slate-900">
+              {cameraError ? (
+                <div className="flex flex-col items-center justify-center space-y-3 text-center p-6 bg-slate-900 w-full h-64 rounded-xl">
                   <AlertCircle size={32} className="text-rose-500" />
                   <p className="text-xs font-bold text-slate-300 max-w-xs">{cameraError}</p>
                   <button
                     type="button"
-                    onClick={startCamera}
+                    onClick={() => setCameraError(null)}
                     className="px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer flex items-center gap-1.5"
                   >
                     <RefreshCw size={14} />
-                    <span>إعادة التشغيل</span>
+                    <span>إعادة المحاولة</span>
                   </button>
                 </div>
-              )}
-
-              
-              {isCameraActive && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-48 h-48 rounded-2xl border-2 border-dashed border-[#0D8A82] relative flex items-center justify-center shadow-2xl">
-                    <div className="absolute inset-x-2 h-0.5 bg-[#0D8A82] shadow-[0_0_12px_#0D8A82] animate-pulse top-1/2 -translate-y-1/2" />
-                  </div>
+              ) : (
+                <div className="w-full h-64 rounded-xl overflow-hidden">
+                  <Scanner
+                    onScan={(result) => {
+                      if (result && result.length > 0 && result[0].rawValue) {
+                        processAttendance(result[0].rawValue);
+                      }
+                    }}
+                    onError={(err) => {
+                      if (err) {
+                        const msg = typeof err === 'string' ? err : err.message || 'تعذر تشغيل كاميرا المسح الضوئي';
+                        setCameraError(msg);
+                      }
+                    }}
+                    components={{
+                      finder: true,
+                    }}
+                    constraints={{
+                      facingMode: 'environment',
+                    }}
+                    styles={{
+                      container: { width: '100%', height: '100%', borderRadius: '0.75rem', overflow: 'hidden' },
+                      video: { borderRadius: '0.75rem', objectFit: 'cover' },
+                    }}
+                  />
                 </div>
               )}
             </div>
@@ -353,7 +270,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           <form onSubmit={handleManualSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700">
-                امسح الكود بالقارئ الخارجي أو أدخل كود الطالب
+                امسح الكود بالقارئ الخارجي أو أدخل كود الطالب المكون من 24 عنصر
               </label>
               <div className="relative">
                 <input
@@ -361,11 +278,14 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
                   autoFocus
                   value={scannedInput}
                   onChange={(e) => setScannedInput(e.target.value)}
-                  placeholder="امسح كارت الطالب أو أدخل الكود..."
+                  placeholder="امسح كارت الـ QR بالقارئ الخارجي أو أدخل الـ ID (24 عنصر)..."
                   className="w-full pl-4 pr-10 py-3.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition"
                 />
                 <QrCode size={18} className="absolute right-3.5 top-4 text-slate-400" />
               </div>
+              <p className="text-[11px] text-slate-500 font-medium">
+                💡 الـ ID المكون من 24 عنصر يوجد في كود الـ QR للطالب أو صفحته الشخصية. (أكواد التفعيل مثل FHJ22U6V ليست ID حضور).
+              </p>
             </div>
 
             <button

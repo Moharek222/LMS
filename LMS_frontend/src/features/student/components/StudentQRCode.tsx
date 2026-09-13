@@ -30,19 +30,17 @@ export const StudentQRCode: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Scale canvas for sharp rendering
-    const moduleSize = 8; // Size of each QR cell
-    const margin = 16; // White quiet zone margin
+    const moduleSize = 8; 
+    const margin = 16;
     const totalSize = size * moduleSize + margin * 2;
 
     canvas.width = totalSize;
     canvas.height = totalSize;
 
-    // Background white
+
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, totalSize, totalSize);
 
-    // Draw QR Modules (Teal/Dark Navy color for modern look)
     ctx.fillStyle = '#091523';
 
     for (let r = 0; r < size; r++) {
@@ -63,7 +61,7 @@ export const StudentQRCode: React.FC = () => {
     if (!canvas || !isQrGenerated || !studentId) return;
 
     try {
-      // Create a high-resolution export canvas with title & branding for PNG download
+    
       const exportCanvas = document.createElement('canvas');
       const padding = 32;
       const titleHeight = 80;
@@ -76,11 +74,11 @@ export const StudentQRCode: React.FC = () => {
       const ctx = exportCanvas.getContext('2d');
       if (!ctx) return;
 
-      // Draw white background card
+      
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-      // Draw subtle border line
+
       ctx.strokeStyle = '#CBD5E1';
       ctx.lineWidth = 2;
       ctx.strokeRect(10, 10, totalWidth - 20, totalHeight - 20);
@@ -95,10 +93,10 @@ export const StudentQRCode: React.FC = () => {
       ctx.font = 'bold 15px sans-serif';
       ctx.fillText(studentName ? `الطالب: ${studentName}` : `المعرف: ${studentId}`, totalWidth / 2, 70);
 
-      // Draw QR Canvas
+      
       ctx.drawImage(canvas, padding, titleHeight + padding);
 
-      // Convert to PNG Blob / Data URL and trigger local file save
+      
       const dataUrl = exportCanvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = dataUrl;
@@ -107,7 +105,7 @@ export const StudentQRCode: React.FC = () => {
       link.click();
       document.body.removeChild(link);
     } catch {
-      // Direct canvas fallback if export canvas fails
+   
       const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = dataUrl;
@@ -143,7 +141,7 @@ export const StudentQRCode: React.FC = () => {
 
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-5 flex flex-col items-center text-center">
-      {/* Title Header */}
+      
       <div className="flex items-center gap-2.5">
         <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shadow-2xs shrink-0">
           <QrCode size={22} />
@@ -156,7 +154,7 @@ export const StudentQRCode: React.FC = () => {
         </div>
       </div>
 
-      {/* QR Canvas Display Container */}
+      
       <div className="p-4 rounded-3xl bg-slate-50 border border-slate-200/90 shadow-2xs inline-block">
         <canvas
           ref={canvasRef}
@@ -164,7 +162,7 @@ export const StudentQRCode: React.FC = () => {
         />
       </div>
 
-      {/* Instructional Messages */}
+      
       <div className="space-y-1.5 max-w-md mx-auto">
         <p className="text-xs font-bold text-slate-700 flex items-center justify-center gap-1.5">
           <ShieldCheck size={16} className="text-[#0D8A82] shrink-0" />
@@ -175,7 +173,7 @@ export const StudentQRCode: React.FC = () => {
         </p>
       </div>
 
-      {/* Action Buttons */}
+     
       <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
         <button
           type="button"

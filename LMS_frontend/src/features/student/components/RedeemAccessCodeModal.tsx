@@ -62,7 +62,7 @@ export const RedeemAccessCodeModal: React.FC<RedeemAccessCodeModalProps> = ({
       }`}
     >
       <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-150 relative">
-        {/* Header */}
+        
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div
