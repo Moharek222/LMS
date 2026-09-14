@@ -15,6 +15,7 @@ export interface IExam extends mongoose.Document {
     duration: number;
     questions: IQuestion[];
     isActive: boolean;
+    isPublished: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -95,6 +96,10 @@ const examSchema = new mongoose.Schema<IExam>({
             },
             message: "At least one question is required"
         }
+    },
+    isPublished: {
+        type: Boolean,
+        default: false
     },
     isActive: {
         type: Boolean,

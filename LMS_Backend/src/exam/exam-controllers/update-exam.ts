@@ -77,6 +77,7 @@ interface IRequest {
     questions?: IQuestion[];
     duration?: number;
     isActive?: boolean;
+    isPublished?: boolean;
 }
 
 interface IResponse {
@@ -101,6 +102,7 @@ export const updateExam: RequestHandler<{ examID: string }, IResponse, IRequest>
         if (questions !== undefined) updateData.questions = questions;
         if (duration !== undefined) updateData.duration = duration;
         if (typeof isActive === "boolean") updateData.isActive = isActive;
+        if (typeof req.body.isPublished === "boolean") updateData.isPublished = req.body.isPublished;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(StatusCodes.BAD_REQUEST).json({
