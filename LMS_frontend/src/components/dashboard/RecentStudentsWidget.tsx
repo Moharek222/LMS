@@ -26,7 +26,7 @@ export const RecentStudentsWidget: React.FC<RecentStudentsWidgetProps> = ({
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
           {students.length === 0 ? (
             <div className="text-center py-6 text-xs text-slate-400 font-semibold">
               لا يوجد طلاب منضمون حديثاً
