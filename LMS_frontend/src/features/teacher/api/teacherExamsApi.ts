@@ -25,7 +25,15 @@ export const createExam = async (
     `/api/courses/${courseId}/exams`,
     payload
   );
-  return response.data.data;
+  const createdExam = response.data.data;
+  if (createdExam?._id) {
+    try {
+      return await updateExam(courseId, createdExam._id, { isPublished: true });
+    } catch {
+      return createdExam;
+    }
+  }
+  return createdExam;
 };
 
 export const updateExam = async (

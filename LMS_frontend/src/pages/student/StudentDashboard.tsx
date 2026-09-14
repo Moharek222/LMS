@@ -187,7 +187,10 @@ export const StudentDashboard: React.FC = () => {
     refetch: refetchLessons,
   } = useCourseLessons(selectedCourseId);
 
-  const effectiveCourses: Array<{ _id: string; title: string }> = coursesData || [];
+  const effectiveCourses: Array<{ _id: string; title: string; isPublished?: boolean }> = React.useMemo(() => {
+    if (!coursesData) return [];
+    return coursesData.filter((c) => c.isPublished !== false);
+  }, [coursesData]);
 
   React.useEffect(() => {
     if (effectiveCourses.length > 0 && !selectedCourseId && (activeTab === 'lessons' || activeTab === 'courses' || activeTab === 'quizzes')) {

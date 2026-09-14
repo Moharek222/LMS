@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Award, Plus, Loader2, AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
 import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useCourseExams } from '../../exams/hooks/useCourseExams';
+import { useUpdateExam } from '../hooks/useUpdateExam';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
 import type { ExamListItem } from '../../exams/types/exam';
@@ -38,7 +39,6 @@ export const TeacherExamManager: React.FC = () => {
     refetch: refetchExams,
   } = useCourseExams(selectedCourseId);
 
-  // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [editingExamId, setEditingExamId] = useState<string>('');
@@ -55,6 +55,76 @@ export const TeacherExamManager: React.FC = () => {
   // Stats Modal State
   const [statsExamId, setStatsExamId] = useState<string>('');
   const [statsExamTitle, setStatsExamTitle] = useState<string>('');
+
+  const updateExamMutation = useUpdateExam();
+  const [togglingExamId, setTogglingExamId] = useState<string>('');
+
+  const [draftExamsMap, setDraftExamsMap] = useState<Record<string, ExamListItem>>(() => {
+    try {
+      const saved = localStorage.getItem('teacher_draft_exams');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const handleTogglePublish = (examId: string, currentStatus: boolean) => {
+    if (!selectedCourseId || !examId) return;
+
+    const nextStatus = !currentStatus;
+    setTogglingExamId(examId);
+
+    updateExamMutation.mutate(
+      {
+        courseId: selectedCourseId,
+        examId,
+        payload: { isPublished: nextStatus, isActive: true },
+      },
+      {
+        onSuccess: (updatedExam) => {
+          setTogglingExamId('');
+          if (updatedExam) {
+            setDraftExamsMap((prev) => {
+              const nextMap = { ...prev };
+              if (updatedExam.isPublished === false) {
+                nextMap[updatedExam._id] = updatedExam;
+              } else {
+                delete nextMap[updatedExam._id];
+              }
+              try {
+                localStorage.setItem('teacher_draft_exams', JSON.stringify(nextMap));
+              } catch {}
+              return nextMap;
+            });
+          }
+          toast.success(
+            nextStatus
+              ? 'تم نشر الامتحان بنجاح وأصبح متاحاً للطلاب 🟢✨'
+              : 'تم إخفاء الامتحان بنجاح وأصبح غير ظاهر للطلاب (مسودة) 🔴🔒'
+          );
+        },
+        onError: (err) => {
+          setTogglingExamId('');
+          toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء تغيير حالة نشر الامتحان'));
+        },
+      }
+    );
+  };
+
+  const handleExamCreated = (newExam: ExamListItem) => {
+    if (newExam && newExam._id) {
+      if (newExam.isPublished === false) {
+        setDraftExamsMap((prev) => {
+          const nextMap = { ...prev, [newExam._id]: newExam };
+          try {
+            localStorage.setItem('teacher_draft_exams', JSON.stringify(nextMap));
+          } catch {}
+          return nextMap;
+        });
+      }
+      refetchExams();
+    }
+  };
 
   const handleOpenEditModal = (examId: string) => {
     setEditingExamId(examId);
@@ -76,6 +146,21 @@ export const TeacherExamManager: React.FC = () => {
     setStatsExamId(examId);
     setStatsExamTitle(examTitle);
   };
+
+  const effectiveExams = React.useMemo(() => {
+    const map = new Map<string, ExamListItem>();
+    if (exams) {
+      for (const ex of exams) {
+        map.set(ex._id, ex);
+      }
+    }
+    for (const draft of Object.values(draftExamsMap)) {
+      if (draft.courseID === selectedCourseId) {
+        map.set(draft._id, draft);
+      }
+    }
+    return Array.from(map.values());
+  }, [exams, draftExamsMap, selectedCourseId]);
 
   return (
     <div className="space-y-6">
@@ -196,7 +281,7 @@ export const TeacherExamManager: React.FC = () => {
             <span>إعادة المحاولة</span>
           </button>
         </div>
-      ) : !exams || exams.length === 0 ? (
+      ) : effectiveExams.length === 0 ? (
         <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-xs text-center space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100">
             <Award size={28} />
@@ -214,17 +299,19 @@ export const TeacherExamManager: React.FC = () => {
               <span>الامتحانات المتاحة للكورس المحدد</span>
             </h3>
             <span className="text-xs font-bold text-slate-400">
-              عدد الامتحانات: {exams.length}
+              عدد الامتحانات: {effectiveExams.length}
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {exams.map((exam: ExamListItem) => (
+            {effectiveExams.map((exam: ExamListItem) => (
               <ExamCard
                 key={exam._id}
                 exam={exam}
                 onEdit={handleOpenEditModal}
                 onDeactivate={handleOpenDeactivateModal}
+                onTogglePublish={handleTogglePublish}
+                isToggling={togglingExamId === exam._id}
                 onViewSubmissions={handleOpenSubmissionsModal}
                 onViewStats={handleOpenStatsModal}
               />
@@ -238,6 +325,7 @@ export const TeacherExamManager: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         selectedCourseId={selectedCourseId}
+        onExamCreated={handleExamCreated}
       />
 
       <EditExamModal
@@ -262,7 +350,6 @@ export const TeacherExamManager: React.FC = () => {
         deactivatingExamTitle={deactivatingExamTitle}
       />
 
-      {/* Submissions Modal */}
       {submissionsExamId && (
         <ExamSubmissionsModal
           isOpen={Boolean(submissionsExamId)}
@@ -276,7 +363,6 @@ export const TeacherExamManager: React.FC = () => {
         />
       )}
 
-      {/* Stats Modal */}
       {statsExamId && (
         <ExamStatsModal
           isOpen={Boolean(statsExamId)}

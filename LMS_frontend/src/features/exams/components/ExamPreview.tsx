@@ -130,6 +130,8 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
       })
     : '';
 
+  const isExamActive = exam?.isActive !== false && exam?.isPublished !== false;
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
@@ -153,7 +155,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
                   <span className="px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-300">
                     مجدول (يبدأ {formattedStartTime})
                   </span>
-                ) : exam.isActive ? (
+                ) : isExamActive ? (
                   <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200">
                     نشط ومتاح
                   </span>
@@ -178,7 +180,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
             )}
             <button
               onClick={onStartSolving}
-              disabled={!exam.isActive || isScheduledInFuture}
+              disabled={!isExamActive || isScheduledInFuture}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition enabled:cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play size={16} />
@@ -257,7 +259,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
         <div className="pt-2 text-center">
           <button
             onClick={onStartSolving}
-            disabled={!exam.isActive || isScheduledInFuture}
+            disabled={!isExamActive || isScheduledInFuture}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-[#0D8A82] text-white text-sm font-extrabold hover:bg-teal-700 active:scale-[0.99] transition cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Play size={18} />

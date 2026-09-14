@@ -1,11 +1,13 @@
 import React from 'react';
-import { Award, Clock, Calendar, CheckCircle2, XCircle, Edit, FileCheck, BarChart3 } from 'lucide-react';
+import { Award, Clock, Calendar, CheckCircle2, XCircle, Edit, FileCheck, BarChart3, Globe, Loader2 } from 'lucide-react';
 import type { ExamListItem } from '../../../exams/types/exam';
 
 interface ExamCardProps {
   exam: ExamListItem;
   onEdit: (examId: string) => void;
-  onDeactivate: (examId: string, examTitle: string) => void;
+  onDeactivate?: (examId: string, examTitle: string) => void;
+  onTogglePublish?: (examId: string, currentStatus: boolean) => void;
+  isToggling?: boolean;
   onViewSubmissions?: (examId: string, examTitle: string) => void;
   onViewStats?: (examId: string, examTitle: string) => void;
 }
@@ -14,6 +16,8 @@ export const ExamCard: React.FC<ExamCardProps> = ({
   exam,
   onEdit,
   onDeactivate,
+  onTogglePublish,
+  isToggling = false,
   onViewSubmissions,
   onViewStats,
 }) => {
@@ -25,6 +29,8 @@ export const ExamCard: React.FC<ExamCardProps> = ({
       })
     : '';
 
+  const isPublished = exam.isPublished ?? exam.isActive;
+
   return (
     <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between space-y-5">
       <div className="space-y-3">
@@ -32,15 +38,15 @@ export const ExamCard: React.FC<ExamCardProps> = ({
           <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
             <Award size={20} />
           </div>
-          {exam.isActive ? (
+          {isPublished ? (
             <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
               <CheckCircle2 size={13} />
-              <span>نشط ومتاح</span>
+              <span>منشور ومتاح للطالب</span>
             </span>
           ) : (
             <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
               <XCircle size={13} />
-              <span>غير نشط</span>
+              <span>غير منشور (مخفي عن الطلاب)</span>
             </span>
           )}
         </div>
@@ -100,23 +106,38 @@ export const ExamCard: React.FC<ExamCardProps> = ({
             <Edit size={14} />
             <span>تعديل</span>
           </button>
-          {exam.isActive ? (
-            <button
-              type="button"
-              onClick={() => onDeactivate(exam._id, exam.title)}
-              className="w-1/2 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
-            >
-              <XCircle size={14} />
-              <span>إيقاف</span>
-            </button>
-          ) : (
-            <button
-              disabled
-              className="w-1/2 py-2 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed opacity-75"
-            >
-              متوقف
-            </button>
-          )}
+
+          <button
+            type="button"
+            disabled={isToggling}
+            onClick={() => {
+              if (onTogglePublish) {
+                onTogglePublish(exam._id, isPublished);
+              } else if (onDeactivate) {
+                onDeactivate(exam._id, exam.title);
+              }
+            }}
+            className={`w-1/2 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 border shadow-2xs ${
+              isPublished
+                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200'
+                : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200'
+            } disabled:opacity-50`}
+            title={isPublished ? 'انقر لإلغاء نشر الامتحان وحجبه عن الطلاب' : 'انقر ونشر الامتحان وإتاحته للطلاب'}
+          >
+            {isToggling ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : isPublished ? (
+              <>
+                <Globe size={14} />
+                <span>منشور 🟢</span>
+              </>
+            ) : (
+              <>
+                <Globe size={14} />
+                <span>غير منشور 🔴</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

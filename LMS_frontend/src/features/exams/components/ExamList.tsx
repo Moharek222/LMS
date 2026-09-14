@@ -20,6 +20,11 @@ export const ExamList: React.FC<ExamListProps> = ({
 }) => {
   const { data: exams, isLoading, isError, error, refetch } = useCourseExams(courseId);
 
+  const visibleExams = React.useMemo(() => {
+    if (!exams) return [];
+    return exams.filter((exam) => exam.isActive !== false && exam.isPublished !== false);
+  }, [exams]);
+
   const courseFilterSection = courses && courses.length > 0 && (
     <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs space-y-2">
       <span className="text-xs font-bold text-slate-500 block">اختر الكورس لعرض الامتحانات الشاملة الخاصة به:</span>
@@ -109,7 +114,7 @@ export const ExamList: React.FC<ExamListProps> = ({
     );
   }
 
-  if (!exams || exams.length === 0) {
+  if (visibleExams.length === 0) {
     return (
       <div className="space-y-4">
         {courseFilterSection}
@@ -136,12 +141,12 @@ export const ExamList: React.FC<ExamListProps> = ({
           <span>الامتحانات الشاملة للكورس المختار</span>
         </h4>
         <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
-          عدد الامتحانات: {exams.length}
+          عدد الامتحانات: {visibleExams.length}
         </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {exams.map((exam) => (
+        {visibleExams.map((exam) => (
           <ExamCard key={exam._id} exam={exam} onStart={onSelectExam} />
         ))}
       </div>

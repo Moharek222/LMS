@@ -113,7 +113,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     );
   }
 
-  if (exam.isActive === false) {
+  if (exam.isActive === false || exam.isPublished === false) {
     return (
       <div className="rounded-3xl p-8 border border-amber-200 bg-amber-50/30 shadow-xs text-center space-y-4">
         <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto border border-amber-200">

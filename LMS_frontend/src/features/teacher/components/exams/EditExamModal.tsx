@@ -249,7 +249,19 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
         payload,
       },
       {
-        onSuccess: () => {
+        onSuccess: (updatedExam) => {
+          if (updatedExam && updatedExam._id) {
+            try {
+              const saved = localStorage.getItem('teacher_draft_exams');
+              const draftMap = saved ? JSON.parse(saved) : {};
+              if (updatedExam.isPublished === false) {
+                draftMap[updatedExam._id] = updatedExam;
+              } else {
+                delete draftMap[updatedExam._id];
+              }
+              localStorage.setItem('teacher_draft_exams', JSON.stringify(draftMap));
+            } catch {}
+          }
           onClose();
           toast.success('تم تحديث الامتحان بنجاح 🎓✨');
         },

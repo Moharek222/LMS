@@ -6,6 +6,8 @@ import { useToast } from '../../../../context/ToastContext';
 import { compressImageFile } from '../../../../utils/imageCompressor';
 import { QuestionFormItem } from '../questions/QuestionFormItem';
 
+import type { TeacherExam } from '../../../exams/types/exam';
+
 interface QuestionDraft {
   id: string;
   type: 'MCQ' | 'ESSAY';
@@ -20,12 +22,14 @@ interface CreateExamModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedCourseId: string;
+  onExamCreated?: (exam: TeacherExam) => void;
 }
 
 export const CreateExamModal: React.FC<CreateExamModalProps> = ({
   isOpen,
   onClose,
   selectedCourseId,
+  onExamCreated,
 }) => {
   const toast = useToast();
   const createExamMutation = useCreateExam();
@@ -250,10 +254,21 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
         payload,
       },
       {
-        onSuccess: () => {
+        onSuccess: (createdExam) => {
+          if (createdExam && createdExam._id) {
+            onExamCreated?.(createdExam);
+            if (createdExam.isPublished === false) {
+              try {
+                const saved = localStorage.getItem('teacher_draft_exams');
+                const draftMap = saved ? JSON.parse(saved) : {};
+                draftMap[createdExam._id] = createdExam;
+                localStorage.setItem('teacher_draft_exams', JSON.stringify(draftMap));
+              } catch {}
+            }
+          }
           onClose();
           resetForm();
-          toast.success('تم إنشاء وتفعيل الامتحان الشامل بنجاح 🎓✨');
+          toast.success('تم إنشاء الامتحان الشامل بنجاح 🎓✨');
         },
         onError: (err) => {
           const msg = toArabicErrorMessage(err, 'حدث خطأ أثناء إنشاء الامتحان، يرجى المحاولة مرة أخرى.');
