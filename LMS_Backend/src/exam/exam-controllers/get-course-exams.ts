@@ -25,7 +25,7 @@ export const getCourseExams: RequestHandler<{ courseID: string }, IResponse> = a
                 message: "course not found"
             });
         }
-        const examzes = await Exam.find({ courseID, isActive: true })
+        const examzes = await Exam.find({ courseID, isActive: true , isPublished: true })
             .select("-questions")
             .sort({ createdAt: 1 })
             .lean()
