@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import ScrollToTop from './components/layout/ScrollToTop';
 import { AuthProvider, useAuth } from './context/useAuth';
 import { ToastProvider } from './context/ToastContext';
 
@@ -54,8 +55,10 @@ function RootRedirect() {
 
 function AppRoutes() {
   return (
-    <Suspense fallback={<PageFallback />}>
-      <Routes>
+    <>
+      <ScrollToTop />
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
         
         <Route path="/" element={<RootRedirect />} />
 
@@ -87,6 +90,7 @@ function AppRoutes() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+    </>
   );
 }
 
