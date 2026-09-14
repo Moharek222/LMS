@@ -60,8 +60,8 @@ export const resetStudentPassword = async (
   password: string
 ): Promise<{ message: string }> => {
   const response = await apiClient.post<{ message: string }>(
-    '/api/students/reset-password',
-    { password, studentID: studentId }
+    `/api/students/reset-password/${studentId}`,
+    { password }
   );
   return response.data;
 };

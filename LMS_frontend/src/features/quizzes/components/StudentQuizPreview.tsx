@@ -99,40 +99,27 @@ export const StudentQuizPreview: React.FC<StudentQuizPreviewProps> = ({
           لا توجد أسئلة مضافة لهذا الاختبار بعد
         </div>
       ) : (
-        <div className="space-y-6">
-          {quiz.questions.map((q, qIndex) => (
-            <div
-              key={q._id || qIndex}
-              className="bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-3"
-            >
-              <div className="flex items-start gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-200">
-                  {qIndex + 1}
-                </span>
-                <h5 className="text-sm font-bold text-slate-800 leading-relaxed">{q.question}</h5>
-              </div>
-
-              <div className="space-y-2 pr-8">
-                {q.options.map((opt, optIndex) => (
-                  <div
-                    key={optIndex}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200"
-                  >
-                    <div className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0" />
-                    <span className="text-xs font-semibold text-slate-700">{opt}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="space-y-5 py-2">
+          <div className="bg-amber-50/70 border border-amber-200/90 rounded-2xl p-4 sm:p-5 text-right space-y-2">
+            <h5 className="text-sm font-bold text-amber-900 flex items-center gap-2">
+              <Award size={18} className="text-amber-600" />
+              <span>تعليمات الاختبار</span>
+            </h5>
+            <ul className="text-xs font-semibold text-amber-800/90 space-y-1.5 list-disc list-inside">
+              <li>الأسئلة والخيارات ستظهر لك فور الضغط على زر "بدء حل الاختبار الآن".</li>
+              <li>المدة المخصصة لهذا الاختبار هي <strong className="font-extrabold">{quiz.duration} دقيقة</strong>.</li>
+              <li>نسبة النجاح المطلوبة لاجتياز الكويز هي <strong className="font-extrabold">{quiz.passingPercentage}%</strong>.</li>
+              <li>تأكد من اختيار الإجابات بدقة قبل انتهاء العداد الزمني.</li>
+            </ul>
+          </div>
 
           {onStartQuiz && (
             <div className="pt-2 text-center">
               <button
                 onClick={onStartQuiz}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition cursor-pointer shadow-sm"
+                className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl bg-amber-500 text-white text-sm font-extrabold hover:bg-amber-600 transition cursor-pointer shadow-md hover:shadow-lg active:scale-98"
               >
-                <Play size={15} />
+                <Play size={16} />
                 <span>بدء حل الاختبار الآن</span>
               </button>
             </div>
