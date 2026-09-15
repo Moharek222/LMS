@@ -7,10 +7,12 @@ import {
   RefreshCw,
   ChevronRight,
   ChevronLeft,
+  Printer,
 } from 'lucide-react';
 import { useTeacherAccessCodes } from '../hooks/useTeacherAccessCodes';
 import { AccessCodeCard } from './accessCodes/AccessCodeCard';
 import { GenerateAccessCodeModal } from './accessCodes/GenerateAccessCodeModal';
+import { PrintAccessCodesModal } from './accessCodes/PrintAccessCodesModal';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
 export const TeacherAccessCodeManager: React.FC = () => {
@@ -18,6 +20,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
   const limit = 10;
 
   const [isGenerateOpen, setIsGenerateOpen] = useState<boolean>(false);
+  const [isPrintOpen, setIsPrintOpen] = useState<boolean>(false);
 
   const { data, isLoading, isError, error, refetch } = useTeacherAccessCodes({
     page,
@@ -82,14 +85,27 @@ export const TeacherAccessCodeManager: React.FC = () => {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsGenerateOpen(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
-        >
-          <Plus size={16} />
-          <span>إنشاء كود تفعيل</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {accessCodes.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsPrintOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-50 text-[#0D8A82] border border-teal-200 hover:bg-teal-100 text-xs font-bold transition cursor-pointer shadow-2xs"
+            >
+              <Printer size={16} />
+              <span>طباعة كشف الأكواد (PDF) 🖨️</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsGenerateOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
+          >
+            <Plus size={16} />
+            <span>إنشاء كود تفعيل</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Access Codes List */}
@@ -140,10 +156,16 @@ export const TeacherAccessCodeManager: React.FC = () => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modals */}
       <GenerateAccessCodeModal
         isOpen={isGenerateOpen}
         onClose={() => setIsGenerateOpen(false)}
+      />
+
+      <PrintAccessCodesModal
+        isOpen={isPrintOpen}
+        onClose={() => setIsPrintOpen(false)}
+        accessCodes={accessCodes}
       />
     </div>
   );
