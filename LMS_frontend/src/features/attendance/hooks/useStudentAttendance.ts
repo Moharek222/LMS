@@ -28,13 +28,10 @@ export const useStudentAttendanceStats = (
 };
 
 export const useMyAttendanceStats = (groupId?: string) => {
-  const { user } = useAuth();
-  const isStudent = user?.role === 'student';
-
   return useQuery<StudentAttendanceStats, Error>({
     queryKey: ['attendance', 'my-stats', groupId],
     queryFn: () => getMyAttendanceStats(groupId!),
-    enabled: Boolean(groupId && !isStudent),
+    enabled: Boolean(groupId),
     retry: false,
   });
 };

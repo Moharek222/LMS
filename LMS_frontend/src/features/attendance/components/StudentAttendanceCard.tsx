@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Clock,
 } from 'lucide-react';
-import axios from 'axios';
 import { useAuth } from '../../../context/useAuth';
 import {
   useMyAttendanceStats,
@@ -33,15 +32,12 @@ export const StudentAttendanceCard: React.FC = () => {
 
   const {
     data: sheetsData,
-    isLoading: isLoadingSheets,
-    isError: isErrorSheets,
-    error: errorSheets,
     refetch: refetchSheets,
   } = useGroupAttendanceSheets(groupId, 1, 20);
 
   const isStudent = user?.role === 'student';
 
-  if (isStudent || !studentId || !groupId) {
+  if (!studentId || !groupId) {
     return (
       <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center space-y-4">
         <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100">
@@ -50,7 +46,7 @@ export const StudentAttendanceCard: React.FC = () => {
         <div className="space-y-1.5 max-w-md mx-auto">
           <h4 className="text-base font-extrabold text-slate-800">سجل انضباط الحضور والغياب</h4>
           <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-            يتم تسجيل ومتابعة الحضور والغياب للمحاضرات المباشرة والجلسات بواسطة المعلم/الإدارة في المجموعة الخاصة بك.
+            لم يتم تفعيل مجموعتك الدراسية بعد. يرجى التواصل مع المعلم/الإدارة لتأكيد تسجيلك بالمجموعة لمتابعة حضورك وغيابك.
           </p>
         </div>
         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 max-w-md mx-auto text-xs text-slate-600 font-bold">
@@ -60,9 +56,9 @@ export const StudentAttendanceCard: React.FC = () => {
     );
   }
 
-  const isLoading = isLoadingStats || isLoadingSheets;
-  const isError = isErrorStats || isErrorSheets;
-  const activeError = errorStats || errorSheets;
+  const isLoading = isLoadingStats;
+  const isError = isErrorStats;
+  const activeError = errorStats;
 
   const handleRetryAll = () => {
     refetchStats();
@@ -79,28 +75,6 @@ export const StudentAttendanceCard: React.FC = () => {
   }
 
   if (isError) {
-    const isForbidden =
-      axios.isAxiosError(activeError) && activeError.response?.status === 403;
-
-    if (isForbidden) {
-      return (
-        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100">
-            <CalendarCheck size={28} />
-          </div>
-          <div className="space-y-1.5 max-w-md mx-auto">
-            <h4 className="text-base font-extrabold text-slate-800">سجل انضباط الحضور والغياب</h4>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              يتم تسجيل ومتابعة الحضور والغياب للمحاضرات المباشرة والجلسات بواسطة المعلم/الإدارة في المجموعة الخاصة بك.
-            </p>
-          </div>
-          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 max-w-md mx-auto text-xs text-slate-600 font-bold">
-            💡 الحضور والغياب يتم رصده إلكترونياً وتلقائياً أثناء الحصص المباشرة والسنتر بواسطة المدرس.
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="rounded-3xl p-8 border border-red-200 bg-red-50/40 shadow-xs flex flex-col items-center justify-center text-center space-y-3">
         <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center border border-red-200">
