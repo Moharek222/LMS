@@ -100,10 +100,8 @@ export const StudentDashboard: React.FC = () => {
   };
 
   const handleBackToExams = () => {
-    const nextParams: Record<string, string> = { tab: activeTab };
+    const nextParams: Record<string, string> = { tab: 'lessons' };
     if (selectedCourseId) nextParams.courseId = selectedCourseId;
-    if (selectedLessonId) nextParams.lessonId = selectedLessonId;
-    if (selectedQuizId) nextParams.quizId = selectedQuizId;
     setSearchParams(nextParams);
   };
 
@@ -145,10 +143,8 @@ export const StudentDashboard: React.FC = () => {
   };
 
   const handleCloseExam = () => {
-    const nextParams: Record<string, string> = { tab: activeTab };
+    const nextParams: Record<string, string> = { tab: 'lessons' };
     if (selectedCourseId) nextParams.courseId = selectedCourseId;
-    if (selectedLessonId) nextParams.lessonId = selectedLessonId;
-    if (selectedQuizId) nextParams.quizId = selectedQuizId;
     setSearchParams(nextParams);
     setIsSolvingExam(false);
   };

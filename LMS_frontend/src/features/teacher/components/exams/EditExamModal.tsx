@@ -195,38 +195,43 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
 
     if (!editingExamId || !selectedCourseId) return;
 
+    const triggerValidationError = (msg: string) => {
+      setEditValidationError(msg);
+      toast.error(msg);
+    };
+
     if (!editTitle.trim() || editTitle.trim().length < 3) {
-      setEditValidationError('عنوان الامتحان يجب أن يكون 3 أحرف على الأقل');
+      triggerValidationError('عنوان الامتحان يجب أن يكون 3 أحرف على الأقل ⚠️');
       return;
     }
 
     const numDuration = Number(editDuration);
     if (isNaN(numDuration) || numDuration <= 0) {
-      setEditValidationError('مدة الامتحان يجب أن تكون رقماً أكبر من صفر');
+      triggerValidationError('مدة الامتحان يجب أن تكون رقماً أكبر من صفر ⚠️');
       return;
     }
 
     if (editQuestions.length === 0) {
-      setEditValidationError('الامتحان يجب أن يحتوي على سؤال واحد على الأقل');
+      triggerValidationError('الامتحان يجب أن يحتوي على سؤال واحد على الأقل ⚠️');
       return;
     }
 
     for (let i = 0; i < editQuestions.length; i++) {
       const q = editQuestions[i];
       if (!q.question.trim() || q.question.trim().length < 3) {
-        setEditValidationError(`السؤال رقم ${i + 1} يجب أن يتكون من 3 أحرف على الأقل`);
+        triggerValidationError(`السؤال رقم ${i + 1} يجب أن يتكون من 3 أحرف على الأقل ⚠️`);
         return;
       }
 
       if (q.type === 'MCQ') {
         const validOptions = q.options.map((opt) => opt.trim()).filter((opt) => opt !== '');
         if (validOptions.length < 2) {
-          setEditValidationError(`سؤال الاختيارات رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل`);
+          triggerValidationError(`سؤال الاختيارات رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل ⚠️`);
           return;
         }
 
         if (!q.answer.trim() || !validOptions.includes(q.answer.trim())) {
-          setEditValidationError(`يرجى تحديد إجابة صحيحة تطابق أحد الاختيارات في السؤال رقم ${i + 1}`);
+          triggerValidationError(`يرجى تحديد إجابة صحيحة تطابق أحد الاختيارات في السؤال رقم ${i + 1} ⚠️`);
           return;
         }
       }
@@ -251,7 +256,7 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
 
     const payloadSize = JSON.stringify(payload).length;
     if (payloadSize > 95 * 1024) {
-      setEditValidationError('حجم بيانات الامتحان وصوره كبير جداً بالنسبة لـ JSON الباك إند (أكبر من 95KB). يرجى إزالة بعض الصور الكبيرة أو تقليل أبعادها أو استخدام روابط صور بدلاً من الرفع المباشر.');
+      triggerValidationError('حجم بيانات الامتحان وصوره كبير جداً بالنسبة لـ JSON الباك إند (أكبر من 95KB). يرجى إزالة بعض الصور الكبيرة أو تقليل أبعادها أو استخدام روابط صور بدلاً من الرفع المباشر.');
       return;
     }
 

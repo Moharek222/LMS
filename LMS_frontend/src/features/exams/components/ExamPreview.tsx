@@ -44,7 +44,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
           >
             <ArrowRight size={14} />
-            <span>رجوع للامتحانات</span>
+            <span>العودة لصفحة الكورس</span>
           </button>
         )}
       </div>
@@ -84,7 +84,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
             >
               <ArrowRight size={14} />
-              <span>رجوع للامتحانات</span>
+              <span>العودة لصفحة الكورس</span>
             </button>
           )}
         </div>
@@ -108,7 +108,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
           >
             <ArrowRight size={14} />
-            <span>رجوع للامتحانات</span>
+            <span>العودة لصفحة الكورس</span>
           </button>
         )}
       </div>
@@ -141,7 +141,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
               <button
                 onClick={onBack}
                 className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 transition cursor-pointer border border-slate-200/80"
-                title="رجوع للامتحانات"
+                title="العودة لصفحة الكورس"
               >
                 <ArrowRight size={20} />
               </button>
@@ -175,7 +175,7 @@ export const ExamPreview: React.FC<ExamPreviewProps> = ({
                 onClick={onBack}
                 className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
               >
-                رجوع للامتحانات
+                العودة لصفحة الكورس
               </button>
             )}
             <button

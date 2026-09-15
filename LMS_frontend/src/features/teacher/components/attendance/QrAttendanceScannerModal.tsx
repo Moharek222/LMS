@@ -42,6 +42,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   const [lastScannedId, setLastScannedId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sessionLog, setSessionLog] = useState<ScannedItemLog[]>([]);
+  const [manualInput, setManualInput] = useState('');
 
   const cooldownRef = useRef<boolean>(false);
 
@@ -66,6 +67,25 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     } catch {
       // Ignore audio errors
     }
+  };
+
+  const extractRawValueFromScan = (result: unknown): string | null => {
+    if (!result) return null;
+    if (Array.isArray(result) && result.length > 0) {
+      for (const item of result) {
+        if (typeof item === 'string' && item.trim()) return item.trim();
+        if (item && typeof item === 'object') {
+          const val = (item as any).rawValue || (item as any).value || (item as any).text || (item as any).data;
+          if (typeof val === 'string' && val.trim()) return val.trim();
+        }
+      }
+    }
+    if (typeof result === 'string' && result.trim()) return result.trim();
+    if (typeof result === 'object') {
+      const val = (result as any).rawValue || (result as any).value || (result as any).text || (result as any).data;
+      if (typeof val === 'string' && val.trim()) return val.trim();
+    }
+    return null;
   };
 
   const extractStudentId = (raw: string): string => {
@@ -203,11 +223,12 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
                 </button>
               </div>
             ) : (
-              <div className="w-full h-64 rounded-xl overflow-hidden">
+              <div className="w-full h-64 rounded-xl overflow-hidden relative">
                 <Scanner
                   onScan={(result) => {
-                    if (result && result.length > 0 && result[0].rawValue) {
-                      processAttendance(result[0].rawValue);
+                    const scannedValue = extractRawValueFromScan(result);
+                    if (scannedValue) {
+                      processAttendance(scannedValue);
                     }
                   }}
                   onError={(err) => {
@@ -220,11 +241,11 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
                     finder: true,
                   }}
                   constraints={{
-                    facingMode: 'environment',
+                    facingMode: { ideal: 'environment' },
                   }}
                   styles={{
                     container: { width: '100%', height: '100%', borderRadius: '0.75rem', overflow: 'hidden' },
-                    video: { borderRadius: '0.75rem', objectFit: 'cover' },
+                    video: { borderRadius: '0.75rem', objectFit: 'contain' },
                   }}
                 />
               </div>
@@ -234,6 +255,35 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           <p className="text-xs text-slate-500 font-semibold text-center leading-relaxed">
             قم بوضع كارت الطالب الفيزيائي أو الـ QR الخاص بالطالب في منتصف المربع لتسجيل الحضور تلقائياً.
           </p>
+
+          {/* Manual Input Fallback */}
+          <div className="pt-2 border-t border-slate-100 space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500">
+              أو أدخل ID / كود الطالب يدوياً:
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={manualInput}
+                onChange={(e) => setManualInput(e.target.value)}
+                placeholder="أدخل كود / ID الطالب هنا..."
+                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-[#0D8A82]"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (manualInput.trim()) {
+                    processAttendance(manualInput.trim());
+                    setManualInput('');
+                  }
+                }}
+                disabled={!manualInput.trim() || recordAttendanceMutation.isPending}
+                className="px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer disabled:opacity-50"
+              >
+                تسجيل
+              </button>
+            </div>
+          </div>
         </div>
 
        

@@ -85,7 +85,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
           >
             <ArrowRight size={14} />
-            <span>العودة للامتحانات</span>
+            <span>العودة لصفحة الكورس</span>
           </button>
         </div>
       </div>
@@ -107,7 +107,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
         >
           <ArrowRight size={14} />
-          <span>العودة للامتحانات</span>
+          <span>العودة لصفحة الكورس</span>
         </button>
       </div>
     );
@@ -128,7 +128,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-900 transition cursor-pointer shadow-xs"
         >
           <ArrowRight size={14} />
-          <span>العودة للامتحانات</span>
+          <span>العودة لصفحة الكورس</span>
         </button>
       </div>
     );
@@ -178,7 +178,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
         >
           <ArrowRight size={16} />
-          <span>العودة للامتحانات</span>
+          <span>العودة لصفحة الكورس</span>
         </button>
       </div>
     );
@@ -256,7 +256,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             onClick={onClose}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
           >
-            <span>العودة للامتحانات</span>
+            <span>العودة لصفحة الكورس</span>
             <ArrowLeft size={16} />
           </button>
         </div>
@@ -288,7 +288,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             onClick={onClose}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
           >
-            <span>العودة للامتحانات</span>
+            <span>العودة لصفحة الكورس</span>
             <ArrowLeft size={16} />
           </button>
         </div>

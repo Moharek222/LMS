@@ -51,7 +51,7 @@ const teacherNavItems: NavItem[] = [
   { id: 'quizzes', label: 'كويزات الدروس', icon: <FileText size={20} /> },
   { id: 'exams', label: 'الامتحانات الشاملة', icon: <Award size={20} /> },
   { id: 'groups', label: 'إدارة المجموعات', icon: <FolderKanban size={20} /> },
-  { id: 'attendance', label: 'المرور والغياب (QR)', icon: <CalendarCheck size={20} /> },
+  { id: 'attendance', label: 'الغياب (QR)', icon: <CalendarCheck size={20} /> },
   { id: 'access-codes', label: 'أكواد التفعيل', icon: <KeyRound size={20} /> },
   { id: 'students', label: 'إدارة المدراء والمنصة', icon: <UserCheck size={20} /> },
 ];

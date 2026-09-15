@@ -194,43 +194,48 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const triggerValidationError = (msg: string) => {
+      setValidationError(msg);
+      toast.error(msg);
+    };
+
     if (!selectedCourseId) {
-      setValidationError('يرجى اختيار الكورس أولاً');
+      triggerValidationError('يرجى اختيار الكورس أولاً');
       return;
     }
 
     if (!title.trim() || title.trim().length < 3) {
-      setValidationError('عنوان الامتحان يجب أن يكون 3 أحرف على الأقل');
+      triggerValidationError('عنوان الامتحان يجب أن يكون 3 أحرف على الأقل ⚠️');
       return;
     }
 
     const numDuration = Number(duration);
     if (isNaN(numDuration) || numDuration <= 0) {
-      setValidationError('مدة الامتحان يجب أن تكون رقماً أكبر من صفر');
+      triggerValidationError('مدة الامتحان يجب أن تكون رقماً أكبر من صفر ⚠️');
       return;
     }
 
     if (questions.length === 0) {
-      setValidationError('الامتحان يجب أن يحتوي على سؤال واحد على الأقل');
+      triggerValidationError('الامتحان يجب أن يحتوي على سؤال واحد على الأقل ⚠️');
       return;
     }
 
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       if (!q.question.trim() || q.question.trim().length < 3) {
-        setValidationError(`السؤال رقم ${i + 1} يجب أن يتكون من 3 أحرف على الأقل`);
+        triggerValidationError(`السؤال رقم ${i + 1} يجب أن يتكون من 3 أحرف على الأقل ⚠️`);
         return;
       }
 
       if (q.type === 'MCQ') {
         const validOptions = q.options.map((opt) => opt.trim()).filter((opt) => opt !== '');
         if (validOptions.length < 2) {
-          setValidationError(`سؤال الاختيارات رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل`);
+          triggerValidationError(`سؤال الاختيارات رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل ⚠️`);
           return;
         }
 
         if (!q.answer.trim() || !validOptions.includes(q.answer.trim())) {
-          setValidationError(`يرجى تحديد إجابة صحيحة تطابق أحد الاختيارات في السؤال رقم ${i + 1}`);
+          triggerValidationError(`يرجى تحديد إجابة صحيحة تطابق أحد الاختيارات في السؤال رقم ${i + 1} ⚠️`);
           return;
         }
       }
@@ -256,7 +261,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
 
     const payloadSize = JSON.stringify(payload).length;
     if (payloadSize > 95 * 1024) {
-      setValidationError('حجم بيانات الامتحان وصوره كبير جداً بالنسبة لـ JSON الباك إند (أكبر من 95KB). يرجى إزالة بعض الصور الكبيرة أو تقليل أبعادها أو استخدام روابط صور بدلاً من الرفع المباشر.');
+      triggerValidationError('حجم بيانات الامتحان وصوره كبير جداً بالنسبة لـ JSON الباك إند (أكبر من 95KB). يرجى إزالة بعض الصور الكبيرة أو تقليل أبعادها أو استخدام روابط صور بدلاً من الرفع المباشر.');
       return;
     }
 

@@ -198,26 +198,31 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
 
     if (!quizId || !lessonId) return;
 
+    const triggerValidationError = (msg: string) => {
+      setValidationError(msg);
+      toast.error(msg);
+    };
+
     const trimmedTitle = title.trim();
     if (!trimmedTitle || trimmedTitle.length < 3) {
-      setValidationError('عنوان الاختبار يجب أن يكون 3 أحرف على الأقل');
+      triggerValidationError('عنوان الاختبار يجب أن يكون 3 أحرف على الأقل ⚠️');
       return;
     }
 
     const parsedDuration = Number(duration);
     if (isNaN(parsedDuration) || parsedDuration < 0) {
-      setValidationError('مدة الاختبار يجب أن تكون رقماً موجباً');
+      triggerValidationError('مدة الاختبار يجب أن تكون رقماً موجباً ⚠️');
       return;
     }
 
     const parsedPassing = Number(passingPercentage);
     if (isNaN(parsedPassing) || parsedPassing < 0 || parsedPassing > 100) {
-      setValidationError('نسبة النجاح يجب أن تكون بين 0% و 100%');
+      triggerValidationError('نسبة النجاح يجب أن تكون بين 0% و 100% ⚠️');
       return;
     }
 
     if (!questions || questions.length < 1) {
-      setValidationError('الاختبار يجب أن يحتوي على سؤال واحد على الأقل');
+      triggerValidationError('الاختبار يجب أن يحتوي على سؤال واحد على الأقل ⚠️');
       return;
     }
 
@@ -225,16 +230,16 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
       const q = questions[i];
       const trimmedQuestionText = q.question.trim();
       if (!trimmedQuestionText || trimmedQuestionText.length < 3) {
-        setValidationError(`نص السؤال رقم ${i + 1} يجب أن يكون 3 أحرف على الأقل`);
+        triggerValidationError(`نص السؤال رقم ${i + 1} يجب أن يكون 3 أحرف على الأقل ⚠️`);
         return;
       }
       const validOptions = q.options.map((opt) => opt.trim()).filter((opt) => opt !== '');
       if (validOptions.length < 2) {
-        setValidationError(`السؤال رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل`);
+        triggerValidationError(`السؤال رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل ⚠️`);
         return;
       }
       if (!q.answer.trim() || !validOptions.includes(q.answer.trim())) {
-        setValidationError(`يرجى تحديد الإجابة الصحيحة للسؤال رقم ${i + 1}`);
+        triggerValidationError(`يرجى تحديد الإجابة الصحيحة للسؤال رقم ${i + 1} ⚠️`);
         return;
       }
     }

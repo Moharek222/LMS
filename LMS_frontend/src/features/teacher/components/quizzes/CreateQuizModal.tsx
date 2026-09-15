@@ -83,7 +83,9 @@ export const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
 
   const handleRemoveQuestion = (qId: string) => {
     if (questions.length <= 1) {
-      setValidationError('الاختبار يجب أن يحتوي على سؤال واحد على الأقل');
+      const msg = 'الاختبار يجب أن يحتوي على سؤال واحد على الأقل';
+      setValidationError(msg);
+      toast.warning(msg);
       return;
     }
     setQuestions((prev) => prev.filter((q) => q.id !== qId));
@@ -179,31 +181,36 @@ export const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const triggerValidationError = (msg: string) => {
+      setValidationError(msg);
+      toast.error(msg);
+    };
+
     if (!selectedLessonId) {
-      setValidationError('يرجى اختيار الدرس التابع له هذا الاختبار أولاً');
+      triggerValidationError('يرجى اختيار الدرس التابع له هذا الاختبار أولاً');
       return;
     }
 
     const trimmedTitle = title.trim();
     if (!trimmedTitle || trimmedTitle.length < 3) {
-      setValidationError('عنوان الاختبار يجب أن يكون 3 أحرف على الأقل');
+      triggerValidationError('اسم / عنوان الاختبار يجب أن يكون 3 أحرف على الأقل ⚠️');
       return;
     }
 
     const parsedDuration = Number(duration);
     if (isNaN(parsedDuration) || parsedDuration < 1) {
-      setValidationError('مدة الاختبار يجب أن تكون دقيقة واحدة على الأقل');
+      triggerValidationError('مدة الاختبار يجب أن تكون دقيقة واحدة على الأقل ⚠️');
       return;
     }
 
     const parsedPassing = Number(passingPercentage);
     if (isNaN(parsedPassing) || parsedPassing < 1 || parsedPassing > 100) {
-      setValidationError('نسبة النجاح يجب أن تكون بين 1% و 100%');
+      triggerValidationError('نسبة النجاح يجب أن تكون بين 1% و 100% ⚠️');
       return;
     }
 
     if (!questions || questions.length < 1) {
-      setValidationError('الاختبار يجب أن يحتوي على سؤال واحد على الأقل');
+      triggerValidationError('الاختبار يجب أن يحتوي على سؤال واحد على الأقل ⚠️');
       return;
     }
 
@@ -211,16 +218,16 @@ export const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
       const q = questions[i];
       const trimmedQuestionText = q.question.trim();
       if (!trimmedQuestionText || trimmedQuestionText.length < 3) {
-        setValidationError(`نص السؤال رقم ${i + 1} يجب أن يكون 3 أحرف على الأقل`);
+        triggerValidationError(`نص السؤال رقم ${i + 1} يجب أن يكون 3 أحرف على الأقل ⚠️`);
         return;
       }
       const validOptions = q.options.map((opt) => opt.trim()).filter((opt) => opt !== '');
       if (validOptions.length < 2) {
-        setValidationError(`السؤال رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل`);
+        triggerValidationError(`السؤال رقم ${i + 1} يجب أن يحتوي على اختيارين غير فارغين على الأقل ⚠️`);
         return;
       }
       if (!q.answer.trim() || !validOptions.includes(q.answer.trim())) {
-        setValidationError(`يرجى تحديد الإجابة الصحيحة للسؤال رقم ${i + 1}`);
+        triggerValidationError(`يرجى تحديد الإجابة الصحيحة للسؤال رقم ${i + 1} ⚠️`);
         return;
       }
     }
