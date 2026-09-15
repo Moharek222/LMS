@@ -35,8 +35,6 @@ export const StudentAttendanceCard: React.FC = () => {
     refetch: refetchSheets,
   } = useGroupAttendanceSheets(groupId, 1, 20);
 
-  const isStudent = user?.role === 'student';
-
   if (!studentId || !groupId) {
     return (
       <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center space-y-4">

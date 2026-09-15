@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Scanner } from '@yudiel/react-qr-scanner';
+import React, { useState, useRef, useEffect } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import {
   QrCode,
   X,
@@ -42,7 +42,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   const [lastScannedId, setLastScannedId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sessionLog, setSessionLog] = useState<ScannedItemLog[]>([]);
-  const [manualInput, setManualInput] = useState('');
 
   const cooldownRef = useRef<boolean>(false);
 
@@ -67,25 +66,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     } catch {
       // Ignore audio errors
     }
-  };
-
-  const extractRawValueFromScan = (result: unknown): string | null => {
-    if (!result) return null;
-    if (Array.isArray(result) && result.length > 0) {
-      for (const item of result) {
-        if (typeof item === 'string' && item.trim()) return item.trim();
-        if (item && typeof item === 'object') {
-          const val = (item as any).rawValue || (item as any).value || (item as any).text || (item as any).data;
-          if (typeof val === 'string' && val.trim()) return val.trim();
-        }
-      }
-    }
-    if (typeof result === 'string' && result.trim()) return result.trim();
-    if (typeof result === 'object') {
-      const val = (result as any).rawValue || (result as any).value || (result as any).text || (result as any).data;
-      if (typeof val === 'string' && val.trim()) return val.trim();
-    }
-    return null;
   };
 
   const extractStudentId = (raw: string): string => {
@@ -167,13 +147,76 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     );
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let html5Qrcode: Html5Qrcode | null = null;
+    let isStopped = false;
+
+    const timer = setTimeout(() => {
+      const container = document.getElementById('qr-reader-video-box');
+      if (!container || isStopped) return;
+
+      try {
+        html5Qrcode = new Html5Qrcode('qr-reader-video-box');
+
+        const config = {
+          fps: 10,
+          qrbox: { width: 220, height: 220 },
+          aspectRatio: 1.0,
+        };
+
+        html5Qrcode
+          .start(
+            { facingMode: 'environment' },
+            config,
+            (decodedText) => {
+              if (decodedText) {
+                processAttendance(decodedText);
+              }
+            },
+            () => {
+              // Ignore frame decode errors
+            }
+          )
+          .catch((err) => {
+            const msg = typeof err === 'string' ? err : err?.message || 'تعذر تشغيل كاميرا المسح الضوئي. يرجى التأكد من إعطاء صلاحية الكاميرا.';
+            setCameraError(msg);
+          });
+      } catch (err: any) {
+        setCameraError(err?.message || 'تعذر بدء ماسح الكاميرا');
+      }
+    }, 250);
+
+    return () => {
+      isStopped = true;
+      clearTimeout(timer);
+      if (html5Qrcode) {
+        if (html5Qrcode.isScanning) {
+          html5Qrcode
+            .stop()
+            .catch(() => {})
+            .finally(() => {
+              try {
+                html5Qrcode?.clear();
+              } catch {}
+            });
+        } else {
+          try {
+            html5Qrcode.clear();
+          } catch {}
+        }
+      }
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
         
-       
+        {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -206,7 +249,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         </div>
 
-        
+        {/* Scanner Body */}
         <div className="space-y-4 flex-1 overflow-y-auto">
           <div className="relative rounded-2xl bg-slate-950 p-2 border-2 border-slate-800 flex flex-col items-center justify-center min-h-64 overflow-hidden">
             {cameraError ? (
@@ -224,30 +267,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
               </div>
             ) : (
               <div className="w-full h-64 rounded-xl overflow-hidden relative">
-                <Scanner
-                  onScan={(result) => {
-                    const scannedValue = extractRawValueFromScan(result);
-                    if (scannedValue) {
-                      processAttendance(scannedValue);
-                    }
-                  }}
-                  onError={(err) => {
-                    if (err) {
-                      const msg = typeof err === 'string' ? err : err.message || 'تعذر تشغيل كاميرا المسح الضوئي';
-                      setCameraError(msg);
-                    }
-                  }}
-                  components={{
-                    finder: true,
-                  }}
-                  constraints={{
-                    facingMode: { ideal: 'environment' },
-                  }}
-                  styles={{
-                    container: { width: '100%', height: '100%', borderRadius: '0.75rem', overflow: 'hidden' },
-                    video: { borderRadius: '0.75rem', objectFit: 'contain' },
-                  }}
-                />
+                <div id="qr-reader-video-box" className="w-full h-full rounded-xl overflow-hidden" />
               </div>
             )}
           </div>
@@ -255,38 +275,9 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           <p className="text-xs text-slate-500 font-semibold text-center leading-relaxed">
             قم بوضع كارت الطالب الفيزيائي أو الـ QR الخاص بالطالب في منتصف المربع لتسجيل الحضور تلقائياً.
           </p>
-
-          {/* Manual Input Fallback */}
-          <div className="pt-2 border-t border-slate-100 space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-500">
-              أو أدخل ID / كود الطالب يدوياً:
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={manualInput}
-                onChange={(e) => setManualInput(e.target.value)}
-                placeholder="أدخل كود / ID الطالب هنا..."
-                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-[#0D8A82]"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (manualInput.trim()) {
-                    processAttendance(manualInput.trim());
-                    setManualInput('');
-                  }
-                }}
-                disabled={!manualInput.trim() || recordAttendanceMutation.isPending}
-                className="px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer disabled:opacity-50"
-              >
-                تسجيل
-              </button>
-            </div>
-          </div>
         </div>
 
-       
+        {/* Errors */}
         {errorMsg && (
           <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 flex items-center gap-2 shrink-0">
             <AlertCircle size={16} className="shrink-0" />
@@ -294,7 +285,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-        
+        {/* Last scanned success badge */}
         {lastScannedId && (
           <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2.5 shadow-2xs shrink-0 animate-in fade-in">
             <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
@@ -307,7 +298,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-        
+        {/* Session Log */}
         {sessionLog.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-slate-100 shrink-0">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700">
@@ -337,7 +328,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-        
+        {/* Footer */}
         <div className="pt-2 border-t border-slate-100 flex justify-end shrink-0">
           <button
             type="button"
