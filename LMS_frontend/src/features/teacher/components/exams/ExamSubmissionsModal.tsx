@@ -10,10 +10,15 @@ import {
   Eye,
   FileCheck,
   Search,
+  Trash2,
 } from 'lucide-react';
-import { useTeacherExamSubmissions } from '../../../exams/hooks/useTeacherExamSubmissions';
+import {
+  useTeacherExamSubmissions,
+  useDeleteExamSubmission,
+} from '../../../exams/hooks/useTeacherExamSubmissions';
 import { GradeSubmissionModal } from './GradeSubmissionModal';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
+import { useToast } from '../../../../context/ToastContext';
 import type { TeacherExamSubmissionItem } from '../../../exams/types/examSubmission';
 
 interface ExamSubmissionsModalProps {
@@ -31,10 +36,14 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
   examId,
   examTitle,
 }) => {
+  const toast = useToast();
   const [page, setPage] = useState<number>(1);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+  const [submissionToDelete, setSubmissionToDelete] = useState<TeacherExamSubmissionItem | null>(null);
+
+  const deleteSubmissionMutation = useDeleteExamSubmission();
 
   const { data, isLoading, isError, error, refetch } = useTeacherExamSubmissions(
     courseId,
@@ -75,11 +84,27 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
     }
   };
 
+  const handleConfirmDeleteSubmission = async () => {
+    if (!submissionToDelete) return;
+    try {
+      await deleteSubmissionMutation.mutateAsync({
+        courseId,
+        examId,
+        submissionId: submissionToDelete._id,
+      });
+      toast.success(`تم حذف تسليم الطالب "${submissionToDelete.studentID?.name || ''}" بنجاح، ويمكنه الآن دخول الامتحان وإعادته.`);
+      setSubmissionToDelete(null);
+      refetch();
+    } catch (err) {
+      toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء حذف تسليم الطالب'));
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
         <div className="bg-white rounded-3xl max-w-4xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 max-h-[88vh] flex flex-col">
-         
+          {/* Header */}
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -103,7 +128,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
             </button>
           </div>
 
-          
+          {/* Search & Status Filter */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-2 flex-1">
               <div className="relative flex-1 max-w-xs">
@@ -126,7 +151,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
                 className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white focus:outline-none focus:border-[#0D8A82]"
               >
                 <option value="">جميع التسليمات</option>
-                <option value="NEEDS_GRADING">بحاجة للتصحيح (PENDING)</option>
+                <option value="PENDING">بحاجة للتصحيح (PENDING)</option>
                 <option value="GRADED">تم التصحيح (GRADED)</option>
               </select>
             </div>
@@ -136,7 +161,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
             </span>
           </div>
 
-          
+          {/* Submissions List */}
           <div className="overflow-y-auto flex-1 space-y-3 pr-1">
             {isLoading ? (
               <div className="py-16 flex flex-col items-center justify-center text-center space-y-3">
@@ -202,14 +227,26 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSubmissionId(sub._id)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-2xs shrink-0"
-                      >
-                        <Eye size={14} />
-                        <span>عرض الإجابات / تصحيح</span>
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSubmissionId(sub._id)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-2xs"
+                        >
+                          <Eye size={14} />
+                          <span>عرض الإجابات / تصحيح</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSubmissionToDelete(sub)}
+                          className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold hover:bg-rose-100 transition cursor-pointer"
+                          title="حذف تسليم الطالب وإعادة إتاحة الامتحان له"
+                        >
+                          <Trash2 size={15} />
+                          <span>حذف</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -217,7 +254,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
             )}
           </div>
 
-          
+          {/* Pagination */}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold shrink-0">
             <button
               type="button"
@@ -246,7 +283,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
         </div>
       </div>
 
-     
+      {/* Grade Modal */}
       {selectedSubmissionId && (
         <GradeSubmissionModal
           isOpen={Boolean(selectedSubmissionId)}
@@ -255,6 +292,43 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
           examId={examId}
           submissionId={selectedSubmissionId}
         />
+      )}
+
+      {/* Delete Submission Modal */}
+      {submissionToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-100">
+              <Trash2 size={26} />
+            </div>
+            <h4 className="text-base font-extrabold text-slate-800">حذف تسليم الطالب</h4>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+              هل أنت متأكد من حذف تسليم الطالب <strong className="text-slate-800">{submissionToDelete.studentID?.name || 'هذا الطالب'}</strong>؟
+              <br />
+              سيؤدي هذا الإجراء لإعادة إتاحة الامتحان للطالب لتمكينه من الدخول وإعادته من جديد.
+            </p>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleConfirmDeleteSubmission}
+                disabled={deleteSubmissionMutation.isPending}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition cursor-pointer shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {deleteSubmissionMutation.isPending && <Loader2 size={14} className="animate-spin" />}
+                <span>تأكيد الحذف</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubmissionToDelete(null)}
+                disabled={deleteSubmissionMutation.isPending}
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

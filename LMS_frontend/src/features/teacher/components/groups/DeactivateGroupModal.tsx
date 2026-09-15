@@ -53,16 +53,16 @@ export const DeactivateGroupModal: React.FC<DeactivateGroupModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-6 sm:p-8 text-center space-y-5">
-       
+        {/* Warning Icon */}
         <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-2xs">
           <AlertTriangle size={28} />
         </div>
 
-      
+        {/* Modal Info */}
         <div className="space-y-2">
-          <h4 className="text-lg font-black text-slate-800">إيقاف وتجميد المجموعة</h4>
+          <h4 className="text-lg font-black text-slate-800">إيقاف وحذف المجموعة</h4>
           <p className="text-xs text-slate-600 font-semibold leading-relaxed">
-            هل أنت متأكد من إيقاف هذه المجموعة؟
+            هل أنت متأكد من حذف وإيقاف هذه المجموعة؟
           </p>
 
           {groupName && (
@@ -71,22 +71,22 @@ export const DeactivateGroupModal: React.FC<DeactivateGroupModalProps> = ({
             </div>
           )}
 
-       
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold text-right leading-relaxed mt-3 flex items-start gap-2">
-            <AlertTriangle size={18} className="text-rose-600 shrink-0 mt-0.5" />
+          {/* Warning Banner */}
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold text-right leading-relaxed mt-3 flex items-start gap-2">
+            <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
             <span>
-              تنبيه هام: إيقاف المجموعة سيؤدي أيضاً إلى تعطيل جميع الطلاب الموجودين بها وإزالة ارتباطهم بالمجموعة.
+              ملاحظة هامة: يُسمح بحذف المجموعة فقط عندما تكون خالية تماماً من الطلاب. في حالة وجود طلاب بها، يرجى نقلهم أو إزالتهم أولاً لتمكين الحذف.
             </span>
           </div>
         </div>
 
         {apiError && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold text-right leading-relaxed">
             {apiError}
           </div>
         )}
 
-       
+        {/* Action Buttons */}
         <div className="flex items-center justify-center gap-3 pt-2">
           <button
             type="button"
@@ -105,10 +105,10 @@ export const DeactivateGroupModal: React.FC<DeactivateGroupModalProps> = ({
             {deleteGroupMutation.isPending ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
-                <span>جاري إيقاف المجموعة...</span>
+                <span>جاري الحذف...</span>
               </>
             ) : (
-              <span>إيقاف المجموعة</span>
+              <span>حذف المجموعة</span>
             )}
           </button>
         </div>

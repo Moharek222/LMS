@@ -1,11 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStudentExam } from './useStudentExam';
 import { useSubmitExam } from './useSubmitExam';
+import { useStudentExamHistory } from '../../student/hooks/useStudentExamHistory';
 import type { ExamSubmissionResult } from '../types/examSubmission';
+import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
 export const useExamRunnerState = (courseId: string, examId: string) => {
   const { data: exam, isLoading, isError, error, refetch } = useStudentExam(courseId, examId);
   const submitExamMutation = useSubmitExam();
+  const { data: examHistoryData } = useStudentExamHistory({ page: 1, limit: 100 });
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
@@ -25,11 +28,29 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
   const sessionStartKey = `lms_exam_session_start_${examId}`;
   const draftAnswersKey = `lms_exam_draft_answers_${examId}`;
 
+  const existingSubmission = React.useMemo(() => {
+    if (!examHistoryData?.data) return null;
+    return examHistoryData.data.find((sub) => {
+      const subExamId = typeof sub.examID === 'string' ? sub.examID : sub.examID?._id;
+      return subExamId && String(subExamId).trim() === String(examId).trim();
+    });
+  }, [examHistoryData, examId]);
+
+  useEffect(() => {
+    if (existingSubmission && !submissionResult) {
+      setSubmissionResult({
+        submissionID: existingSubmission._id,
+        status: (existingSubmission as any).status || 'GRADED',
+        score: existingSubmission.score,
+        totalExamPoints: (existingSubmission as any).totalExamPoints || existingSubmission.score,
+      });
+    }
+  }, [existingSubmission, submissionResult]);
+
   useEffect(() => {
     userAnswersRef.current = userAnswers;
   }, [userAnswers]);
 
-  
   useEffect(() => {
     try {
       const savedDraft = localStorage.getItem(draftAnswersKey);
@@ -44,7 +65,6 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
     }
   }, [draftAnswersKey]);
 
-  
   useEffect(() => {
     if (!exam || !exam.startAt) {
       setUntilStartLeft(null);
@@ -72,7 +92,6 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
     }
   }, [exam]);
 
-  
   useEffect(() => {
     if (!exam || typeof exam.duration !== 'number' || exam.duration <= 0 || submissionResult || timeExpiredNoAnswers) {
       return;
@@ -111,6 +130,10 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
   };
 
   const handleDoSubmit = (isAuto = false) => {
+    if (isSubmittingRef.current || submitExamMutation.isPending || submissionResult) {
+      return;
+    }
+
     const answeredCount = (exam?.questions || []).filter((q) => {
       const ans = userAnswersRef.current[q._id];
       return Boolean(ans && ans.trim());
@@ -155,8 +178,9 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
           setSubmissionResult(result);
           cleanupLocalStorage();
         },
-        onError: () => {
+        onError: (err) => {
           isSubmittingRef.current = false;
+          setSubmitErrorMessage(toArabicErrorMessage(err, 'لا يمكنك إجراء الامتحان أكثر من مرة (تم تسليم الامتحان سابقاً).'));
         },
       }
     );

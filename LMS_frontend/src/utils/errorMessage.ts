@@ -74,7 +74,7 @@ const translateEnglishText = (text: string): string | null => {
     return 'بيانات الدخول غير صحيحة أو غير مصرح.';
   }
   if (lower.includes('failed with status code 409') || lower.includes('already submitted') || lower.includes('conflict')) {
-    return 'لقد قمت بإجراء هذا الإجراء من قبل (مسجل بالفعل).';
+    return 'لا يمكنك إجراء الامتحان أكثر من مرة (تم تسليم الامتحان سابقاً).';
   }
   if (lower.includes('only video formats are supported')) {
     return 'يسمح فقط برفع صيغ الفيديو (MP4, WebM, Mov).';
@@ -151,8 +151,8 @@ const translateEnglishText = (text: string): string | null => {
   if (lower.includes('no image provided')) {
     return 'يرجى اختيار صورة مرفقة للرفع.';
   }
-  if (lower.includes('already submitted this exam') || lower.includes('already submitted this quiz')) {
-    return 'لقد قمت بتقديم هذا الاختبار/الامتحان مسبقاً.';
+  if (lower.includes('already submitted this exam') || lower.includes('already submitted this quiz') || lower.includes('already submitted')) {
+    return 'لا يمكنك إجراء الامتحان أكثر من مرة (تم تسليم الامتحان سابقاً).';
   }
   if (lower.includes('quiz not found or not active')) {
     return 'الاختبار غير موجود أو غير نشط حالياً.';
@@ -166,6 +166,9 @@ const translateEnglishText = (text: string): string | null => {
   if (lower.includes('invalid submission id format') || lower.includes('invalid quiz submission id format')) {
     return 'معرف تسليم الاختبار/الامتحان غير صحيح.';
   }
+  if (lower.includes('group has students and cannot be deleted') || lower.includes('group has students')) {
+    return 'لا يمكن حذف هذه المجموعة لأنها تحتوي على طلاب مسجلين. يمكنك حذف المجموعة فقط عندما تكون خالية من الطلاب.';
+  }
   if (lower.includes('group name already exists')) {
     return 'اسم المجموعة موجود بالفعل، يرجى اختيار اسم آخر.';
   }
@@ -174,6 +177,9 @@ const translateEnglishText = (text: string): string | null => {
   }
   if (lower.includes('student is already in this group')) {
     return 'الطالب موجود في هذه المجموعة بالفعل.';
+  }
+  if (lower.includes('does not belong to this group')) {
+    return 'عفواً، هذا الطالب غير مسجل في هذه المجموعة الدراسية. يرجى التأكد من اختيار المجموعة الصحيحة للطالب.';
   }
   if (lower.includes('group not found')) {
     return 'المجموعة الدراسية غير موجودة.';

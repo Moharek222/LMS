@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileCheck, AlertTriangle, Loader2, RefreshCw, BookOpen } from 'lucide-react';
 import { useCourseExams } from '../hooks/useCourseExams';
+import { useStudentExamHistory } from '../../student/hooks/useStudentExamHistory';
 import { ExamCard } from './ExamCard';
 import type { ExamListItem } from '../types/exam';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
@@ -19,6 +20,17 @@ export const ExamList: React.FC<ExamListProps> = ({
   onSelectExam,
 }) => {
   const { data: exams, isLoading, isError, error, refetch } = useCourseExams(courseId);
+  const { data: examHistoryData } = useStudentExamHistory({ page: 1, limit: 100 });
+
+  const submittedExamIds = React.useMemo(() => {
+    if (!examHistoryData?.data) return new Set<string>();
+    const set = new Set<string>();
+    examHistoryData.data.forEach((item) => {
+      const id = typeof item.examID === 'string' ? item.examID : item.examID?._id;
+      if (id) set.add(String(id).trim());
+    });
+    return set;
+  }, [examHistoryData]);
 
   const visibleExams = React.useMemo(() => {
     if (!exams) return [];
@@ -147,7 +159,12 @@ export const ExamList: React.FC<ExamListProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {visibleExams.map((exam) => (
-          <ExamCard key={exam._id} exam={exam} onStart={onSelectExam} />
+          <ExamCard
+            key={exam._id}
+            exam={exam}
+            isSubmitted={submittedExamIds.has(String(exam._id).trim())}
+            onStart={onSelectExam}
+          />
         ))}
       </div>
     </div>

@@ -35,7 +35,7 @@ export const getGroupsApi = async (): Promise<Group[]> => {
       },
     });
 
-    if (response.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+    if (response.data && Array.isArray(response.data.data)) {
       return response.data.data;
     }
     return FALLBACK_GROUPS;

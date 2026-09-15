@@ -137,6 +137,10 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   };
 
   const handleExecuteSubmission = () => {
+    if (submitQuizMutation.isPending || submissionResult) {
+      return;
+    }
+
     setShowConfirmModal(false);
 
     const selectedOptionPayload = Object.entries(answers).map(([qId, ans]) => ({

@@ -71,13 +71,23 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   const extractStudentId = (raw: string): string => {
     const trimmed = raw.trim();
     if (!trimmed) return '';
+
+    // 1. Match 24-character hex Mongo ID pattern from JSON, URL or plain string
+    const hexMatch = trimmed.match(/[0-9a-fA-F]{24}/);
+    if (hexMatch) {
+      return hexMatch[0];
+    }
+
     try {
       const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed === 'object' && parsed.studentId) {
-        return String(parsed.studentId);
+      if (parsed && typeof parsed === 'object') {
+        const val = parsed.studentId || parsed.studentID || parsed.id || parsed._id;
+        if (val && typeof val === 'string') {
+          return val.trim();
+        }
       }
     } catch {
-      // Not JSON, fallback to raw string
+      // Ignore JSON error
     }
     return trimmed;
   };

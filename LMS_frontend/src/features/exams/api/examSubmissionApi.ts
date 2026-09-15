@@ -22,12 +22,7 @@ export const submitExam = async (
       error.message?.includes('409') ||
       error.message?.includes('already submitted')
     ) {
-      return {
-        score: payload.answers.length,
-        totalQuestions: payload.answers.length,
-        isPassed: true,
-        status: 'GRADED',
-      };
+      throw new Error('تم تسليم هذا الامتحان سابقاً، ولا يمكن تسليمه أكثر من مرة.');
     }
     throw error;
   }

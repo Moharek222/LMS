@@ -5,6 +5,8 @@ import { useUpdateQuiz } from '../../../quizzes/hooks/useUpdateQuiz';
 import type { TeacherQuizQuestion } from '../../../quizzes/types/quiz';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import { uploadQuizQuestionImage } from '../../../quizzes/api/teacherQuizzesApi';
+import { compressImageFile } from '../../../../utils/imageCompressor';
 
 interface QuestionDraft {
   id: string;
@@ -116,24 +118,32 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
     );
   };
 
-  const handleImageFileSelect = (qId: string, file: File) => {
+  const handleImageFileSelect = async (qId: string, file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 5 ميجابايت');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (result) {
-        handleQuestionImageChange(qId, result);
-        toast.success('تم تحميل الصورة بنجاح 🖼️');
+
+    try {
+      toast.info('جاري رفع الصورة للسيرفر... ⏳');
+      const res = await uploadQuizQuestionImage(lessonId, file);
+      if (res?.imageUrl) {
+        handleQuestionImageChange(qId, res.imageUrl);
+        toast.success('تم رفع الصورة بنجاح 🖼️');
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      // Fallback to compressed Base64
+    }
+
+    try {
+      toast.info('جاري ضغط وتحسين الصورة لتناسب المنصة... ⏳');
+      const compressedDataUrl = await compressImageFile(file, 800, 800, 0.65);
+      handleQuestionImageChange(qId, compressedDataUrl);
+      toast.success('تم ضغط وتحميل الصورة بنجاح 🖼️');
+    } catch {
+      toast.error('حدث خطأ أثناء معالجة الصورة، يرجى المحاولة مرة أخرى');
+    }
   };
 
   const handleAddOption = (qId: string) => {

@@ -6,6 +6,7 @@ import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
 import { compressImageFile } from '../../../../utils/imageCompressor';
 import { QuestionFormItem } from '../questions/QuestionFormItem';
+import { uploadExamQuestionImage } from '../../api/teacherExamsApi';
 
 interface QuestionDraft {
   id: string;
@@ -165,6 +166,18 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
     if (!file.type.startsWith('image/')) {
       toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
       return;
+    }
+
+    try {
+      toast.info('جاري رفع الصورة للسيرفر... ⏳');
+      const res = await uploadExamQuestionImage(selectedCourseId, file);
+      if (res?.imageUrl) {
+        handleEditQuestionImageChange(qId, res.imageUrl);
+        toast.success('تم رفع الصورة بنجاح 🖼️');
+        return;
+      }
+    } catch {
+      // Fallback to compressed Base64
     }
 
     try {

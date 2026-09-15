@@ -3,6 +3,7 @@ import {
   getTeacherExamSubmissions,
   getTeacherExamSubmissionDetails,
   gradeEssayQuestions,
+  deleteExamSubmission,
 } from '../api/teacherExamSubmissionsApi';
 import type { GradeEssayPayload } from '../types/examSubmission';
 
@@ -51,6 +52,29 @@ export const useGradeEssayQuestions = () => {
       });
       queryClient.invalidateQueries({
         queryKey: ['teacher-exam-submission-details', variables.courseId, variables.examId, variables.submissionId],
+      });
+    },
+  });
+};
+
+export interface DeleteExamSubmissionVariables {
+  courseId: string;
+  examId: string;
+  submissionId: string;
+}
+
+export const useDeleteExamSubmission = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ courseId, examId, submissionId }: DeleteExamSubmissionVariables) =>
+      deleteExamSubmission(courseId, examId, submissionId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['teacher-exam-submissions', variables.courseId, variables.examId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['student-exam-history'],
       });
     },
   });
