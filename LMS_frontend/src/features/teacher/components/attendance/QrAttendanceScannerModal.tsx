@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
   QrCode,
   X,
@@ -150,62 +150,44 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
   useEffect(() => {
     if (!isOpen) return;
 
-    let html5Qrcode: Html5Qrcode | null = null;
-    let isStopped = false;
+    let scanner: Html5QrcodeScanner | null = null;
 
     const timer = setTimeout(() => {
-      const container = document.getElementById('qr-reader-video-box');
-      if (!container || isStopped) return;
-
       try {
-        html5Qrcode = new Html5Qrcode('qr-reader-video-box');
+        const element = document.getElementById('qr-reader-video-box');
+        if (!element) return;
 
-        const config = {
-          fps: 10,
-          qrbox: { width: 220, height: 220 },
-          aspectRatio: 1.0,
-        };
+        scanner = new Html5QrcodeScanner(
+          'qr-reader-video-box',
+          {
+            fps: 15,
+            qrbox: { width: 220, height: 220 },
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+            rememberLastUsedCamera: true,
+            showTorchButtonIfSupported: true,
+          },
+          false
+        );
 
-        html5Qrcode
-          .start(
-            { facingMode: 'environment' },
-            config,
-            (decodedText) => {
-              if (decodedText) {
-                processAttendance(decodedText);
-              }
-            },
-            () => {
-              // Ignore frame decode errors
+        scanner.render(
+          (decodedText) => {
+            if (decodedText) {
+              processAttendance(decodedText);
             }
-          )
-          .catch((err) => {
-            const msg = typeof err === 'string' ? err : err?.message || 'تعذر تشغيل كاميرا المسح الضوئي. يرجى التأكد من إعطاء صلاحية الكاميرا.';
-            setCameraError(msg);
-          });
+          },
+          () => {}
+        );
       } catch (err: any) {
-        setCameraError(err?.message || 'تعذر بدء ماسح الكاميرا');
+        setCameraError(err?.message || 'تعذر بدء ماسح الـ QR الضوئي');
       }
-    }, 250);
+    }, 200);
 
     return () => {
-      isStopped = true;
       clearTimeout(timer);
-      if (html5Qrcode) {
-        if (html5Qrcode.isScanning) {
-          html5Qrcode
-            .stop()
-            .catch(() => {})
-            .finally(() => {
-              try {
-                html5Qrcode?.clear();
-              } catch {}
-            });
-        } else {
-          try {
-            html5Qrcode.clear();
-          } catch {}
-        }
+      if (scanner) {
+        try {
+          scanner.clear().catch(() => {});
+        } catch {}
       }
     };
   }, [isOpen]);
@@ -214,6 +196,40 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <style>{`
+        #qr-reader-video-box {
+          border: none !important;
+          width: 100% !important;
+        }
+        #qr-reader-video-box video {
+          border-radius: 1rem !important;
+          object-fit: cover !important;
+        }
+        #qr-reader-video-box__scan_region {
+          border-radius: 1rem !important;
+          background: transparent !important;
+        }
+        #qr-reader-video-box__dashboard {
+          padding: 8px !important;
+          background: transparent !important;
+        }
+        #qr-reader-video-box__dashboard_control button,
+        #qr-reader-video-box button {
+          background-color: #0D8A82 !important;
+          color: white !important;
+          border-radius: 0.75rem !important;
+          padding: 6px 14px !important;
+          font-size: 12px !important;
+          font-weight: bold !important;
+          border: none !important;
+          cursor: pointer !important;
+          margin: 4px !important;
+        }
+        #qr-reader-video-box a {
+          display: none !important;
+        }
+      `}</style>
+
       <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
         
         {/* Header */}
@@ -251,7 +267,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
         {/* Scanner Body */}
         <div className="space-y-4 flex-1 overflow-y-auto">
-          <div className="relative rounded-2xl bg-slate-950 p-2 border-2 border-slate-800 flex flex-col items-center justify-center min-h-64 overflow-hidden">
+          <div className="relative rounded-2xl bg-slate-950 p-2 border-2 border-slate-800 flex flex-col items-center justify-center min-h-72 overflow-hidden">
             {cameraError ? (
               <div className="flex flex-col items-center justify-center space-y-3 text-center p-6 bg-slate-900 w-full h-64 rounded-xl">
                 <AlertCircle size={32} className="text-rose-500" />
@@ -266,14 +282,14 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
                 </button>
               </div>
             ) : (
-              <div className="w-full h-64 rounded-xl overflow-hidden relative">
-                <div id="qr-reader-video-box" className="w-full h-full rounded-xl overflow-hidden" />
+              <div className="w-full rounded-xl overflow-hidden relative">
+                <div id="qr-reader-video-box" className="w-full rounded-xl overflow-hidden" />
               </div>
             )}
           </div>
 
           <p className="text-xs text-slate-500 font-semibold text-center leading-relaxed">
-            قم بوضع كارت الطالب الفيزيائي أو الـ QR الخاص بالطالب في منتصف المربع لتسجيل الحضور تلقائياً.
+            قم بوضع كارت الطالب الفيزيائي أو الـ QR الخاص بالطالب في منتصف المربع التفاعلي لتسجيل الحضور تلقائياً.
           </p>
         </div>
 
