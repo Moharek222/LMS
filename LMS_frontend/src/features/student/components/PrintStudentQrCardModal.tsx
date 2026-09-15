@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { QrCode, Printer, X, ShieldCheck, Phone, Users } from 'lucide-react';
-import { generateQRMatrix } from '../utils/qrGenerator';
+import QRCode from 'qrcode';
 
 interface PrintStudentQrCardModalProps {
   isOpen: boolean;
@@ -25,32 +25,19 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
     if (!isOpen || !studentId || !canvasRef.current) return;
 
     const payload = JSON.stringify({ studentId });
-    const qrResult = generateQRMatrix(payload);
-    if (!qrResult) return;
-
-    const { size, modules } = qrResult;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const moduleSize = 5;
-    const margin = 10;
-    const totalSize = size * moduleSize + margin * 2;
-
-    canvas.width = totalSize;
-    canvas.height = totalSize;
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, totalSize, totalSize);
-
-    ctx.fillStyle = '#091523';
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        if (modules[r][c]) {
-          ctx.fillRect(margin + c * moduleSize, margin + r * moduleSize, moduleSize, moduleSize);
-        }
+    QRCode.toCanvas(
+      canvasRef.current,
+      payload,
+      {
+        width: 140,
+        margin: 4,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+        errorCorrectionLevel: 'M',
       }
-    }
+    );
   }, [isOpen, studentId]);
 
   if (!isOpen) return null;

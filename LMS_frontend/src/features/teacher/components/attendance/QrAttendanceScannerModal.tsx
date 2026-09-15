@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
   QrCode,
   X,
@@ -10,8 +10,10 @@ import {
   Sparkles,
   RefreshCw,
   Clock,
+  UploadCloud,
 } from 'lucide-react';
 import { useRecordStudentAttendance } from '../../../attendance/hooks/useStudentAttendance';
+import { useGroupStudents } from '../../hooks/useGroupStudents';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
 
@@ -25,6 +27,7 @@ interface QrAttendanceScannerModalProps {
 interface ScannedItemLog {
   id: string;
   studentId: string;
+  studentName?: string;
   timestamp: string;
 }
 
@@ -36,12 +39,19 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 }) => {
   const toast = useToast();
   const recordAttendanceMutation = useRecordStudentAttendance();
+  const { data: students = [] } = useGroupStudents(groupId);
+
+  const getStudentName = (id: string): string | null => {
+    const student = students.find((s) => s._id === id);
+    return student?.name || null;
+  };
 
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastScannedId, setLastScannedId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sessionLog, setSessionLog] = useState<ScannedItemLog[]>([]);
+  const [isScanningFile, setIsScanningFile] = useState(false);
 
   const cooldownRef = useRef<boolean>(false);
 
@@ -116,7 +126,9 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
         onSuccess: () => {
           playBeep();
           setLastScannedId(studentId);
-          toast.success(`تم تسجيل حضور الطالب بنجاح! 🎉`);
+          const sName = getStudentName(studentId);
+          const displayName = sName ? `(${sName})` : '';
+          toast.success(`تم تسجيل حضور الطالب ${displayName} بنجاح! 🎉`);
 
           const nowTime = new Date().toLocaleTimeString('ar-EG', {
             hour: '2-digit',
@@ -125,14 +137,19 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           });
 
           setSessionLog((prev) => [
-            { id: Math.random().toString(), studentId, timestamp: nowTime },
+            {
+              id: Math.random().toString(),
+              studentId,
+              studentName: sName || undefined,
+              timestamp: nowTime,
+            },
             ...prev,
           ]);
 
           setTimeout(() => {
             cooldownRef.current = false;
             setLastScannedId(null);
-          }, 2500);
+          }, 3000);
         },
         onError: (err) => {
           playBeep();
@@ -145,6 +162,103 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
         },
       }
     );
+  };
+
+  const handleQrImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
+      return;
+    }
+
+    setIsScanningFile(true);
+    setErrorMsg(null);
+
+    try {
+      const tempId = 'temp-qr-file-reader-box';
+      let tempEl = document.getElementById(tempId);
+      if (!tempEl) {
+        tempEl = document.createElement('div');
+        tempEl.id = tempId;
+        tempEl.style.display = 'none';
+        document.body.appendChild(tempEl);
+      }
+
+      const html5Qrcode = new Html5Qrcode(tempId);
+      let decodedText: string | null = null;
+
+      // Stage 1: Try scanning raw uploaded file directly
+      try {
+        decodedText = await html5Qrcode.scanFile(file, false);
+      } catch {
+        // Direct scan failed (e.g. image contains surrounding card borders or text)
+      }
+
+      // Stage 2: Center crop fallback (removes outer card borders and header text)
+      if (!decodedText) {
+        try {
+          const croppedBlob = await new Promise<Blob | null>((resolve) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                URL.revokeObjectURL(url);
+                return resolve(null);
+              }
+
+              // Focus on the center 75% square region where QR code matrix sits
+              const minDim = Math.min(img.width, img.height);
+              const cropSize = Math.floor(minDim * 0.78);
+              const cropX = Math.floor((img.width - cropSize) / 2);
+              const cropY = Math.floor((img.height - cropSize) / 2);
+
+              canvas.width = cropSize;
+              canvas.height = cropSize;
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, cropSize, cropSize);
+              ctx.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, cropSize, cropSize);
+
+              URL.revokeObjectURL(url);
+              canvas.toBlob((blob) => resolve(blob), 'image/png');
+            };
+            img.onerror = () => {
+              URL.revokeObjectURL(url);
+              resolve(null);
+            };
+            img.src = url;
+          });
+
+          if (croppedBlob) {
+            const croppedFile = new File([croppedBlob], 'qr_cropped.png', { type: 'image/png' });
+            decodedText = await html5Qrcode.scanFile(croppedFile, false);
+          }
+        } catch {
+          // Cropped scan failed
+        }
+      }
+
+      html5Qrcode.clear();
+
+      if (decodedText) {
+        processAttendance(decodedText);
+      } else {
+        const msg = 'لم يتم التمكن من قراءة رمز الـ QR من الصورة المختارة. يرجى التأكد من اختيار صورة واضحة لرمز QR الطالب.';
+        setErrorMsg(msg);
+        toast.error(msg);
+      }
+    } catch {
+      const msg = 'تعذر قراءة رمز QR من الصورة المختارة. تأكد أن الصورة واضحة وتحتوي على رمز QR الطالب.';
+      setErrorMsg(msg);
+      toast.error(msg);
+    } finally {
+      setIsScanningFile(false);
+      e.target.value = '';
+    }
   };
 
   useEffect(() => {
@@ -288,8 +402,30 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
             )}
           </div>
 
+          {/* Upload QR File Button */}
+          <div className="flex flex-col items-center justify-center gap-2">
+            <label
+              htmlFor="qr-file-upload-input"
+              className={`w-full py-3 px-4 rounded-2xl border-2 border-dashed border-[#0D8A82]/40 bg-teal-50/40 hover:bg-teal-50 hover:border-[#0D8A82] transition cursor-pointer flex items-center justify-center gap-2 text-xs font-bold text-[#0D8A82] shadow-2xs ${
+                isScanningFile ? 'opacity-60 pointer-events-none' : ''
+              }`}
+            >
+              <UploadCloud size={18} className="shrink-0 text-[#0D8A82]" />
+              <span>
+                {isScanningFile ? 'جاري فحص الصورة...' : 'رفع صورة الـ QR من الجهاز 🖼️'}
+              </span>
+            </label>
+            <input
+              id="qr-file-upload-input"
+              type="file"
+              accept="image/*"
+              onChange={handleQrImageFileUpload}
+              className="hidden"
+            />
+          </div>
+
           <p className="text-xs text-slate-500 font-semibold text-center leading-relaxed">
-            قم بوضع كارت الطالب الفيزيائي أو الـ QR الخاص بالطالب في منتصف المربع التفاعلي لتسجيل الحضور تلقائياً.
+            قم بوضع كارت الطالب الفيزيائي أمام الكاميرا لتسجيل الحضور تلقائياً، أو اختر صورة الـ QR المخزنة على جهازك.
           </p>
         </div>
 
@@ -303,12 +439,14 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
         {/* Last scanned success badge */}
         {lastScannedId && (
-          <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2.5 shadow-2xs shrink-0 animate-in fade-in">
+          <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 flex items-center gap-2.5 shadow-2xs shrink-0 animate-in fade-in">
             <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
             <div className="space-y-0.5">
               <span>تم تسجيل حضور الطالب بنجاح! 🎉</span>
-              <span className="block text-[11px] text-emerald-700 font-mono font-bold">
-                ID: {lastScannedId}
+              <span className="block text-xs font-extrabold text-emerald-800">
+                {getStudentName(lastScannedId)
+                  ? `الطالب: ${getStudentName(lastScannedId)}`
+                  : `ID: ${lastScannedId}`}
               </span>
             </div>
           </div>
@@ -327,19 +465,22 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
               </span>
             </div>
 
-            <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
-              {sessionLog.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs"
-                >
-                  <div className="flex items-center gap-1.5 font-bold text-slate-800">
-                    <Sparkles size={13} className="text-[#0D8A82]" />
-                    <span className="font-mono text-[11px]">{item.studentId}</span>
+            <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+              {sessionLog.map((item) => {
+                const sName = item.studentName || getStudentName(item.studentId);
+                return (
+                  <div
+                    key={item.id}
+                    className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs"
+                  >
+                    <div className="flex items-center gap-2 font-extrabold text-slate-800">
+                      <Sparkles size={14} className="text-[#0D8A82] shrink-0" />
+                      <span>{sName || `طالب (ID: ${item.studentId.slice(-6)})`}</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-semibold dir-ltr">{item.timestamp}</span>
                   </div>
-                  <span className="text-[11px] text-slate-400 font-semibold dir-ltr">{item.timestamp}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

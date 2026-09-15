@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Download, QrCode, AlertTriangle, ShieldCheck } from 'lucide-react';
+import QRCode from 'qrcode';
 import { useAuth } from '../../../context/useAuth';
-import { generateQRMatrix } from '../utils/qrGenerator';
 
 export const StudentQRCode: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -18,42 +18,28 @@ export const StudentQRCode: React.FC = () => {
     }
 
     const payload = JSON.stringify({ studentId });
-    const qrResult = generateQRMatrix(payload);
 
-    if (!qrResult) {
-      setIsQrGenerated(false);
-      return;
-    }
-
-    const { size, modules } = qrResult;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const moduleSize = 8; 
-    const margin = 16;
-    const totalSize = size * moduleSize + margin * 2;
-
-    canvas.width = totalSize;
-    canvas.height = totalSize;
-
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, totalSize, totalSize);
-
-    ctx.fillStyle = '#091523';
-
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        if (modules[r][c]) {
-          const x = margin + c * moduleSize;
-          const y = margin + r * moduleSize;
-          ctx.fillRect(x, y, moduleSize, moduleSize);
+    QRCode.toCanvas(
+      canvasRef.current,
+      payload,
+      {
+        width: 280,
+        margin: 4, // ISO 18004 Quiet Zone standard
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+        errorCorrectionLevel: 'M',
+      },
+      (err) => {
+        if (err) {
+          console.error('Error generating QR code:', err);
+          setIsQrGenerated(false);
+        } else {
+          setIsQrGenerated(true);
         }
       }
-    }
-
-    setIsQrGenerated(true);
+    );
   }, [studentId]);
 
   const handleDownload = () => {
@@ -61,12 +47,11 @@ export const StudentQRCode: React.FC = () => {
     if (!canvas || !isQrGenerated || !studentId) return;
 
     try {
-    
       const exportCanvas = document.createElement('canvas');
-      const padding = 32;
-      const titleHeight = 80;
+      const padding = 40;
+      const headerHeight = 90;
       const totalWidth = canvas.width + padding * 2;
-      const totalHeight = canvas.height + padding * 2 + titleHeight;
+      const totalHeight = canvas.height + headerHeight + padding * 2;
 
       exportCanvas.width = totalWidth;
       exportCanvas.height = totalHeight;
@@ -74,29 +59,23 @@ export const StudentQRCode: React.FC = () => {
       const ctx = exportCanvas.getContext('2d');
       if (!ctx) return;
 
-      
+      // Pure white background for maximum contrast and scanner readability
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-
-      ctx.strokeStyle = '#CBD5E1';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(10, 10, totalWidth - 20, totalHeight - 20);
-
-      // Header title (RTL friendly)
+      // Card header title
       ctx.fillStyle = '#0D8A82';
-      ctx.font = 'bold 20px sans-serif';
+      ctx.font = 'bold 22px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('منصة الصادق التعليمية - رمز الطالب', totalWidth / 2, 45);
 
       ctx.fillStyle = '#1E293B';
-      ctx.font = 'bold 15px sans-serif';
-      ctx.fillText(studentName ? `الطالب: ${studentName}` : `المعرف: ${studentId}`, totalWidth / 2, 70);
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(studentName ? `الطالب: ${studentName}` : `المعرف: ${studentId}`, totalWidth / 2, 75);
 
-      
-      ctx.drawImage(canvas, padding, titleHeight + padding);
+      // Draw QR Canvas in center with clear quiet zone margin
+      ctx.drawImage(canvas, padding, headerHeight + padding);
 
-      
       const dataUrl = exportCanvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = dataUrl;
@@ -105,7 +84,6 @@ export const StudentQRCode: React.FC = () => {
       link.click();
       document.body.removeChild(link);
     } catch {
-   
       const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = dataUrl;
