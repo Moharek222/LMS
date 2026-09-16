@@ -16,6 +16,7 @@ import userRouter from "./src/user/user-router";
 import courseRouter from "./src/course/course-router";
 import lessonRouter from "./src/lesson/lesson-router";
 import studentRouter from "./src/student/student-router";
+import progressRouter from "./src/progress/progress-router";
 
 dotenv.config();
 const app = express();
@@ -83,6 +84,7 @@ app.use("/api/groups", groupRouter);
 app.use("/api/students", studentRouter);
 app.use("/api/courses", courseRouter);
 app.use("/api/lessons", lessonRouter);
+app.use("/api/progress", progressRouter);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

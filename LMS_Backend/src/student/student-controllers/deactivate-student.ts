@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
 import { Student } from "../student-model";
+import { AccessCode } from "../../access-code/access-code-model";
 
 
 
@@ -25,6 +26,8 @@ export const deactivateStudent:RequestHandler<{ id: string }> = async (req, res 
                 message: "Student not found"
             });
         }
+
+        await AccessCode.deleteMany({ studentID: student._id });
 
         res.status(StatusCodes.OK).json({
             message: "Student deleted successfully",
