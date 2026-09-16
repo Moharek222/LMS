@@ -38,7 +38,7 @@ export const PrintAccessCodesModal: React.FC<PrintAccessCodesModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
         
-        {/* Modal Action Header (Hidden on Print) */}
+        
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0 print:hidden">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">

@@ -53,12 +53,12 @@ export const DeactivateGroupModal: React.FC<DeactivateGroupModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-6 sm:p-8 text-center space-y-5">
-        {/* Warning Icon */}
+        
         <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-2xs">
           <AlertTriangle size={28} />
         </div>
 
-        {/* Modal Info */}
+        
         <div className="space-y-2">
           <h4 className="text-lg font-black text-slate-800">إيقاف وحذف المجموعة</h4>
           <p className="text-xs text-slate-600 font-semibold leading-relaxed">
@@ -71,7 +71,7 @@ export const DeactivateGroupModal: React.FC<DeactivateGroupModalProps> = ({
             </div>
           )}
 
-          {/* Warning Banner */}
+         
           <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold text-right leading-relaxed mt-3 flex items-start gap-2">
             <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
             <span>
@@ -86,7 +86,7 @@ export const DeactivateGroupModal: React.FC<DeactivateGroupModalProps> = ({
           </div>
         )}
 
-        {/* Action Buttons */}
+       
         <div className="flex items-center justify-center gap-3 pt-2">
           <button
             type="button"

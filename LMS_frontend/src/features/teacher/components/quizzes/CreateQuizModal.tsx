@@ -299,7 +299,7 @@ export const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
           </button>
         </div>
 
-        {/* Validation / Success Banners */}
+        
         {validationError && (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs font-bold flex items-center gap-2">
             <AlertTriangle size={18} className="shrink-0" />
@@ -314,7 +314,7 @@ export const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
           </div>
         )}
 
-        {/* Form */}
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -534,7 +534,7 @@ export const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
             ))}
           </div>
 
-          {/* Action buttons */}
+          
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"

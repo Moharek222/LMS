@@ -325,7 +325,7 @@ const sortedLessons = React.useMemo(() => {
           )
         ) : (
           <div className="space-y-6">
-            {/* Sub-tabs header */}
+           
             <div className="flex items-center gap-2 overflow-x-auto pb-1 bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs">
               <button
                 onClick={() => setAssessmentSubTab('exams')}
@@ -362,7 +362,7 @@ const sortedLessons = React.useMemo(() => {
               </button>
             </div>
 
-            {/* Sub-tab Content */}
+            
             {assessmentSubTab === 'exams' && (
               <ExamList
                 courseId={selectedCourseId}

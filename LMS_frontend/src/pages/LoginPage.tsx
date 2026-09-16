@@ -367,16 +367,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
 
                   
                   <div className="flex items-center justify-between pt-1">
-                    {/* <a
-                      href="#forgot-password"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        alert('تواصل مع الأستاذ أو السكرتارية لإعادة تعيين كلمة المرور الخاصة بك.');
-                      }}
-                      className="text-xs font-bold text-[#0D8A82] hover:underline transition"
-                    >
-                      نسيت كلمة المرور؟
-                    </a> */}
+                    
                     <label className="flex items-center gap-2 cursor-pointer">
                       <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
                       <input

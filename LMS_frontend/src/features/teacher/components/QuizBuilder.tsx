@@ -33,7 +33,7 @@ export const QuizBuilder: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Course & Lesson Selection Card */}
+      
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs max-w-4xl mx-auto space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200/90">
           <div>

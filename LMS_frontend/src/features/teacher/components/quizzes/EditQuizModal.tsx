@@ -316,7 +316,7 @@ export const EditQuizModal: React.FC<EditQuizModalProps> = ({
           </button>
         </div>
 
-        {/* Loading details state */}
+        
         {isLoading ? (
           <div className="p-12 flex flex-col items-center justify-center text-center space-y-3">
             <Loader2 size={32} className="animate-spin text-amber-600" />

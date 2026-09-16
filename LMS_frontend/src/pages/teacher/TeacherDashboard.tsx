@@ -5,7 +5,6 @@ import { ChemistryBanner } from '../../components/dashboard/ChemistryBanner';
 import { KpiStatCard } from '../../components/dashboard/KpiStatCard';
 import { RecentStudentsWidget, type JoinedStudent } from '../../components/dashboard/RecentStudentsWidget';
 import { CourseProgressWidget, type CourseItem } from '../../components/dashboard/CourseProgressWidget';
-// import { PerformanceAnalytics } from '../../components/dashboard/PerformanceAnalytics';
 import { CourseManager } from '../../features/teacher/components/CourseManager';
 import { LessonManager } from '../../features/teacher/components/LessonManager';
 import { QuizBuilder } from '../../features/teacher/components/QuizBuilder';
@@ -130,14 +129,6 @@ export const TeacherDashboard: React.FC = () => {
     }));
   }, [teacherCourses, totalStudentsCount]);
 
-  // const performanceBreakdown = React.useMemo(() => [
-  //   { label: 'ممتاز (A)', percentage: 45, color: 'bg-[#0D8A82]' },
-  //   { label: 'جيد جداً (B)', percentage: 30, color: 'bg-[#0D8A82]' },
-  //   { label: 'جيد (C)', percentage: 15, color: 'bg-amber-400' },
-  //   { label: 'مقبول (D)', percentage: 7, color: 'bg-orange-400' },
-  //   { label: 'يحتاج تحسين', percentage: 3, color: 'bg-rose-500' },
-  // ], []);
-
   return (
     <DashboardLayout
       activeTab={activeTab}
@@ -196,11 +187,6 @@ export const TeacherDashboard: React.FC = () => {
             />
           </div>
 
-          {/* Performance Analytics */}
-          {/* <PerformanceAnalytics
-            averagePerformance={50}
-            breakdown={performanceBreakdown}
-          /> */}
         </div>
       )}
 

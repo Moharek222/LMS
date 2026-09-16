@@ -204,7 +204,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
               </p>
             </div>
 
-            {/* Generated Code Box */}
+           
             <div className="p-5 rounded-2xl bg-teal-50/90 border-2 border-teal-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
               <div className="flex items-center gap-3">
                 <KeyRound size={26} className="text-[#0D8A82] shrink-0" />

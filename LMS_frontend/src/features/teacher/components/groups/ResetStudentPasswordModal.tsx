@@ -75,7 +75,7 @@ export const ResetStudentPasswordModal: React.FC<ResetStudentPasswordModalProps>
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-150 relative">
         
-        {/* Header */}
+        
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -99,14 +99,14 @@ export const ResetStudentPasswordModal: React.FC<ResetStudentPasswordModalProps>
           </button>
         </div>
 
-        {/* Error Alert */}
+       
         {errorMsg && (
           <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold leading-relaxed">
             {errorMsg}
           </div>
         )}
 
-        {/* Form */}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 block">
@@ -150,7 +150,7 @@ export const ResetStudentPasswordModal: React.FC<ResetStudentPasswordModalProps>
             <span>سيتم تغيير كلمة المرور فوراً وسيتم تسجيل خروج الطالب تلقائياً من الأجهزة المفتوحة.</span>
           </div>
 
-          {/* Action buttons */}
+          
           <div className="pt-3 flex items-center justify-end gap-2.5">
             <button
               type="button"

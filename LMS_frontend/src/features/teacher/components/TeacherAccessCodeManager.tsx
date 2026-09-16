@@ -156,7 +156,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
         </div>
       )}
 
-      {/* Modals */}
+     
       <GenerateAccessCodeModal
         isOpen={isGenerateOpen}
         onClose={() => setIsGenerateOpen(false)}

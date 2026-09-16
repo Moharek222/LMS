@@ -111,7 +111,7 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
         className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full p-6 sm:p-8 space-y-6 relative my-8 text-right"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
@@ -141,7 +141,7 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             </div>
           )}
 
-          {/* Title */}
+         
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               عنوان الدرس *
@@ -156,7 +156,7 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             />
           </div>
 
-          {/* Order */}
+         
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               ترتيب الدرس *
@@ -171,7 +171,7 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             />
           </div>
 
-          {/* Description */}
+          
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               وصف الدرس (اختياري)
@@ -186,13 +186,13 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             />
           </div>
 
-          {/* Direct Cloud Video Uploader */}
+          
           <DirectVideoUploader
             currentVideoUrl={contentUrl}
             onVideoUploaded={(key: string) => setContentUrl(key)}
           />
 
-          {/* Requires Passing Checkbox/Toggle */}
+          
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-xs font-bold text-slate-700">يتطلب اجتياز الاختبار للانتقال للدرس التالي</span>
             <button
@@ -211,7 +211,7 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             </button>
           </div>
 
-          {/* Footer Actions */}
+          
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"

@@ -185,7 +185,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
         </div>
       </div>
 
-      {/* Confirmation Modal for Student Deactivation */}
+      
       {studentToDeactivate && (
         <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-sm w-full border border-slate-200 shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">

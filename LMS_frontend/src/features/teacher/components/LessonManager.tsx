@@ -30,7 +30,7 @@ export const LessonManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Course Selection Card */}
+     
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs max-w-3xl mx-auto space-y-6">
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -87,7 +87,7 @@ export const LessonManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Lesson List Container */}
+     
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs max-w-3xl mx-auto space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <h4 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
@@ -148,14 +148,14 @@ export const LessonManager: React.FC = () => {
         )}
       </div>
 
-      {/* Extracted Create Lesson Modal */}
+      
       <CreateLessonModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         selectedCourseId={selectedCourseId}
       />
 
-      {/* Edit Lesson Modal */}
+      
       <EditLessonModal
         isOpen={Boolean(editingLesson)}
         onClose={() => setEditingLesson(null)}
@@ -163,7 +163,7 @@ export const LessonManager: React.FC = () => {
         courseId={selectedCourseId}
       />
 
-      {/* Delete Lesson Modal */}
+      
       <DeleteLessonModal
         isOpen={Boolean(deletingLesson)}
         onClose={() => setDeletingLesson(null)}
