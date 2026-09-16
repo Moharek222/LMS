@@ -41,5 +41,4 @@ router.get("/my-percentage",
     getMyAttendancePercentage
 );
 
-
 export default router;

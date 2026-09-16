@@ -22,6 +22,11 @@ router.get("/",
     getStudentsSubmissions
 );
 
+router.get("/student-history/:studentID",
+    isAuthorized(Role.Admin, Role.Teacher),
+    getStudentsSubmissions
+);
+
 router.get("/:id",
     isAuthorized(Role.Student),
     getSubmissionById

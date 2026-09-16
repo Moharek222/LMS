@@ -12,6 +12,7 @@ import { gradeEssayQuestions } from "./exam-submission-controllers/grade-essay";
 import { deleteSubmission } from "./exam-submission-controllers/delete-submission";
 import { requireActiveSubscription } from "../middlewares/is-active-code";
 import { handleValidationErrors } from "../middlewares/handleValidationErrors";
+import { getStudentSubmissions } from "./exam-submission-controllers/get-student-submissinos";
 
 const router = Router({ mergeParams: true });
 
@@ -46,6 +47,10 @@ router.get("/:submissionID/details",
     requireActiveSubscription,
     getSubmissionDetails
 );
+
+router.get("/student-history/:studentID",
+    isAuthorized(Role.Admin, Role.Teacher),
+    getStudentSubmissions)
 
 router.get("/:submissionID/result",
     isAuthorized(Role.Student),
