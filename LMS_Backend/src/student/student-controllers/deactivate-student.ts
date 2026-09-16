@@ -6,7 +6,7 @@ import { Student } from "../student-model";
 
 
 
-export const deleteStudent:RequestHandler<{ id: string }> = async (req, res ,next) => {
+export const deactivateStudent:RequestHandler<{ id: string }> = async (req, res ,next) => {
     try{
         const { id } = req.params;
 

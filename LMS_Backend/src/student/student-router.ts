@@ -11,6 +11,7 @@ import { isAuthorized } from "../middlewares/isAuthorized.middleware";
 import { Role } from "../user/user-model";
 import { getStudents } from "./student-controllers/get-students";
 import { resetPasswordValidation, resetStudentPassword } from "./student-controllers/reset-student-password";
+import { deactivateStudent } from "./student-controllers/deactivate-student";
 
 const router = Router();
 
@@ -38,6 +39,19 @@ router.put("/profile",
     handleValidationErrors,
     updateProfile
 );
+
+router.put("/profile",
+    updateProfileValidation,
+    handleValidationErrors,
+    updateProfile
+);
+router.put("/deactivate/:id",
+    isAuthorized(Role.Admin, Role.Teacher),
+    deactivateStudent
+);
+
+
+
 // Quiz history
 router.get("/quiz-history", getMySubmissionsQuiz)
 // Exam history
