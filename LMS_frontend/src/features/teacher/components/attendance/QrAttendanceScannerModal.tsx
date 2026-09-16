@@ -82,7 +82,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     const trimmed = raw.trim();
     if (!trimmed) return '';
 
-    // 1. Match 24-character hex Mongo ID pattern from JSON, URL or plain string
+    
     const hexMatch = trimmed.match(/[0-9a-fA-F]{24}/);
     if (hexMatch) {
       return hexMatch[0];
@@ -189,14 +189,14 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
       const html5Qrcode = new Html5Qrcode(tempId);
       let decodedText: string | null = null;
 
-      // Stage 1: Try scanning raw uploaded file directly
+      
       try {
         decodedText = await html5Qrcode.scanFile(file, false);
       } catch {
         // Direct scan failed (e.g. image contains surrounding card borders or text)
       }
 
-      // Stage 2: Center crop fallback (removes outer card borders and header text)
+      
       if (!decodedText) {
         try {
           const croppedBlob = await new Promise<Blob | null>((resolve) => {
@@ -210,7 +210,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
                 return resolve(null);
               }
 
-              // Focus on the center 75% square region where QR code matrix sits
+              
               const minDim = Math.min(img.width, img.height);
               const cropSize = Math.floor(minDim * 0.78);
               const cropX = Math.floor((img.width - cropSize) / 2);
@@ -402,7 +402,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
             )}
           </div>
 
-          {/* Upload QR File Button */}
+          
           <div className="flex flex-col items-center justify-center gap-2">
             <label
               htmlFor="qr-file-upload-input"
@@ -429,7 +429,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </p>
         </div>
 
-        {/* Errors */}
+       
         {errorMsg && (
           <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 flex items-center gap-2 shrink-0">
             <AlertCircle size={16} className="shrink-0" />
@@ -437,7 +437,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-        {/* Last scanned success badge */}
+        
         {lastScannedId && (
           <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 flex items-center gap-2.5 shadow-2xs shrink-0 animate-in fade-in">
             <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
@@ -452,7 +452,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-        {/* Session Log */}
+       
         {sessionLog.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-slate-100 shrink-0">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700">
@@ -485,7 +485,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-        {/* Footer */}
+       
         <div className="pt-2 border-t border-slate-100 flex justify-end shrink-0">
           <button
             type="button"

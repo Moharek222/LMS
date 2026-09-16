@@ -1,5 +1,5 @@
 import React from 'react';
-import { Printer, X, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Printer, X, KeyRound} from 'lucide-react';
 import type { AccessCode } from '../../types/groupManagement';
 
 interface PrintAccessCodesModalProps {
@@ -71,12 +71,12 @@ export const PrintAccessCodesModal: React.FC<PrintAccessCodesModalProps> = ({
           </div>
         </div>
 
-        {/* Printable Access Codes Content */}
+        
         <div
           id="printable-access-codes-sheet"
           className="overflow-y-auto flex-1 space-y-6 pr-1 print:overflow-visible print:p-0"
         >
-          {/* Print Header */}
+          
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1 print:bg-white print:border-b-2 print:border-black print:rounded-none">
             <h2 className="text-lg font-black text-slate-900">منصة الصادق التعليمية - كشف أكواد التفعيل الرسمية</h2>
             <div className="flex items-center justify-center gap-6 text-xs text-slate-600 font-semibold pt-1">
@@ -86,7 +86,7 @@ export const PrintAccessCodesModal: React.FC<PrintAccessCodesModalProps> = ({
             </div>
           </div>
 
-          {/* Grid of Access Codes Cards */}
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:grid-cols-2 print:gap-3">
             {accessCodes.map((codeItem, index) => {
               const studentName =
@@ -154,7 +154,7 @@ export const PrintAccessCodesModal: React.FC<PrintAccessCodesModalProps> = ({
           </div>
         </div>
 
-        {/* Modal Footer (Hidden on Print) */}
+       
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between shrink-0 print:hidden">
           <span className="text-xs text-slate-500 font-semibold">
             يمكنك طباعة الصفحة مباشرة عبر طابعة الكمبيوتر أو حفظها كملف PDF.

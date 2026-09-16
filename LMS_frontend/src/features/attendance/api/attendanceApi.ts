@@ -20,25 +20,24 @@ export interface AttendanceSheet {
   updatedAt?: string;
 }
 
-export interface AttendanceSheetStudentDetails {
+export interface AttendanceSheetStudentStatus {
   _id: string;
   name: string;
   phone?: string;
+  status: 'Present' | 'Absent';
 }
 
-export interface AttendanceSheetDetails {
-  _id: string;
-  groupID: string;
-  date: string;
-  presentStudents: AttendanceSheetStudentDetails[];
-  createdAt?: string;
-  updatedAt?: string;
+export interface AttendanceSheetStats {
+  totalStudents: number;
+  totalPresent: number;
+  totalAbsent: number;
 }
 
 export interface AttendanceSheetDetailsResponse {
   message: string;
-  totalPresent: number;
-  data: AttendanceSheetDetails;
+  date?: string;
+  stats?: AttendanceSheetStats;
+  data: AttendanceSheetStudentStatus[];
 }
 
 export interface PaginatedAttendanceSheetsResponse {

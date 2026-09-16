@@ -13,7 +13,6 @@ import {
   ChevronLeft,
   X,
   QrCode,
-  ArrowRightLeft,
   Printer,
 } from 'lucide-react';
 import { useTeacherGroups } from '../hooks/useTeacherGroups';
@@ -26,7 +25,6 @@ import {
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
 import { QrAttendanceScannerModal } from './attendance/QrAttendanceScannerModal';
-import { MoveStudentModal } from './groups/MoveStudentModal';
 import { PrintStudentQrCardModal } from '../../student/components/PrintStudentQrCardModal';
 
 export const TeacherAttendanceManager: React.FC = () => {
@@ -37,14 +35,13 @@ export const TeacherAttendanceManager: React.FC = () => {
   const [detailsTab, setDetailsTab] = useState<'present' | 'absent'>('present');
   const [recordingStudentId, setRecordingStudentId] = useState<string | null>(null);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
-  const [moveStudentTarget, setMoveStudentTarget] = useState<{ id: string; name: string } | null>(null);
   const [printStudentTarget, setPrintStudentTarget] = useState<{
     id: string;
     name: string;
     phone?: string;
   } | null>(null);
 
-  // 1. Fetch active teacher groups
+  
   const {
     data: groupsData,
     isLoading: isLoadingGroups,
@@ -55,7 +52,7 @@ export const TeacherAttendanceManager: React.FC = () => {
 
   const activeGroups = (groupsData?.data || []).filter((g) => g.isActive !== false);
 
-  // 2. Fetch students for selected group
+  
   const {
     data: students,
     isLoading: isLoadingStudents,
@@ -64,7 +61,7 @@ export const TeacherAttendanceManager: React.FC = () => {
     refetch: refetchStudents,
   } = useGroupStudents(selectedGroupId);
 
-  // 3. Fetch attendance sheets for selected group
+  
   const {
     data: sheetsData,
     isLoading: isLoadingSheets,
@@ -73,7 +70,7 @@ export const TeacherAttendanceManager: React.FC = () => {
     refetch: refetchSheets,
   } = useGroupAttendanceSheets(selectedGroupId, sheetsPage, 10);
 
-  // 4. Fetch sheet details when a sheet is selected
+  
   const {
     data: sheetDetailsData,
     isLoading: isLoadingSheetDetails,
@@ -82,7 +79,7 @@ export const TeacherAttendanceManager: React.FC = () => {
     refetch: refetchSheetDetails,
   } = useAttendanceSheetDetails(selectedGroupId, selectedSheetId || undefined);
 
-  // 5. Attendance recording mutation
+ 
   const recordAttendanceMutation = useRecordStudentAttendance();
 
   const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -132,7 +129,7 @@ export const TeacherAttendanceManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
+      
       <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
@@ -158,7 +155,7 @@ export const TeacherAttendanceManager: React.FC = () => {
         )}
       </div>
 
-      {/* Step 1: Select Active Group */}
+    
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
         <label className="block text-xs font-bold text-slate-700">
           المجموعة الدراسية <span className="text-rose-500">*</span>
@@ -202,10 +199,10 @@ export const TeacherAttendanceManager: React.FC = () => {
         )}
       </div>
 
-      {/* Main Content Area after Group Selection */}
+     
       {selectedGroupId && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column: Group Roster & Manual Attendance Marking */}
+          
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4 flex flex-col min-h-96">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
@@ -285,16 +282,6 @@ export const TeacherAttendanceManager: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => setMoveStudentTarget({ id: student._id, name: student.name })}
-                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-bold transition cursor-pointer flex items-center gap-1"
-                          title="نقل الطالب لمجموعة أخرى"
-                        >
-                          <ArrowRightLeft size={13} />
-                          <span className="hidden sm:inline">نقل</span>
-                        </button>
-
-                        <button
-                          type="button"
                           onClick={() => handleRecordAttendance(student._id, student.name)}
                           disabled={recordAttendanceMutation.isPending}
                           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-2xs shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -319,7 +306,7 @@ export const TeacherAttendanceManager: React.FC = () => {
             )}
           </div>
 
-          {/* Right Column: Attendance Sheets History */}
+         
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4 flex flex-col min-h-96">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
@@ -391,7 +378,7 @@ export const TeacherAttendanceManager: React.FC = () => {
               </div>
             )}
 
-            {/* Server Pagination for Sheets */}
+           
             {totalSheetsPages > 1 && (
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
                 <button
@@ -419,11 +406,12 @@ export const TeacherAttendanceManager: React.FC = () => {
         </div>
       )}
 
-      {/* Sheet Details Modal */}
+      
       {selectedSheetId && (() => {
-        const presentList = sheetDetailsData?.data?.presentStudents || [];
-        const presentIds = new Set(presentList.map((s) => s._id));
-        const absentList = (students || []).filter((s) => !presentIds.has(s._id));
+        const studentStatuses = sheetDetailsData?.data || [];
+        const presentList = studentStatuses.filter((s) => s.status === 'Present');
+        const absentList = studentStatuses.filter((s) => s.status === 'Absent');
+        const sheetDate = sheetDetailsData?.date;
 
         return (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -435,9 +423,9 @@ export const TeacherAttendanceManager: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-sm font-extrabold text-slate-800">تفاصيل كشف الحضور والغياب</h4>
-                    {sheetDetailsData?.data?.date && (
+                    {sheetDate && (
                       <p className="text-xs text-slate-500 font-medium">
-                        التاريخ: {formatDate(sheetDetailsData.data.date)}
+                        التاريخ: {formatDate(sheetDate)}
                       </p>
                     )}
                   </div>
@@ -451,7 +439,7 @@ export const TeacherAttendanceManager: React.FC = () => {
                 </button>
               </div>
 
-              {/* Tabs Bar: Present vs Absent */}
+             
               <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl shrink-0">
                 <button
                   type="button"
@@ -563,7 +551,7 @@ export const TeacherAttendanceManager: React.FC = () => {
         );
       })()}
 
-      {/* QR Attendance Scanner Modal */}
+      
       {selectedGroupId && (
         <QrAttendanceScannerModal
           isOpen={isQrScannerOpen}
@@ -573,18 +561,9 @@ export const TeacherAttendanceManager: React.FC = () => {
         />
       )}
 
-      {/* Move Student Modal */}
-      {moveStudentTarget && selectedGroupId && (
-        <MoveStudentModal
-          isOpen={Boolean(moveStudentTarget)}
-          onClose={() => setMoveStudentTarget(null)}
-          studentId={moveStudentTarget.id}
-          studentName={moveStudentTarget.name}
-          currentGroupId={selectedGroupId}
-        />
-      )}
 
-      {/* Print Student QR Card Modal */}
+
+     
       {printStudentTarget && (
         <PrintStudentQrCardModal
           isOpen={Boolean(printStudentTarget)}

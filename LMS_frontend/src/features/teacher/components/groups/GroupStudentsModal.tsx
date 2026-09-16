@@ -1,8 +1,10 @@
 import React from 'react';
-import { Users, User, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X } from 'lucide-react';
+import { Users, User, UserX, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { useGroupStudents } from '../../hooks/useGroupStudents';
+import { useDeactivateStudent } from '../../hooks/useDeactivateStudent';
 import type { Group, GroupStudent } from '../../types/groupManagement';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
+import { useToast } from '../../../../context/ToastContext';
 
 interface GroupStudentsModalProps {
   isOpen: boolean;
@@ -19,8 +21,25 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   onMoveStudent,
   onResetPassword,
 }) => {
+  const toast = useToast();
   const groupId = group?._id || '';
   const { data: students, isLoading, isError, error, refetch } = useGroupStudents(groupId);
+  const deactivateStudentMutation = useDeactivateStudent();
+
+  const [studentToDeactivate, setStudentToDeactivate] = React.useState<GroupStudent | null>(null);
+
+  const handleConfirmDeactivate = (student: GroupStudent) => {
+    deactivateStudentMutation.mutate(student._id, {
+      onSuccess: () => {
+        toast.success(`تم تعطيل حساب الطالب (${student.name}) بنجاح.`);
+        setStudentToDeactivate(null);
+        refetch();
+      },
+      onError: (err) => {
+        toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء تعطيل حساب الطالب'));
+      },
+    });
+  };
 
   if (!isOpen || !group) return null;
 
@@ -135,6 +154,16 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                       <ArrowLeftRight size={13} />
                       <span>نقل</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setStudentToDeactivate(student)}
+                      disabled={deactivateStudentMutation.isPending}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/80 text-xs font-bold transition cursor-pointer"
+                      title="تعطيل حساب الطالب"
+                    >
+                      <UserX size={13} />
+                      <span>تعطيل</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -142,7 +171,6 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
           )}
         </div>
 
-        
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between shrink-0">
           <span className="text-xs font-bold text-slate-500">
             {students ? `إجمالي الطلاب: ${students.length}` : ''}
@@ -156,6 +184,45 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Confirmation Modal for Student Deactivation */}
+      {studentToDeactivate && (
+        <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full border border-slate-200 shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100 mx-auto">
+              <UserX size={24} />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h4 className="text-base font-extrabold text-slate-800">تأكيد تعطيل حساب الطالب</h4>
+              <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+                هل أنت تأكد من تعطيل حساب الطالب <span className="text-rose-600 font-bold">({studentToDeactivate.name})</span> بالمنصة؟
+              </p>
+              <p className="text-[11px] text-slate-500 font-semibold bg-rose-50/50 p-2.5 rounded-xl border border-rose-100">
+                ⚠️ عند التعطيل لن يتمكن الطالب من تسجيل الدخول حتى يتم إعادة تنشيطه.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setStudentToDeactivate(null)}
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmDeactivate(studentToDeactivate)}
+                disabled={deactivateStudentMutation.isPending}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                {deactivateStudentMutation.isPending ? 'جاري التعطيل...' : 'تأكيد التعطيل 🛑'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
