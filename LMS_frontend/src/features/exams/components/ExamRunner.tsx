@@ -187,9 +187,11 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
   // Submission Result View
   if (submissionResult) {
     const isPendingGrade = submissionResult.status === 'PENDING';
-    const score = submissionResult.score ?? 0;
-    const totalQ = submissionResult.totalQuestions || 1;
-    const percentage = Math.round((score / Math.max(1, totalQ)) * 100);
+    const score = submissionResult.totalScore ?? submissionResult.score ?? 0;
+    const totalPoints = submissionResult.totalExamPoints ?? submissionResult.totalQuestions ?? (exam?.questions?.length || 1);
+    const totalQuestionsCount = exam?.questions?.length || submissionResult.totalQuestions || 1;
+    const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
+    const isPassed = submissionResult.isPassed !== undefined ? submissionResult.isPassed : (percentage >= 50);
 
     return (
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xs text-center space-y-6 max-w-2xl mx-auto">
@@ -197,12 +199,12 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto border shadow-sm ${
             isPendingGrade
               ? 'bg-amber-50 text-amber-600 border-amber-200'
-              : submissionResult.isPassed
+              : isPassed
               ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
               : 'bg-rose-50 text-rose-600 border-rose-200'
           }`}
         >
-          {isPendingGrade ? <Clock size={44} /> : submissionResult.isPassed ? <CheckCircle2 size={44} /> : <XCircle size={44} />}
+          {isPendingGrade ? <Clock size={44} /> : isPassed ? <CheckCircle2 size={44} /> : <XCircle size={44} />}
         </div>
 
         <div className="space-y-2">
@@ -210,7 +212,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-extrabold border ${
               isPendingGrade
                 ? 'bg-amber-100 text-amber-800 border-amber-300'
-                : submissionResult.isPassed
+                : isPassed
                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                 : 'bg-rose-100 text-rose-800 border-rose-300'
             }`}
@@ -219,8 +221,8 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             <span>
               {isPendingGrade
                 ? 'تم التسليم وبانتظار تصحيح الأسئلة المقالية'
-                : submissionResult.isPassed
-                ? 'تم اجتياز الامتحان بنجاح'
+                : isPassed
+                ? 'تم اجتياز الامتحان بنجاح 🏆'
                 : 'لم يتم اجتياز الامتحان'}
             </span>
           </span>
@@ -237,16 +239,16 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80">
             <span className="text-[11px] text-slate-400 font-bold block">درجة الطالب الحالية</span>
-            <span className="text-xl font-black text-slate-800">{submissionResult.score} درجة</span>
+            <span className="text-xl font-black text-slate-800">{score} / {totalPoints} درجة</span>
           </div>
 
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80">
             <span className="text-[11px] text-slate-400 font-bold block">إجمالي الأسئلة</span>
-            <span className="text-xl font-black text-slate-800">{submissionResult.totalQuestions} أسئلة</span>
+            <span className="text-xl font-black text-slate-800">{totalQuestionsCount} أسئلة</span>
           </div>
 
           <div className="bg-teal-50/60 rounded-2xl p-4 border border-teal-100">
-            <span className="text-[11px] text-[#0D8A82] font-bold block">النسبة الحالية</span>
+            <span className="text-[11px] text-[#0D8A82] font-bold block">النسبة المئوية</span>
             <span className="text-xl font-black text-[#0D8A82]">{percentage}%</span>
           </div>
         </div>

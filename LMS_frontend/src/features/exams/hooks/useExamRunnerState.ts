@@ -38,11 +38,15 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
 
   useEffect(() => {
     if (existingSubmission && !submissionResult) {
+      const scoreVal = (existingSubmission as any).totalScore ?? existingSubmission.score ?? 0;
+      const totalPointsVal = (existingSubmission as any).totalExamPoints ?? (existingSubmission as any).totalQuestions ?? scoreVal;
       setSubmissionResult({
         submissionID: existingSubmission._id,
         status: (existingSubmission as any).status || 'GRADED',
-        score: existingSubmission.score,
-        totalExamPoints: (existingSubmission as any).totalExamPoints || existingSubmission.score,
+        totalScore: scoreVal,
+        score: scoreVal,
+        totalExamPoints: totalPointsVal,
+        totalQuestions: totalPointsVal,
       });
     }
   }, [existingSubmission, submissionResult]);

@@ -10,6 +10,7 @@ export interface SubmitExamPayload {
 
 export interface ExamSubmissionResult {
   score?: number;
+  totalScore?: number;
   totalQuestions?: number;
   isPassed?: boolean;
   submissionID?: string;

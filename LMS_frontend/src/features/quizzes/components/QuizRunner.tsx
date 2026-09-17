@@ -239,10 +239,10 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
   /* Result screen */
   if (submissionResult) {
-    const isPassed = submissionResult.isPassed;
-    const score = submissionResult.score;
-    const total = submissionResult.totalQuestions || questions.length || 1;
+    const score = submissionResult.score ?? (submissionResult as any).totalScore ?? 0;
+    const total = submissionResult.totalQuestions || (submissionResult as any).totalExamPoints || questions.length || 1;
     const percentage = Math.round((score / total) * 100);
+    const isPassed = submissionResult.isPassed !== undefined ? submissionResult.isPassed : percentage >= 50;
 
     return (
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6 text-center">
