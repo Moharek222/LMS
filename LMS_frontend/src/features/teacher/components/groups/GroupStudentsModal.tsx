@@ -1,7 +1,9 @@
 import React from 'react';
-import { Users, User, UserX, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X, BarChart3 } from 'lucide-react';
+import { Users, User, UserX, UserCheck, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X, BarChart3 } from 'lucide-react';
 import { useGroupStudents } from '../../hooks/useGroupStudents';
 import { useDeactivateStudent } from '../../hooks/useDeactivateStudent';
+import { useActivateStudent } from '../../hooks/useActivateStudent';
+import { moveStudent } from '../../api/teacherGroupsApi';
 import type { Group, GroupStudent } from '../../types/groupManagement';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
@@ -26,14 +28,40 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   const groupId = group?._id || '';
   const { data: students, isLoading, isError, error, refetch } = useGroupStudents(groupId);
   const deactivateStudentMutation = useDeactivateStudent();
+  const activateStudentMutation = useActivateStudent();
 
   const [studentToDeactivate, setStudentToDeactivate] = React.useState<GroupStudent | null>(null);
   const [selectedStudentForDetails, setSelectedStudentForDetails] = React.useState<GroupStudent | null>(null);
+  const [deactivatedStudentsMap, setDeactivatedStudentsMap] = React.useState<Record<string, GroupStudent>>({});
+
+  // Combine query students + locally deactivated students
+  const displayStudents = React.useMemo(() => {
+    const list: GroupStudent[] = (students || []).map((s) => {
+      // If student is marked deactivated locally, override
+      if (deactivatedStudentsMap[s._id]) {
+        return deactivatedStudentsMap[s._id];
+      }
+      return s;
+    });
+
+    // Append any locally deactivated student not in query list
+    Object.values(deactivatedStudentsMap).forEach((ds) => {
+      if (!list.some((s) => s._id === ds._id)) {
+        list.push(ds);
+      }
+    });
+
+    return list;
+  }, [students, deactivatedStudentsMap]);
 
   const handleConfirmDeactivate = (student: GroupStudent) => {
     deactivateStudentMutation.mutate(student._id, {
       onSuccess: () => {
         toast.success(`تم تعطيل حساب الطالب (${student.name}) بنجاح.`);
+        setDeactivatedStudentsMap((prev) => ({
+          ...prev,
+          [student._id]: { ...student, isDeactivated: true, isActive: false },
+        }));
         setStudentToDeactivate(null);
         refetch();
       },
@@ -41,6 +69,28 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
         toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء تعطيل حساب الطالب'));
       },
     });
+  };
+
+  const handleActivateStudent = async (student: GroupStudent) => {
+    try {
+      await activateStudentMutation.mutateAsync(student._id);
+      
+      // Assign back to group if needed
+      if (groupId) {
+        await moveStudent(student._id, { newGroupID: groupId }).catch(() => {});
+      }
+
+      setDeactivatedStudentsMap((prev) => {
+        const next = { ...prev };
+        delete next[student._id];
+        return next;
+      });
+
+      toast.success(`تم إعادة تفعيل حساب الطالب (${student.name}) بنجاح! 🟢`);
+      refetch();
+    } catch (err) {
+      toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء إعادت تفعيل حساب الطالب'));
+    }
   };
 
   if (!isOpen || !group) return null;
@@ -100,7 +150,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
               </div>
             )}
 
-            {!isLoading && !isError && (!students || students.length === 0) && (
+            {!isLoading && !isError && (!displayStudents || displayStudents.length === 0) && (
               <div className="py-16 text-center space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto border border-slate-200">
                   <Users size={24} />
@@ -112,80 +162,108 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
               </div>
             )}
 
-            {!isLoading && !isError && students && students.length > 0 && (
+            {!isLoading && !isError && displayStudents && displayStudents.length > 0 && (
               <div className="space-y-3">
-                {students.map((student) => (
-                  <div
-                    key={student._id}
-                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <User size={15} className="text-[#0D8A82]" />
-                        <span className="text-xs font-extrabold text-slate-800">{student.name}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-[11px] text-slate-500 font-semibold flex-wrap">
-                        <div className="flex items-center gap-1">
-                          <Phone size={12} className="text-slate-400" />
-                          <span>الهاتف: {student.phone || 'غير متوفر'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Phone size={12} className="text-slate-400" />
-                          <span>ولي الأمر: {student.parentPhone || 'غير متوفر'}</span>
-                        </div>
-                      </div>
-                    </div>
+                {displayStudents.map((student) => {
+                  const isDeactivated = student.isDeactivated || student.isActive === false;
 
-                    <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedStudentForDetails(student)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 text-white hover:bg-teal-700 text-xs font-bold transition cursor-pointer shadow-2xs"
-                        title="متابعة النسبة الحضور والمشاهدات والكويزات"
-                      >
-                        <BarChart3 size={13} />
-                        <span>السجل والتقدم</span>
-                      </button>
+                  return (
+                    <div
+                      key={student._id}
+                      className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3.5 w-full min-w-0 overflow-hidden"
+                    >
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <User size={15} className="text-[#0D8A82] shrink-0" />
+                          <span className="text-xs font-extrabold text-slate-800 break-words">{student.name}</span>
+                          {isDeactivated ? (
+                            <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold flex items-center gap-1 shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                              <span>حساب معطل 🔴</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold flex items-center gap-1 shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              <span>نشط ومفعل 🟢</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-[11px] text-slate-500 font-semibold flex-wrap">
+                          <div className="flex items-center gap-1">
+                            <Phone size={12} className="text-slate-400 shrink-0" />
+                            <span>الهاتف: {student.phone || 'غير متوفر'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Phone size={12} className="text-slate-400 shrink-0" />
+                            <span>ولي الأمر: {student.parentPhone || 'غير متوفر'}</span>
+                          </div>
+                        </div>
+                      </div>
 
-                      {onResetPassword && (
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
                         <button
                           type="button"
-                          onClick={() => onResetPassword(student, group)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200/80 text-xs font-bold transition cursor-pointer"
-                          title="تعيين كلمة مرور جديدة للطالب"
+                          onClick={() => setSelectedStudentForDetails(student)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 text-white hover:bg-teal-700 text-xs font-bold transition cursor-pointer shadow-2xs shrink-0"
+                          title="متابعة نسبة الحضور والمشاهدات والكويزات"
                         >
-                          <KeyRound size={13} />
-                          <span>كلمة السر</span>
+                          <BarChart3 size={13} />
+                          <span>السجل والتقدم</span>
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => onMoveStudent(student, group)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer"
-                      >
-                        <ArrowLeftRight size={13} />
-                        <span>نقل</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setStudentToDeactivate(student)}
-                        disabled={deactivateStudentMutation.isPending}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/80 text-xs font-bold transition cursor-pointer"
-                        title="تعطيل حساب الطالب"
-                      >
-                        <UserX size={13} />
-                        <span>تعطيل</span>
-                      </button>
+
+                        {onResetPassword && (
+                          <button
+                            type="button"
+                            onClick={() => onResetPassword(student, group)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200/80 text-xs font-bold transition cursor-pointer shrink-0"
+                            title="تعيين كلمة مرور جديدة للطالب"
+                          >
+                            <KeyRound size={13} />
+                            <span>كلمة السر</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => onMoveStudent(student, group)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer shrink-0"
+                        >
+                          <ArrowLeftRight size={13} />
+                          <span>نقل</span>
+                        </button>
+                        {isDeactivated ? (
+                          <button
+                            type="button"
+                            onClick={() => handleActivateStudent(student)}
+                            disabled={activateStudentMutation.isPending}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold transition cursor-pointer shrink-0"
+                            title="إعادة تفعيل حساب الطالب"
+                          >
+                            <UserCheck size={13} />
+                            <span>{activateStudentMutation.isPending ? 'جاري التفعيل...' : 'تفعيل'}</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setStudentToDeactivate(student)}
+                            disabled={deactivateStudentMutation.isPending}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/80 text-xs font-bold transition cursor-pointer shrink-0"
+                            title="تعطيل حساب الطالب"
+                          >
+                            <UserX size={13} />
+                            <span>تعطيل</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between shrink-0">
             <span className="text-xs font-bold text-slate-500">
-              {students ? `إجمالي الطلاب: ${students.length}` : ''}
+              {displayStudents ? `إجمالي الطلاب: ${displayStudents.length}` : ''}
             </span>
             <button
               type="button"

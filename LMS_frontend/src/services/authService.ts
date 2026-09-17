@@ -79,7 +79,7 @@ export const getMeApi = async (): Promise<UserProfile | null> => {
     phone: backendData.phone,
     role: backendData.role || (backendData.email ? 'teacher' : 'student'),
     groupId: typeof backendData.groupID === 'object' ? backendData.groupID?._id : backendData.groupID,
-    isActive: backendData.isActive !== false,
+    isActive: backendData.isActive !== false && backendData.isDeactivated !== true,
     hasActiveSubscription: backendData.hasActiveSubscription,
   };
 };

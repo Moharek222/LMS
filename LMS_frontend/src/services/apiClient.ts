@@ -21,7 +21,7 @@ apiClient.interceptors.response.use(
       error.config?.headers?.['x-skip-auth-redirect'] === 'true' ||
       isPublicAuthRoute;
 
-    if (error.response && error.response.status === 401 && !skipRedirect) {
+    if (error.response && (error.response.status === 401 || error.response.status === 403) && !skipRedirect) {
       localStorage.removeItem('lms_user');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

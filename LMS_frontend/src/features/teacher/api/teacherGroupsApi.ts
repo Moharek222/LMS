@@ -73,6 +73,13 @@ export const deactivateStudent = async (studentId: string): Promise<{ message: s
   return response.data;
 };
 
+export const activateStudent = async (studentId: string): Promise<{ message: string }> => {
+  const response = await apiClient.put<{ message: string }>(
+    `/api/students/activate/${studentId}`
+  );
+  return response.data;
+};
+
 export const teacherGroupsApi = {
   getTeacherGroups,
   getGroupStudents,
@@ -82,6 +89,7 @@ export const teacherGroupsApi = {
   moveStudent,
   resetStudentPassword,
   deactivateStudent,
+  activateStudent,
 };
 
 export default teacherGroupsApi;

@@ -53,7 +53,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
 
   const { user, isAuthenticated, loginTeacher, loginStudent, isLoading } = useAuth();
 
-
   const teacherForm = useForm<TeacherInputs>({
     resolver: zodResolver(teacherSchema),
     mode: 'onTouched',
@@ -63,7 +62,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
     resolver: zodResolver(studentSchema),
     mode: 'onTouched',
   });
-
 
   const onTeacherSubmit = async (data: TeacherInputs) => {
     setServerError(null);
@@ -98,7 +96,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
     }
   };
 
-
   const onStudentSubmit = async (data: StudentInputs) => {
     setServerError(null);
     try {
@@ -132,27 +129,36 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
   };
 
   return (
-   
-    <div dir="rtl" className="h-screen w-full flex flex-col lg:grid lg:grid-cols-5 font-sans bg-slate-50 overflow-hidden">
+    <div dir="rtl" className="min-h-screen lg:h-screen w-full flex flex-col lg:grid lg:grid-cols-5 font-sans bg-[#091523] lg:bg-slate-50 overflow-y-auto lg:overflow-hidden">
       
-     
-      <div className="lg:col-span-2 flex flex-col justify-center items-center px-6 py-8 sm:px-10 lg:px-12 bg-[#FAFBFC] overflow-y-auto h-full z-10 shadow-lg">
+      {/* Mobile Header Image Banner */}
+      <div className="lg:hidden relative w-full h-64 sm:h-72 bg-[#091523] shrink-0 overflow-hidden">
+        <img
+          src="/newmobile.png"
+          alt="منصة الصادق في الكيمياء"
+          className="w-full h-full object-cover object-top"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#091523]/20 to-[#091523]/80 pointer-events-none" />
+      </div>
+
+      {/* Form Card Container */}
+      <div className="lg:col-span-2 flex flex-col justify-center items-center px-6 py-8 sm:px-10 lg:px-12 bg-[#FAFBFC] rounded-t-[2.5rem] lg:rounded-none -mt-10 lg:mt-0 relative z-20 shadow-2xl lg:shadow-lg min-h-[calc(100vh-13rem)] lg:min-h-full lg:overflow-y-auto">
         <div className="w-full max-w-md my-auto">
           
-         
-          <div className="text-center mb-7">
-            <h1 className="text-3xl font-extrabold text-slate-800 mb-1.5">مرحباً بك</h1>
-            <p className="text-slate-500 text-sm font-semibold">اختر نوع الحساب للمتابعة</p>
+          {/* Header Title */}
+          <div className="text-center mb-6 sm:mb-7">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-1.5">مرحباً بك</h1>
+            <p className="text-slate-500 text-xs sm:text-sm font-semibold">اختر نوع الحساب للمتابعة</p>
           </div>
 
-         
           {isAuthenticated && user ? (
             <Navigate to={user.role === 'student' ? '/student/dashboard' : '/teacher/dashboard'} replace />
           ) : (
             <>
-           
+              {/* Account Type Selector Buttons */}
               <div className="grid grid-cols-2 gap-3 mb-2">
                 
+                {/* Student Tab Button */}
                 <div className="flex flex-col items-center">
                   <button
                     type="button"
@@ -174,7 +180,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                   <div className={`h-1 w-12 rounded-full mt-2 transition-all duration-300 ${accountType === 'student' ? 'bg-[#0D8A82]' : 'bg-transparent'}`}></div>
                 </div>
 
-               
+                {/* Teacher Tab Button */}
                 <div className="flex flex-col items-center">
                   <button
                     type="button"
@@ -189,7 +195,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                     }`}
                   >
                     <User size={20} />
-                    <span>مدرس </span>
+                    <span>مدرس</span>
                     {accountType === 'teacher' && <CheckCircle2 size={18} className="text-white fill-white/20" />}
                   </button>
                   
@@ -197,7 +203,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                 </div>
               </div>
 
-             
+              {/* Subtitle Badge */}
               <div className="flex items-center justify-center gap-2 mb-6 mt-2">
                 <span className="text-base font-bold text-slate-800">
                   {accountType === 'teacher' ? 'تسجيل دخول المدرس' : 'تسجيل دخول الطالب'}
@@ -209,15 +215,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                 )}
               </div>
 
-             
+              {/* Server Error Alert */}
               {serverError && (
-                <div className="flex items-center gap-2.5 p-3.5 mb-5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-bold">
+                <div className="flex items-center gap-2.5 p-3.5 mb-5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm font-bold">
                   <AlertCircle size={20} className="shrink-0" />
                   <span>{serverError}</span>
                 </div>
               )}
 
-             
+              {/* Teacher Form */}
               {accountType === 'teacher' ? (
                 <form className="space-y-4" onSubmit={teacherForm.handleSubmit(onTeacherSubmit)}>
                   
@@ -242,7 +248,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                     )}
                   </div>
 
-                 
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
                     <div className="relative">
@@ -272,7 +277,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                     )}
                   </div>
 
-                  
                   <div className="flex items-center justify-between pt-1">
                     <a
                       href="#forgot-password"
@@ -294,11 +298,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                     </label>
                   </div>
 
-                 
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer"
+                    className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer text-sm"
                   >
                     {isLoading ? (
                       <span>جاري تسجيل الدخول...</span>
@@ -311,7 +314,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                   </button>
                 </form>
               ) : (
-                
+                /* Student Form */
                 <form className="space-y-4" onSubmit={studentForm.handleSubmit(onStudentSubmit)}>
                   
                   <div className="space-y-1.5">
@@ -335,7 +338,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                     )}
                   </div>
 
-                  
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
                     <div className="relative">
@@ -365,9 +367,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                     )}
                   </div>
 
-                  
                   <div className="flex items-center justify-between pt-1">
-                    
                     <label className="flex items-center gap-2 cursor-pointer">
                       <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
                       <input
@@ -378,11 +378,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                     </label>
                   </div>
 
-                  
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer"
+                    className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer text-sm"
                   >
                     {isLoading ? (
                       <span>جاري تسجيل الدخول...</span>
@@ -396,14 +395,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                 </form>
               )}
 
-             
               <div className="flex items-center gap-4 my-5">
                 <div className="flex-1 h-px bg-slate-200"></div>
                 <span className="text-slate-400 text-xs font-medium">أو</span>
                 <div className="flex-1 h-px bg-slate-200"></div>
               </div>
 
-              
               <a
                 href="https://wa.me/mahmoud_3zb"
                 target="_blank"
@@ -414,7 +411,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                 <Headphones size={18} />
               </a>
 
-              
               <div className="text-center mt-4 pt-2">
                 <p className="text-xs text-slate-600 font-medium">
                   ليس لديك حساب طالب؟{' '}
@@ -424,20 +420,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                       onClick={onNavigateToRegister}
                       className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
                     >
-                      إنشاء حساب جديد
+                      سجل الآن
                     </button>
                   ) : (
                     <Link
                       to="/register"
                       className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
                     >
-                      إنشاء حساب جديد
+                      سجل الآن
                     </Link>
                   )}
                 </p>
               </div>
 
-             
               <div className="flex flex-col items-center justify-center gap-1 mt-5 text-slate-400">
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-xs font-semibold">منصة آمنة ومحمية</span>
@@ -451,7 +446,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
         </div>
       </div>
 
-     
+      {/* Desktop Banner Image Column */}
       <div className="hidden lg:block lg:col-span-3 relative h-full w-full overflow-hidden select-none bg-[#091523]">
         <img
           src="/slogan8k3.png"

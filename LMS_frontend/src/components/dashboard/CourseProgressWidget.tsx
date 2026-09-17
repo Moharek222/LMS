@@ -63,39 +63,79 @@ export const CourseProgressWidget: React.FC<CourseProgressWidgetProps> = ({
               لا توجد مواد دراسية مضافة حتى الآن
             </div>
           ) : (
-            courses.map((course) => (
-              <div
-                key={course.id}
-                onClick={() => onSelectCourse?.(course.id)}
-                className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition cursor-pointer"
-              >
-                
-                <div className="flex-1 text-right space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    {showProgress && (
-                      <span className="text-[11px] font-bold text-teal-600">
-                        تقدم {course.progress}%
-                      </span>
-                    )}
-                    <h4 className="text-xs font-bold text-slate-800">{course.title}</h4>
-                  </div>
+            courses.map((course) => {
+              const radius = 14;
+              const circumference = 2 * Math.PI * radius;
+              const strokeDashoffset = circumference - (course.progress / 100) * circumference;
+              const remainingProgress = 100 - course.progress;
 
+              return (
+                <div
+                  key={course.id}
+                  onClick={() => onSelectCourse?.(course.id)}
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/70 hover:bg-teal-50/40 border border-slate-100 hover:border-teal-200 transition cursor-pointer group"
+                >
+                  {/* Progress Ring Icon */}
                   {showProgress && (
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-linear-to from-[#0D8A82] to-teal-400 rounded-full transition-all duration-500"
-                        style={{ width: `${course.progress}%` }}
-                      />
+                    <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
+                      <svg className="w-10 h-10 transform -rotate-90">
+                        <circle
+                          cx="20"
+                          cy="20"
+                          r={radius}
+                          stroke="currentColor"
+                          strokeWidth="3.5"
+                          className="text-slate-200"
+                          fill="transparent"
+                        />
+                        <circle
+                          cx="20"
+                          cy="20"
+                          r={radius}
+                          stroke="currentColor"
+                          strokeWidth="3.5"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={strokeDashoffset}
+                          strokeLinecap="round"
+                          className="text-[#0D8A82] transition-all duration-700 ease-out"
+                          fill="transparent"
+                        />
+                      </svg>
+                      <span className="absolute text-[10px] font-black text-slate-700 group-hover:text-[#0D8A82] transition">
+                        {course.progress}%
+                      </span>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
-                    {showStudentCount && <span>{course.studentCount} طالب</span>}
-                    <span>{course.level}</span>
+                  <div className="flex-1 text-right space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-slate-800 group-hover:text-[#0D8A82] transition">
+                        {course.title}
+                      </h4>
+                      {showProgress && (
+                        <span className="text-[10px] font-bold text-slate-400">
+                          متبقي {remainingProgress}%
+                        </span>
+                      )}
+                    </div>
+
+                    {showProgress && (
+                      <div className="w-full h-1.5 bg-slate-200/60 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-linear-to-r from-[#0D8A82] to-teal-400 rounded-full transition-all duration-500"
+                          style={{ width: `${course.progress}%` }}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
+                      {showStudentCount && <span>{course.studentCount} طالب</span>}
+                      <span>{course.level}</span>
+                    </div>
                   </div>
-                </div>  
-              </div>
-            ))
+                </div>
+              );
+            })
           )}
         </div>
       </div>

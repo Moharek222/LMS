@@ -42,6 +42,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const verifiedRef = useRef<boolean>(false);
 
+  const checkStudentStatus = React.useCallback(async () => {
+    const savedUserStr = localStorage.getItem('lms_user');
+    if (!savedUserStr) return;
+
+    try {
+      const parsed = JSON.parse(savedUserStr);
+      if (parsed?.role !== 'student') return;
+    } catch {
+      return;
+    }
+
+    try {
+      const updatedProfile = await getMeApi();
+      if (!updatedProfile || updatedProfile.isActive === false) {
+        setUser(null);
+        localStorage.removeItem('lms_user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        return;
+      }
+
+      setUser((prev) => {
+        if (!prev) return null;
+        const merged = {
+          ...prev,
+          ...updatedProfile,
+        };
+        localStorage.setItem('lms_user', JSON.stringify(merged));
+        return merged;
+      });
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
+        setUser(null);
+        localStorage.removeItem('lms_user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const savedUserStr = localStorage.getItem('lms_user');
     if (!savedUserStr) {
@@ -64,38 +106,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
 
-    if (verifiedRef.current) return;
-    verifiedRef.current = true;
-
-    getMeApi()
-      .then((updatedProfile) => {
-        if (updatedProfile) {
-          setUser((prev) => {
-            const hasActiveSubscription =
-              updatedProfile.hasActiveSubscription !== undefined
-                ? updatedProfile.hasActiveSubscription
-                : prev?.hasActiveSubscription;
-
-            const merged = {
-              ...prev,
-              ...updatedProfile,
-              ...(hasActiveSubscription !== undefined ? { hasActiveSubscription } : {}),
-            };
-            localStorage.setItem('lms_user', JSON.stringify(merged));
-            return merged;
-          });
-        }
-      })
-      .catch((error: unknown) => {
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          setUser(null);
-          localStorage.removeItem('lms_user');
-        }
-      })
-      .finally(() => {
+    if (!verifiedRef.current) {
+      verifiedRef.current = true;
+      checkStudentStatus().finally(() => {
         setIsLoading(false);
       });
-  }, []);
+    } else {
+      setIsLoading(false);
+    }
+
+    // Set up periodic 10-second polling and window focus listener for student accounts
+    const intervalId = setInterval(() => {
+      checkStudentStatus();
+    }, 10000);
+
+    const handleFocus = () => {
+      checkStudentStatus();
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [checkStudentStatus]);
 
   const loginTeacher = async (credentials: TeacherLoginCredentials) => {
     setIsLoading(true);

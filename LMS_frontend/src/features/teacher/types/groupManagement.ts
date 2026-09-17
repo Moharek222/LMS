@@ -25,6 +25,8 @@ export interface GroupStudent {
   name: string;
   phone: string;
   parentPhone: string;
+  isDeactivated?: boolean;
+  isActive?: boolean;
 }
 
 export type PaginatedGroupsResponse = PaginatedResponse<Group>;

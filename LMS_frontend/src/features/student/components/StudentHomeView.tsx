@@ -1,16 +1,19 @@
 import React from 'react';
 import {
   BookOpen,
-  Video,
-  FileText,
   CalendarCheck,
   CheckCircle2,
   AlertTriangle,
+  Award,
+  PlayCircle,
 } from 'lucide-react';
 import { ChemistryBanner } from '../../../components/dashboard/ChemistryBanner';
 import { KpiStatCard } from '../../../components/dashboard/KpiStatCard';
 import { CourseProgressWidget } from '../../../components/dashboard/CourseProgressWidget';
 import { NextActionWidget } from '../../../components/dashboard/NextActionWidget';
+import { useStudentQuizHistory } from '../hooks/useStudentQuizHistory';
+import { useStudentWatchHistory } from '../../lessons/hooks/useProgress';
+import { useMyAttendanceStats } from '../../attendance/hooks/useStudentAttendance';
 
 export interface CourseItem {
   _id: string;
@@ -18,6 +21,9 @@ export interface CourseItem {
 }
 
 export interface StudentHomeUser {
+  id?: string;
+  _id?: string;
+  name?: string;
   hasActiveSubscription?: boolean;
 }
 
@@ -38,17 +44,38 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
   effectiveCourses,
   onSelectTab,
   onSelectCourse,
-  totalLessonsCount,
 }) => {
+  const studentId = user?.id || user?._id || '';
+
+  // Fetch real student stats
+  const { data: quizHistory } = useStudentQuizHistory({ page: 1, limit: 100 });
+  const { data: watchHistory } = useStudentWatchHistory(studentId);
+  const { data: attendanceStats } = useMyAttendanceStats(effectiveCourses[0]?._id);
+
+  // 1. Total Passed Quizzes
+  const passedQuizzesCount = React.useMemo(() => {
+    if (!quizHistory?.data) return 0;
+    return quizHistory.data.filter((q) => q.isPassed).length;
+  }, [quizHistory]);
+
+  // 2. Total Watched Lessons
+  const watchedLessonsCount = React.useMemo(() => {
+    if (!watchHistory) return 0;
+    return watchHistory.reduce((acc, curr) => acc + (curr.watchedLessons?.length || 0), 0);
+  }, [watchHistory]);
+
+  // 3. Attendance Percentage
+  const attendancePercentage = attendanceStats?.attendancePercentage ?? 100;
+
   const coursesCount = isLoadingCourses ? '—' : effectiveCourses.length;
   const firstCourseTitle = effectiveCourses.length > 0 ? effectiveCourses[0].title : undefined;
 
   return (
     <div className="space-y-6">
-     
+      {/* Banner */}
       <ChemistryBanner quote="تعلم الكيمياء بفهم وتطبيق وثقة مع منصة الصادق" />
 
-      
+      {/* Subscription Card */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div
@@ -85,48 +112,46 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
         </div>
       </div>
 
-      
+      {/* Quick Stats Hero Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiStatCard
           title="المواد الدراسية"
           value={coursesCount}
-          subtitle={isLoadingCourses ? 'جاري التحميل...' : 'مقررات مضافة'}
+          subtitle={isLoadingCourses ? 'جاري التحميل...' : 'مقررات دراسية متوفرة'}
           icon={<BookOpen size={24} />}
           color="teal"
         />
         <KpiStatCard
-          title="المحاضرات والدروس"
-          value={totalLessonsCount && totalLessonsCount > 0 ? totalLessonsCount : '—'}
-          subtitle={totalLessonsCount && totalLessonsCount > 0 ? 'دروس المقرر المحدد' : 'محاضرات دراسية'}
-          icon={<Video size={24} />}
+          title="الدروس المشاهدة"
+          value={watchedLessonsCount}
+          subtitle="محاضرة مكتملة"
+          icon={<PlayCircle size={24} />}
           color="blue"
         />
         <KpiStatCard
-          title="الاختبارات والتقييم"
-          value="—"
-          subtitle="تقييمات دراسية"
-          icon={<FileText size={24} />}
+          title="الكويزات المجتازة"
+          value={passedQuizzesCount}
+          subtitle="اختبار بنسبة نجاح 100%"
+          icon={<Award size={24} />}
           color="amber"
         />
         <KpiStatCard
-          title="سجل الحضور"
-          value="—"
-          subtitle="سجل الانضباط والغياب"
+          title="معدل انضباط الحضور"
+          value={`${attendancePercentage}%`}
+          subtitle="نسبة الحضور بالجروب"
           icon={<CalendarCheck size={24} />}
           color="green"
         />
       </div>
 
-      
+      {/* Main Grid Widgets */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-       
         <NextActionWidget
           onStartLearning={() => onSelectTab('lessons')}
           hasCourses={effectiveCourses.length > 0}
           firstCourseTitle={firstCourseTitle}
         />
 
-       
         {isLoadingCourses ? (
           <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex flex-col items-center justify-center min-h-55 text-center">
             <div className="w-8 h-8 border-3 border-[#0D8A82] border-t-transparent rounded-full animate-spin mb-2"></div>
@@ -140,16 +165,16 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
           </div>
         ) : (
           <CourseProgressWidget
-            title="موادك الدراسية"
+            title="موادك الدراسية والمستويات"
             showAddButton={false}
             showStudentCount={false}
-            showProgress={false}
+            showProgress={true}
             courses={effectiveCourses.map((course) => ({
               id: course._id,
               title: course.title,
-              level: 'مقرر دراسي',
+              level: 'مقرر تفاعلي شامل',
               studentCount: 0,
-              progress: 0,
+              progress: Math.min(100, (watchedLessonsCount > 0 ? 50 : 0) + (passedQuizzesCount > 0 ? 50 : 0)),
               imageUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&q=80&w=200',
             }))}
             onViewAll={() => onSelectTab('courses')}

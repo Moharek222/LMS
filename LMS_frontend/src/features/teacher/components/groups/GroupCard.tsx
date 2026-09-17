@@ -18,7 +18,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   const isGroupActive = group.isActive !== false;
 
   return (
-    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full min-w-0">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-teal-100 text-[#0D8A82] flex items-center justify-center font-bold text-xs shrink-0">
           <FolderKanban size={18} />
