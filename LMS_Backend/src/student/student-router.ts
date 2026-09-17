@@ -13,6 +13,7 @@ import { getStudents } from "./student-controllers/get-students";
 import { resetPasswordValidation, resetStudentPassword } from "./student-controllers/reset-student-password";
 import { deactivateStudent } from "./student-controllers/deactivate-student";
 import { activeStudent } from "./student-controllers/active-student";
+import { getDeactivatedStudents } from "./student-controllers/get-deactivated-students";
 
 const router = Router();
 
@@ -27,6 +28,10 @@ router.get("/",
 router.get("/me",
     isAuthorized(Role.Admin, Role.Teacher, Role.Student),
     getProfile);
+
+router.get("/deactivated",
+    isAuthorized(Role.Admin, Role.Teacher),
+    getDeactivatedStudents);
 
 router.post("/reset-password/:studentID",
     isAuthorized(Role.Admin, Role.Teacher),

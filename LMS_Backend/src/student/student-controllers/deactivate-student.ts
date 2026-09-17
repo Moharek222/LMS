@@ -18,7 +18,7 @@ export const deactivateStudent:RequestHandler<{ id: string }> = async (req, res 
         }
         const student = await Student.findByIdAndUpdate(
             id, 
-            { $set: { isActive: false ,groupID: null } },
+            { $set: { isActive: false } },
             { new: true, runValidators: true });
 
         if (!student) {
