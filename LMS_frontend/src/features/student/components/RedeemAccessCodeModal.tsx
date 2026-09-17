@@ -38,6 +38,7 @@ export const RedeemAccessCodeModal: React.FC<RedeemAccessCodeModalProps> = ({
         toast.success(res.message || 'تم تفعيل كود الوصول والاشتراك بنجاح! 🎉');
         if (user?.id) {
           sessionStorage.setItem(`lms_code_verified_${user.id}`, 'true');
+          localStorage.setItem(`lms_code_verified_${user.id}`, 'true');
         }
         updateUser({ hasActiveSubscription: true });
         setCode('');

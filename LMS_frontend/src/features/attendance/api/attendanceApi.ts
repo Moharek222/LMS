@@ -69,10 +69,18 @@ export const getStudentAttendancePercentage = getStudentAttendanceStats;
 export const getMyAttendanceStats = async (
   groupId: string
 ): Promise<StudentAttendanceStats> => {
-  const response = await apiClient.get<StudentAttendanceStatsResponse>(
-    `/api/groups/${groupId}/attendance/my-percentage`
-  );
-  return response.data.data;
+  if (!groupId) {
+    return { attendancePercentage: 100, totalSessions: 0, attendedSessions: 0 };
+  }
+  try {
+    const response = await apiClient.get<StudentAttendanceStatsResponse>(
+      `/api/groups/${groupId}/attendance/my-percentage`,
+      { headers: { 'X-Skip-Auth-Redirect': 'true' } }
+    );
+    return response.data.data;
+  } catch {
+    return { attendancePercentage: 100, totalSessions: 0, attendedSessions: 0 };
+  }
 };
 
 export const getGroupAttendanceSheets = async (

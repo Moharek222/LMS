@@ -240,13 +240,24 @@ const sortedLessons = React.useMemo(() => {
   };
 
   const [verifiedState, setVerifiedState] = useState<boolean>(() => {
-    return user?.id ? sessionStorage.getItem(`lms_code_verified_${user.id}`) === 'true' : false;
+    if (!user?.id) return false;
+    return (
+      sessionStorage.getItem(`lms_code_verified_${user.id}`) === 'true' ||
+      localStorage.getItem(`lms_code_verified_${user.id}`) === 'true'
+    );
   });
 
   const selectedLesson = effectiveLessons.find((l) => l._id === selectedLessonId);
   const isSubscriptionActive =
     user?.role === 'student'
-      ? Boolean(user?.hasActiveSubscription && (verifiedState || (user?.id && sessionStorage.getItem(`lms_code_verified_${user.id}`) === 'true')))
+      ? Boolean(
+          user?.hasActiveSubscription ||
+          verifiedState ||
+          (user?.id && (
+            sessionStorage.getItem(`lms_code_verified_${user.id}`) === 'true' ||
+            localStorage.getItem(`lms_code_verified_${user.id}`) === 'true'
+          ))
+        )
       : true;
 
   return (

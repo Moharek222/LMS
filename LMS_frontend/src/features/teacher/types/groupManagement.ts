@@ -29,6 +29,22 @@ export interface GroupStudent {
   isActive?: boolean;
 }
 
+export interface DeactivatedStudent {
+  _id: string;
+  name: string;
+  phone: string;
+  parentPhone?: string;
+  isActive: boolean;
+  groupID?: {
+    _id: string;
+    name: string;
+  } | string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type PaginatedDeactivatedStudentsResponse = PaginatedResponse<DeactivatedStudent>;
+
 export type PaginatedGroupsResponse = PaginatedResponse<Group>;
 
 export interface GroupResponse {

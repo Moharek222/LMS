@@ -8,6 +8,7 @@ import type { Group, GroupStudent } from '../../types/groupManagement';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
 import { StudentDetailsModal } from './StudentDetailsModal';
+import { addDeactivatedStudent } from '../../utils/deactivatedStudentsStorage';
 
 interface GroupStudentsModalProps {
   isOpen: boolean;
@@ -32,36 +33,22 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
 
   const [studentToDeactivate, setStudentToDeactivate] = React.useState<GroupStudent | null>(null);
   const [selectedStudentForDetails, setSelectedStudentForDetails] = React.useState<GroupStudent | null>(null);
-  const [deactivatedStudentsMap, setDeactivatedStudentsMap] = React.useState<Record<string, GroupStudent>>({});
 
-  // Combine query students + locally deactivated students
-  const displayStudents = React.useMemo(() => {
-    const list: GroupStudent[] = (students || []).map((s) => {
-      // If student is marked deactivated locally, override
-      if (deactivatedStudentsMap[s._id]) {
-        return deactivatedStudentsMap[s._id];
-      }
-      return s;
-    });
-
-    // Append any locally deactivated student not in query list
-    Object.values(deactivatedStudentsMap).forEach((ds) => {
-      if (!list.some((s) => s._id === ds._id)) {
-        list.push(ds);
-      }
-    });
-
-    return list;
-  }, [students, deactivatedStudentsMap]);
+  const displayStudents = students || [];
 
   const handleConfirmDeactivate = (student: GroupStudent) => {
     deactivateStudentMutation.mutate(student._id, {
       onSuccess: () => {
-        toast.success(`تم تعطيل حساب الطالب (${student.name}) بنجاح.`);
-        setDeactivatedStudentsMap((prev) => ({
-          ...prev,
-          [student._id]: { ...student, isDeactivated: true, isActive: false },
-        }));
+        addDeactivatedStudent({
+          _id: student._id,
+          name: student.name,
+          phone: student.phone,
+          parentPhone: student.parentPhone,
+          groupId: group?._id,
+          groupName: group?.name,
+          deactivatedAt: new Date().toISOString(),
+        });
+        toast.success(`تم تعطيل حساب الطالب (${student.name}) ونقله لصفحة (تفعيل الطلاب) 🔴`);
         setStudentToDeactivate(null);
         refetch();
       },
@@ -79,12 +66,6 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
       if (groupId) {
         await moveStudent(student._id, { newGroupID: groupId }).catch(() => {});
       }
-
-      setDeactivatedStudentsMap((prev) => {
-        const next = { ...prev };
-        delete next[student._id];
-        return next;
-      });
 
       toast.success(`تم إعادة تفعيل حساب الطالب (${student.name}) بنجاح! 🟢`);
       refetch();

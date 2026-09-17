@@ -16,6 +16,7 @@ import AdminUserManagement from '../../features/admin/components/AdminUserManage
 import { useTeacherCourses } from '../../features/teacher/hooks/useTeacherCourses';
 import { getGroupsApi } from '../../services/groupService';
 import apiClient from '../../services/apiClient';
+import DeactivatedStudentsManager from '../../features/teacher/components/DeactivatedStudentsManager';
 import {
   Home,
   BookOpen,
@@ -26,6 +27,7 @@ import {
   CalendarCheck,
   KeyRound,
   UserCheck,
+  UserX,
   Users,
 } from 'lucide-react';
 import type { NavItem } from '../../components/dashboard/Sidebar';
@@ -37,6 +39,7 @@ const validTeacherTabs = [
   'quizzes',
   'exams',
   'groups',
+  'activate-students',
   'attendance',
   'access-codes',
   'students',
@@ -50,6 +53,7 @@ const teacherNavItems: NavItem[] = [
   { id: 'quizzes', label: 'كويزات الدروس', icon: <FileText size={20} /> },
   { id: 'exams', label: 'الامتحانات الشاملة', icon: <Award size={20} /> },
   { id: 'groups', label: 'إدارة المجموعات', icon: <FolderKanban size={20} /> },
+  { id: 'activate-students', label: 'تفعيل الطلاب', icon: <UserX size={20} /> },
   { id: 'attendance', label: 'الغياب (QR)', icon: <CalendarCheck size={20} /> },
   { id: 'access-codes', label: 'أكواد التفعيل', icon: <KeyRound size={20} /> },
   { id: 'students', label: 'إدارة المدراء والمنصة', icon: <UserCheck size={20} /> },
@@ -195,6 +199,7 @@ export const TeacherDashboard: React.FC = () => {
       {activeTab === 'quizzes' && <QuizBuilder />}
       {activeTab === 'exams' && <TeacherExamManager />}
       {activeTab === 'groups' && <TeacherGroupManager />}
+      {activeTab === 'activate-students' && <DeactivatedStudentsManager />}
       {activeTab === 'access-codes' && <TeacherAccessCodeManager />}
       {activeTab === 'attendance' && <TeacherAttendanceManager />}
       {activeTab === 'students' && <AdminUserManagement />}

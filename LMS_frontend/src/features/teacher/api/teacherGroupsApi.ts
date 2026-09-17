@@ -12,6 +12,8 @@ import type {
   UpdateGroupPayload,
   MoveStudentPayload,
   GroupQueryParams,
+  BaseQueryParams,
+  PaginatedDeactivatedStudentsResponse,
 } from '../types/groupManagement';
 
 export const getTeacherGroups = async (
@@ -80,6 +82,16 @@ export const activateStudent = async (studentId: string): Promise<{ message: str
   return response.data;
 };
 
+export const getDeactivatedStudentsApi = async (
+  params?: BaseQueryParams
+): Promise<PaginatedDeactivatedStudentsResponse> => {
+  const response = await apiClient.get<PaginatedDeactivatedStudentsResponse>(
+    '/api/students/deactivated',
+    { params }
+  );
+  return response.data;
+};
+
 export const teacherGroupsApi = {
   getTeacherGroups,
   getGroupStudents,
@@ -90,6 +102,7 @@ export const teacherGroupsApi = {
   resetStudentPassword,
   deactivateStudent,
   activateStudent,
+  getDeactivatedStudentsApi,
 };
 
 export default teacherGroupsApi;
