@@ -12,6 +12,7 @@ import { Role } from "../user/user-model";
 import { getStudents } from "./student-controllers/get-students";
 import { resetPasswordValidation, resetStudentPassword } from "./student-controllers/reset-student-password";
 import { deactivateStudent } from "./student-controllers/deactivate-student";
+import { activeStudent } from "./student-controllers/active-student";
 
 const router = Router();
 
@@ -49,7 +50,10 @@ router.put("/deactivate/:id",
     isAuthorized(Role.Admin, Role.Teacher),
     deactivateStudent
 );
-
+router.put("/activate/:id",
+    isAuthorized(Role.Admin, Role.Teacher),
+    activeStudent
+);
 
 
 // Quiz history
