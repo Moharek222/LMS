@@ -64,6 +64,8 @@ export const getStudentAttendanceStats = async (
   return response.data.data;
 };
 
+export const getStudentAttendancePercentage = getStudentAttendanceStats;
+
 export const getMyAttendanceStats = async (
   groupId: string
 ): Promise<StudentAttendanceStats> => {
@@ -112,6 +114,7 @@ export const recordStudentAttendance = async (
 
 export const attendanceApi = {
   getStudentAttendanceStats,
+  getStudentAttendancePercentage,
   getMyAttendanceStats,
   getGroupAttendanceSheets,
   getAttendanceSheetDetails,

@@ -5,6 +5,7 @@ export interface QuizListItem {
   duration: number; // in minutes
   passingPercentage: number;
   isActive: boolean;
+  questions?: any[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -64,4 +65,3 @@ export interface DeleteQuizResponse {
   message: string;
   data?: TeacherQuiz;
 }
-

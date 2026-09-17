@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Clock,
   Award,
@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Send,
   HelpCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { useStudentQuiz } from '../hooks/useStudentQuiz';
 import { useSubmitQuiz } from '../hooks/useSubmitQuiz';
@@ -36,13 +37,13 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   const submitQuizMutation = useSubmitQuiz();
   const { data: quizHistoryData } = useStudentQuizHistory({ page: 1, limit: 100 });
 
-  
+  const isSubmittingRef = useRef<boolean>(false);
   const draftAnswersKey = `lms_quiz_draft_answers_${quizId}`;
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isRetrying, setIsRetrying] = useState<boolean>(false);
 
-  // Restore draft answers safely on mount or when quizId changes
+  // Restore draft answers safely on mount
   React.useEffect(() => {
     try {
       const savedDraft = localStorage.getItem(draftAnswersKey);
@@ -128,7 +129,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
     const unansweredCount = questions.length - answeredCount;
 
     if (unansweredCount > 0) {
-      setValidationError(`لسه فيه ${unansweredCount} أسئلة بدون إجابة`);
+      setValidationError(`متبقي ${unansweredCount} أسئلة بدون إجابة`);
       return;
     }
 
@@ -137,10 +138,11 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   };
 
   const handleExecuteSubmission = () => {
-    if (submitQuizMutation.isPending || submissionResult) {
+    if (submitQuizMutation.isPending || isSubmittingRef.current || submissionResult) {
       return;
     }
 
+    isSubmittingRef.current = true;
     setShowConfirmModal(false);
 
     const selectedOptionPayload = Object.entries(answers).map(([qId, ans]) => ({
@@ -158,6 +160,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
       },
       {
         onSuccess: (data) => {
+          isSubmittingRef.current = false;
           try {
             localStorage.removeItem(draftAnswersKey);
           } catch {
@@ -171,8 +174,12 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
             toast.warning(`تم تسليم الاختبار. حصلت على ${data.score} من ${data.totalQuestions}. يمكنك المراجعة والمحاولة مجدداً 💪`);
           }
         },
-        onError: (err) => {
-          if (err.message?.includes('already submitted') || err.message?.includes('409') || err.message?.includes('CONFLICT')) {
+        onError: (err: any) => {
+          isSubmittingRef.current = false;
+          const status = err?.response?.status;
+          const msg = err?.message || err?.response?.data?.message || '';
+
+          if (status === 409 || msg.includes('already submitted') || msg.includes('409') || msg.includes('CONFLICT')) {
             try {
               localStorage.removeItem(draftAnswersKey);
             } catch {
@@ -187,7 +194,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
             onPassed?.();
             toast.info('تم تسليم هذا الاختبار سابقاً بنجاح.');
           } else {
-            toast.error(toArabicErrorMessage(err, 'حصلت مشكلة أثناء تسليم الاختبار، حاول مرة تانية.'));
+            toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء تسليم الاختبار، حاول مرة أخرى.'));
           }
         },
       }
@@ -230,7 +237,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
     );
   }
 
-  
+  /* Result screen */
   if (submissionResult) {
     const isPassed = submissionResult.isPassed;
     const score = submissionResult.score;
@@ -238,7 +245,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
     const percentage = Math.round((score / total) * 100);
 
     return (
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 text-center">
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6 text-center">
         <div
           className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto border shadow-sm ${
             isPassed
@@ -246,23 +253,23 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
               : 'bg-amber-50 text-amber-600 border-amber-200'
           }`}
         >
-          {isPassed ? <CheckCircle2 size={44} /> : <XCircle size={44} />}
+          {isPassed ? <CheckCircle2 size={46} /> : <XCircle size={46} />}
         </div>
 
         <div className="space-y-2 max-w-md mx-auto">
-          <h3 className="text-xl font-black text-slate-800">
-            {isPassed ? 'مبروك 🎉 نجحت في الاختبار' : 'لم تحقق درجة النجاح هذه المرة'}
+          <h3 className="text-xl sm:text-2xl font-black text-slate-800">
+            {isPassed ? 'مبروك 🎉 تم اجتياز الاختبار بنجاح' : 'لم تحقق درجة النجاح المطلوبة هذه المرة'}
           </h3>
-          <p className="text-xs text-slate-500 font-semibold">
+          <p className="text-xs text-slate-500 font-semibold leading-relaxed">
             {isPassed
-              ? 'أحسنت الاستيعاب، استمر في التقدم والمراجعة الدورية!'
-              : 'يمكنك مراجعة المحاضرة وإعادة المحاولة في وقت لاحق.'}
+              ? 'أحسنت الاستيعاب، استمر في التقدم والمراجعة الفعالة!'
+              : 'يمكنك مراجعة الشرح التفاعلي وإعادة المحاولة مجدداً.'}
           </p>
         </div>
 
-        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/90 max-w-sm mx-auto flex items-center justify-around gap-4">
+        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/90 max-w-sm mx-auto flex items-center justify-around gap-4 shadow-2xs">
           <div>
-            <span className="text-[11px] text-slate-400 font-bold block">درجتك في الاختبار</span>
+            <span className="text-[11px] text-slate-400 font-bold block mb-0.5">درجتك النهائية</span>
             <span className="text-2xl font-black text-slate-800">
               {score} / {total}
             </span>
@@ -271,7 +278,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
           <div className="h-8 w-px bg-slate-200" />
 
           <div>
-            <span className="text-[11px] text-slate-400 font-bold block">النسبة المئوية</span>
+            <span className="text-[11px] text-slate-400 font-bold block mb-0.5">النسبة المئوية</span>
             <span
               className={`text-2xl font-black ${
                 isPassed ? 'text-emerald-600' : 'text-amber-600'
@@ -284,7 +291,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
         {quiz?.passingPercentage !== undefined && (
           <p className="text-xs text-slate-400 font-semibold">
-            درجة النجاح المطلوبة لهذا الاختبار: {quiz.passingPercentage}%
+            درجة النجاح المطلوبة لاجتياز الاختبار: {quiz.passingPercentage}%
           </p>
         )}
 
@@ -301,9 +308,10 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
                   // Ignore storage errors
                 }
               }}
-              className="px-6 py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition cursor-pointer shadow-sm"
             >
-              إعادة محاولة حل الاختبار 🔄
+              <RotateCcw size={15} />
+              <span>إعادة محاولة حل الاختبار 🔄</span>
             </button>
           )}
 
@@ -318,17 +326,16 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
     );
   }
 
-  
   const answeredCount = Object.keys(answers).length;
 
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-xs space-y-6 relative">
-     
+    <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-6 relative">
+      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
           <button
             onClick={handleBackClick}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            className="p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
             title="رجوع"
           >
             <ArrowRight size={20} />
@@ -339,18 +346,18 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
             </h3>
             <div className="flex items-center gap-3 text-xs text-slate-500 font-semibold mt-1 flex-wrap">
               <span className="flex items-center gap-1">
-                <HelpCircle size={14} className="text-slate-400" />
-                <span>الإجابات: {answeredCount} من {questions.length}</span>
+                <HelpCircle size={14} className="text-teal-600" />
+                <span>تم إجابة: {answeredCount} من {questions.length}</span>
               </span>
               {quiz?.duration !== undefined && (
                 <span className="flex items-center gap-1">
-                  <Clock size={14} className="text-slate-400" />
+                  <Clock size={14} className="text-amber-600" />
                   <span>المدة: {quiz.duration} دقيقة</span>
                 </span>
               )}
               {quiz?.passingPercentage !== undefined && (
                 <span className="flex items-center gap-1">
-                  <Award size={14} className="text-amber-500" />
+                  <Award size={14} className="text-amber-600" />
                   <span>درجة النجاح: {quiz.passingPercentage}%</span>
                 </span>
               )}
@@ -360,22 +367,22 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
         <button
           onClick={handleValidateBeforeSubmit}
-          disabled={submitQuizMutation.isPending}
+          disabled={submitQuizMutation.isPending || isSubmittingRef.current}
           className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition cursor-pointer shadow-sm disabled:opacity-50 shrink-0 self-end sm:self-auto"
         >
           <Send size={15} />
-          <span>{submitQuizMutation.isPending ? 'جاري تسليم الاختبار...' : 'تسليم الاختبار'}</span>
+          <span>{submitQuizMutation.isPending ? 'جاري التسليم...' : 'تسليم الاختبار'}</span>
         </button>
       </div>
 
-     
+      
       {validationError && (
         <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 flex items-center justify-between gap-3 text-amber-800 text-xs font-bold animate-fade-in">
           <div className="flex items-center gap-2">
             <AlertTriangle size={18} className="text-amber-600 shrink-0" />
             <span>{validationError}</span>
           </div>
-          <span className="text-[11px] text-amber-700">يرجى الإجابة على جميع الأسئلة المطلوبة قبل التسليم</span>
+          <span className="text-[11px] text-amber-700">يرجى الإجابة على كافة الأسئلة قبل التسليم</span>
         </div>
       )}
 
@@ -385,7 +392,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
           <div className="flex items-center gap-2">
             <AlertTriangle size={18} className="text-red-600 shrink-0" />
             <span>
-              {toArabicErrorMessage(submitQuizMutation.error, 'حصلت مشكلة أثناء تسليم الاختبار، حاول مرة تانية.')}
+              {toArabicErrorMessage(submitQuizMutation.error, 'حدث خطأ أثناء تسليم الاختبار، حاول مرة أخرى.')}
             </span>
           </div>
           <button
@@ -397,7 +404,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         </div>
       )}
 
-     
+      {/* Questions list */}
       <div className="space-y-6">
         {questions.map((q, qIndex) => {
           const selectedForThisQuestion = answers[q._id];
@@ -406,7 +413,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
           return (
             <div
               key={q._id || qIndex}
-              className={`rounded-2xl p-5 border transition ${
+              className={`rounded-2xl p-5 border transition-all duration-200 ${
                 isAnswered
                   ? 'bg-white border-teal-200/90 shadow-2xs'
                   : 'bg-slate-50/70 border-slate-200'
@@ -448,9 +455,9 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
                     <label
                       key={optIndex}
                       onClick={() => handleSelectOption(q._id, optionText)}
-                      className={`flex items-center gap-3 p-3.5 rounded-xl border text-xs font-semibold cursor-pointer transition ${
+                      className={`flex items-center gap-3 p-3.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
                         isOptionSelected
-                          ? 'bg-teal-50/80 border-[#0D8A82] text-[#0D8A82] ring-1 ring-[#0D8A82] shadow-xs'
+                          ? 'bg-teal-50/90 border-[#0D8A82] text-[#0D8A82] ring-1 ring-[#0D8A82] shadow-xs'
                           : 'bg-white border-slate-200 text-slate-700 hover:border-teal-200 hover:bg-slate-50'
                       }`}
                     >
@@ -472,22 +479,22 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
       </div>
 
       
-      <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+      <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-4 flex-wrap">
         <span className="text-xs text-slate-500 font-semibold">
-          تمت الإجابة على {answeredCount} من {questions.length} سؤال
+          تم الإجابة على {answeredCount} من إجمالي {questions.length} سؤال
         </span>
 
         <button
           onClick={handleValidateBeforeSubmit}
-          disabled={submitQuizMutation.isPending}
+          disabled={submitQuizMutation.isPending || isSubmittingRef.current}
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm disabled:opacity-50"
         >
           <Send size={15} />
-          <span>{submitQuizMutation.isPending ? 'جاري تسليم الاختبار...' : 'تسليم الاختبار'}</span>
+          <span>{submitQuizMutation.isPending ? 'جاري التسليم...' : 'تسليم الاختبار'}</span>
         </button>
       </div>
 
-     
+      
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
@@ -496,13 +503,13 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
             </div>
             <h4 className="text-base font-extrabold text-slate-800">تأكيد تسليم الاختبار</h4>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              هل أنت متأكد إنك عاوز تسلّم الاختبار وتعتمد إجاباتك؟
+              هل أنت متأكد من رغبتك في تسليم الاختبار واحتساب الإجابات؟
             </p>
 
             <div className="flex items-center gap-2 pt-2">
               <button
                 onClick={handleExecuteSubmission}
-                disabled={submitQuizMutation.isPending}
+                disabled={submitQuizMutation.isPending || isSubmittingRef.current}
                 className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs disabled:opacity-50"
               >
                 {submitQuizMutation.isPending ? 'جاري التسليم...' : 'تسليم الاختبار'}
@@ -519,6 +526,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         </div>
       )}
 
+     
       {showExitModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
@@ -527,13 +535,13 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
             </div>
             <h4 className="text-base font-extrabold text-slate-800">مغادرة الاختبار</h4>
             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              لديك إجابات لم يتم تسليمها بعد. هل أنت متأكد أنك تريد الخروج؟
+              لديك إجابات لم تقم بتسليمها بعد. هل تريد مغادرة شاشة الاختبار؟
             </p>
 
             <div className="flex items-center gap-2 pt-2">
               <button
                 onClick={() => setShowExitModal(false)}
-                className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
+                className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
               >
                 متابعة الحل
               </button>
