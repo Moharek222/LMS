@@ -67,6 +67,18 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
   // 3. Attendance Percentage
   const attendancePercentage = attendanceStats?.attendancePercentage ?? 100;
 
+  const isSubscriptionActive = React.useMemo(() => {
+    const userId = user?.id || user?._id;
+    if (user?.hasActiveSubscription) return true;
+    if (userId) {
+      return (
+        sessionStorage.getItem(`lms_code_verified_${userId}`) === 'true' ||
+        localStorage.getItem(`lms_code_verified_${userId}`) === 'true'
+      );
+    }
+    return false;
+  }, [user]);
+
   const coursesCount = isLoadingCourses ? '—' : effectiveCourses.length;
   const firstCourseTitle = effectiveCourses.length > 0 ? effectiveCourses[0].title : undefined;
 
@@ -80,17 +92,17 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
         <div className="flex items-center gap-3.5">
           <div
             className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-              user?.hasActiveSubscription
+              isSubscriptionActive
                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
                 : 'bg-amber-50 text-amber-600 border border-amber-200'
             }`}
           >
-            {user?.hasActiveSubscription ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
+            {isSubscriptionActive ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
           </div>
           <div>
             <h4 className="text-sm font-bold text-slate-800">حالة الاشتراك في المنصة</h4>
             <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              {user?.hasActiveSubscription
+              {isSubscriptionActive
                 ? 'اشتراكك نشط ومفعل لمتابعة جميع المحاضرات والامتحانات'
                 : 'تنبيه: يلزم تفعيل كارت الاشتراك للوصول الكامل للمحاضرات والدروس المحمية'}
             </p>
@@ -98,7 +110,7 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
         </div>
 
         <div className="shrink-0 w-full sm:w-auto">
-          {user?.hasActiveSubscription ? (
+          {isSubscriptionActive ? (
             <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-100/80 text-emerald-800 text-xs font-bold border border-emerald-300">
               <CheckCircle2 size={16} />
               <span>اشتراك نشط</span>

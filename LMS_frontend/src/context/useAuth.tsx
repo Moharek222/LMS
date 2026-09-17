@@ -66,9 +66,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setUser((prev) => {
         if (!prev) return null;
-        const merged = {
+        const studentId = updatedProfile.id || prev.id;
+        const isVerified = Boolean(
+          prev.hasActiveSubscription ||
+          updatedProfile.hasActiveSubscription ||
+          (studentId && (
+            sessionStorage.getItem(`lms_code_verified_${studentId}`) === 'true' ||
+            localStorage.getItem(`lms_code_verified_${studentId}`) === 'true'
+          ))
+        );
+        const merged: UserProfile = {
           ...prev,
           ...updatedProfile,
+          hasActiveSubscription: isVerified,
         };
         localStorage.setItem('lms_user', JSON.stringify(merged));
         return merged;
@@ -147,8 +157,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     try {
       const profile = await loginStudentApi(credentials);
-      setUser(profile);
-      localStorage.setItem('lms_user', JSON.stringify(profile));
+      const studentId = profile.id;
+      const isVerified = Boolean(
+        profile.hasActiveSubscription ||
+        (studentId && (
+          sessionStorage.getItem(`lms_code_verified_${studentId}`) === 'true' ||
+          localStorage.getItem(`lms_code_verified_${studentId}`) === 'true'
+        ))
+      );
+      const fullProfile: UserProfile = { ...profile, hasActiveSubscription: isVerified };
+      setUser(fullProfile);
+      localStorage.setItem('lms_user', JSON.stringify(fullProfile));
     } finally {
       setIsLoading(false);
     }
@@ -168,9 +187,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       await logoutApi().catch(() => {});
     } finally {
-      if (user?.id) {
-        sessionStorage.removeItem(`lms_code_verified_${user.id}`);
-        localStorage.removeItem(`lms_code_verified_${user.id}`);
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('lms_code_verified_')) {
+            localStorage.removeItem(key);
+          }
+        });
+        Object.keys(sessionStorage).forEach((key) => {
+          if (key.startsWith('lms_code_verified_')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch {
+        // Ignore storage errors
       }
       setUser(null);
       localStorage.removeItem('lms_user');

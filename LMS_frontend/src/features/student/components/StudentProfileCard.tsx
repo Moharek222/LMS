@@ -35,7 +35,15 @@ export const StudentProfileCard: React.FC = () => {
 
   const name = myProfile?.name || user?.name || 'غير متوفر';
   const phone = myProfile?.phone || user?.phone || 'غير متوفر';
-  const hasActiveSubscription = myProfile?.hasActiveSubscription ?? user?.hasActiveSubscription ?? false;
+  const userId = user?.id;
+  const hasActiveSubscription = Boolean(
+    myProfile?.hasActiveSubscription ??
+    user?.hasActiveSubscription ??
+    (userId && (
+      sessionStorage.getItem(`lms_code_verified_${userId}`) === 'true' ||
+      localStorage.getItem(`lms_code_verified_${userId}`) === 'true'
+    ))
+  );
 
   const getResolvedGroupName = (): string => {
     if (myProfile?.groupID) {
