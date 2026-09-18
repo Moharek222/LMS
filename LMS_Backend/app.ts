@@ -6,7 +6,6 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-// import mongoSanitize from "express-mongo-sanitize";
 
 // Routers
 import authRouter from "./src/auth/auth-router";
@@ -20,7 +19,6 @@ import progressRouter from "./src/progress/progress-router";
 
 dotenv.config();
 const app = express();
-// app.set("trust proxy", 1);
 
 const PORT = Number(process.env.PORT) || 3000;
 const URI = process.env.DB_URL;
@@ -53,8 +51,8 @@ const globalLimiter = rateLimit({
 app.use("/api", globalLimiter);
 
 const allowedOrigins = process.env.FRONTEND_URL 
-    ? [process.env.FRONTEND_URL, "http://localhost:5173", "http://localhost:3000", "http://192.168.1.4:5173"]
-    : ["http://localhost:5173", "http://localhost:3000", "http://192.168.1.4:5173"]; //يا عزب لو شفت دى فكرنى اشيل ال ip بتاع لابى من هنا قبل الرفع
+    ? [process.env.FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"]
+    : ["http://localhost:5173", "http://localhost:3000"];
 app.use(
     cors({
         origin: (origin, callback) => {
@@ -73,9 +71,6 @@ app.use(
 app.use(cookieParser());
 app.use(express.static("public"));
 app.use(express.json());
-// app.use(express.urlencoded({ limit: '10mb', extended: true }));
-// app.use(mongoSanitize()); { limit: '10mb' }
-
 // API Routes
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);

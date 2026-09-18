@@ -15,7 +15,7 @@ export const activeStudent:RequestHandler<{id: string}> =async (req,res ,next) =
         const student = await Student.findByIdAndUpdate(
             id,
             {$set:{isActive: true}},
-            {new: true, runValidators: true});
+            {new: true, runValidators: true}).exec();
         if(!student){
             return res.status(StatusCodes.NOT_FOUND).json({
                 message: "Student not found"
