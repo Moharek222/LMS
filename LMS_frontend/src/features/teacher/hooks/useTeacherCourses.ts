@@ -6,6 +6,9 @@ export const useTeacherCourses = () => {
   return useQuery<Course[], Error>({
     queryKey: ['teacher-courses'],
     queryFn: getTeacherCourses,
+    refetchOnWindowFocus: false,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
