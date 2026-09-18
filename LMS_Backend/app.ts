@@ -80,6 +80,9 @@ app.use("/api/students", studentRouter);
 app.use("/api/courses", courseRouter);
 app.use("/api/lessons", lessonRouter);
 app.use("/api/progress", progressRouter);
+app.get('/', (req, res) => {
+    res.status(200).send('LMS API is running');
+})
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
