@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import axios from 'axios';
 import type { UserProfile, TeacherLoginCredentials, StudentLoginCredentials } from '../types/auth';
 import { loginTeacherApi, loginStudentApi, logoutApi, getMeApi } from '../services/authService';
@@ -29,91 +29,72 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return null;
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(() => {
-    return Boolean(localStorage.getItem('lms_user'));
-  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const verifiedRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    const checkStatusOnce = async () => {
-      const savedUserStr = localStorage.getItem('lms_user');
-      if (!savedUserStr) {
-        setIsLoading(false);
-        return;
+  // دالة واحدة للفحص بتشتغل مرة واحدة بس
+  const checkStatusOnce = async () => {
+    const savedUserStr = localStorage.getItem('lms_user');
+    if (!savedUserStr) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const parsedUser = JSON.parse(savedUserStr);
+      // بنعمل الفحص للطلاب والمدرسين مرة واحدة أول ما يفتح الموقع
+      const updatedProfile = await getMeApi();
+      
+      if (!updatedProfile || updatedProfile.isActive === false) {
+        throw new Error("User inactive or not found");
       }
 
-      let parsedUser: Partial<UserProfile> | null = null;
-      try {
-        parsedUser = JSON.parse(savedUserStr);
-      } catch {
-        localStorage.removeItem('lms_user');
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const updatedProfile = await getMeApi();
-
-        if (!updatedProfile || updatedProfile.isActive === false) {
-          setUser(null);
-          localStorage.removeItem('lms_user');
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
-          return;
-        }
-
-        setUser((prev) => {
-          if (!prev) return null;
-          const studentId = updatedProfile.id || prev.id;
-          let isVerified = updatedProfile.hasActiveSubscription;
-
-          if (parsedUser?.role === 'student') {
+      setUser((prev) => {
+        if (!prev) return null;
+        const userId = updatedProfile.id || prev.id;
+        
+        let isVerified = updatedProfile.hasActiveSubscription;
+        if (parsedUser.role === 'student') {
             isVerified = Boolean(
               prev.hasActiveSubscription ||
               updatedProfile.hasActiveSubscription ||
-              (studentId && (
-                sessionStorage.getItem(`lms_code_verified_${studentId}`) === 'true' ||
-                localStorage.getItem(`lms_code_verified_${studentId}`) === 'true'
+              (userId && (
+                sessionStorage.getItem(`lms_code_verified_${userId}`) === 'true' ||
+                localStorage.getItem(`lms_code_verified_${userId}`) === 'true'
               ))
             );
-          }
-
-          const merged: UserProfile = {
-            ...prev,
-            ...updatedProfile,
-            hasActiveSubscription: isVerified,
-          };
-
-          if (
-            prev.name === merged.name &&
-            prev.phone === merged.phone &&
-            prev.email === merged.email &&
-            prev.groupId === merged.groupId &&
-            prev.isActive === merged.isActive &&
-            prev.hasActiveSubscription === merged.hasActiveSubscription
-          ) {
-            return prev;
-          }
-
-          localStorage.setItem('lms_user', JSON.stringify(merged));
-          return merged;
-        });
-      } catch (error: unknown) {
-        if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
-          setUser(null);
-          localStorage.removeItem('lms_user');
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
         }
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    checkStatusOnce();
-  }, []);
+        const merged: UserProfile = {
+          ...prev,
+          ...updatedProfile,
+          hasActiveSubscription: isVerified,
+        };
+        localStorage.setItem('lms_user', JSON.stringify(merged));
+        return merged;
+      });
+
+    } catch (error: unknown) {
+      // لو التوكن خلص أو اليوزر اتمسح
+      if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
+        setUser(null);
+        localStorage.removeItem('lms_user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!verifiedRef.current) {
+      verifiedRef.current = true;
+      checkStatusOnce();
+    }
+    // مسحنا كل مصايب الـ setInterval والـ window.addEventListener
+  }, []); // الأقواس فاضية عشان يشتغل مرة واحدة بس وقت فتح الموقع
 
   const loginTeacher = async (credentials: TeacherLoginCredentials) => {
     setIsLoading(true);
@@ -163,12 +144,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         Object.keys(localStorage).forEach((key) => {
           if (key.startsWith('lms_code_verified_')) {
-            localStorage.removeItem(key);
+            localStorage.removeItem('lms_code_verified_');
           }
         });
         Object.keys(sessionStorage).forEach((key) => {
           if (key.startsWith('lms_code_verified_')) {
-            sessionStorage.removeItem(key);
+            sessionStorage.removeItem('lms_code_verified_');
           }
         });
       } catch {
