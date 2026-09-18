@@ -51,8 +51,9 @@ const globalLimiter = rateLimit({
 app.use("/api", globalLimiter);
 
 const allowedOrigins = process.env.FRONTEND_URL 
-    ? [process.env.FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"]
+    ? [process.env.FRONTEND_URL.replace(/\/$/, ""), "http://localhost:5173", "http://localhost:3000"]
     : ["http://localhost:5173", "http://localhost:3000"];
+
 app.use(
     cors({
         origin: (origin, callback) => {
@@ -62,8 +63,8 @@ app.use(
                 callback(new Error("Not allowed by CORS"));
             }
         },
-        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allowedHeaders: ["Content-Type", "Authorization"]
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-Skip-Auth-Redirect", "x-skip-auth-redirect"]
     })
 );
 
