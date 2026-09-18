@@ -3,7 +3,6 @@ import { body, validationResult } from "express-validator";
 import { Student } from "../student/student-model";
 import bcrypt from "bcrypt";
 import jwtService from "../services/jwt-service";
-import { COOKIE_OPTIONS } from "./teacher-login";
 import crypto from "crypto";
 import { Role } from "../user/user-model";
 import { AccessCode, Status } from "../access-code/access-code-model";
@@ -12,11 +11,11 @@ interface IRequest {
     phone: string;
     password: string;
 }
-
 interface IResponse {
     message: string;
+    token?: string;
+    refreshToken?: string;
     data?: any;
-    // errors?: any;
 }
 
 export const loginValidation = [
@@ -59,15 +58,6 @@ export const studentLogin: RequestHandler<{}, IResponse, IRequest> = async (req,
             { expiresIn: "7d" }
         );
 
-        res.cookie("token", token, {
-            ...COOKIE_OPTIONS,
-            maxAge: 2 * 60 * 60 * 1000,
-        });
-
-        res.cookie("refreshToken", refreshToken, {
-            ...COOKIE_OPTIONS,
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
 
         const studentObj = student.toObject();
         const { password: _, activeToken: __, ...studentWithoutPassword } = studentObj;
@@ -89,6 +79,8 @@ export const studentLogin: RequestHandler<{}, IResponse, IRequest> = async (req,
         }
         return res.status(200).json({
             message: "Logged in successfully",
+            token,
+            refreshToken,
             data: {
                 ...studentWithoutPassword,
                 hasActiveSubscription

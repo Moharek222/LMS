@@ -13,12 +13,6 @@ export const loginValidation = [
                 .notEmpty().withMessage("Password is required"),
 ];
 
-export const COOKIE_OPTIONS = {
-        httpOnly: true,
-        sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-};
 
 export const teacherLogin: RequestHandler = async (req, res, next) => {
         try {
@@ -48,21 +42,12 @@ export const teacherLogin: RequestHandler = async (req, res, next) => {
                         { expiresIn: "7d" }
                 );
 
-                res.cookie("token", token, {
-                        ...COOKIE_OPTIONS,
-                        maxAge: 2 * 60 * 60 * 1000,
-                });
-
-                res.cookie("refreshToken", refreshToken, {
-                        ...COOKIE_OPTIONS,
-                        maxAge: 7 * 24 * 60 * 60 * 1000, 
-                });
-
                 const userObj = user.toObject();
                 const { password: _, ...userWithoutPassword } = userObj;
-
                 return res.status(200).json({
                         message: "Logged in successfully",
+                        token,
+                        refreshToken,
                         user: userWithoutPassword
                 });
         } catch (err) {
