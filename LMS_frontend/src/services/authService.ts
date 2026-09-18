@@ -19,9 +19,11 @@ export const loginTeacherApi = async (credentials: TeacherLoginCredentials): Pro
   });
 
   if (response.data.token) {
+    localStorage.setItem('token', response.data.token);
     localStorage.setItem('lms_token', response.data.token);
   }
   if (response.data.refreshToken) {
+    localStorage.setItem('refreshToken', response.data.refreshToken);
     localStorage.setItem('lms_refresh_token', response.data.refreshToken);
   }
 
@@ -43,9 +45,11 @@ export const loginStudentApi = async (credentials: StudentLoginCredentials): Pro
   });
 
   if (response.data.token) {
+    localStorage.setItem('token', response.data.token);
     localStorage.setItem('lms_token', response.data.token);
   }
   if (response.data.refreshToken) {
+    localStorage.setItem('refreshToken', response.data.refreshToken);
     localStorage.setItem('lms_refresh_token', response.data.refreshToken);
   }
 
@@ -75,15 +79,24 @@ export const registerStudentApi = async (credentials: StudentRegisterCredentials
 };
 
 export const refreshSessionApi = async (): Promise<string | null> => {
-  const refreshToken = localStorage.getItem('lms_refresh_token');
+  const refreshToken = localStorage.getItem('refreshToken') || localStorage.getItem('lms_refresh_token');
   if (!refreshToken) return null;
 
   try {
-    const response = await apiClient.post<{ token?: string; accessToken?: string }>('/api/auth/refresh-token', {
-      refreshToken,
-    });
-    const newToken = response.data.token || response.data.accessToken;
+    let response: any = null;
+    try {
+      response = await apiClient.post<{ token?: string; accessToken?: string }>('/api/auth/refreshSession', {
+        refreshToken,
+      });
+    } catch {
+      response = await apiClient.post<{ token?: string; accessToken?: string }>('/api/auth/refresh', {
+        refreshToken,
+      });
+    }
+
+    const newToken = response?.data?.token || response?.data?.accessToken;
     if (newToken) {
+      localStorage.setItem('token', newToken);
       localStorage.setItem('lms_token', newToken);
       return newToken;
     }
@@ -94,6 +107,8 @@ export const refreshSessionApi = async (): Promise<string | null> => {
 };
 
 export const logoutApi = async (): Promise<LogoutResponse> => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
   localStorage.removeItem('lms_token');
   localStorage.removeItem('lms_refresh_token');
   const response = await apiClient.post<LogoutResponse>('/api/auth/logout');

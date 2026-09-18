@@ -17,7 +17,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { registerStudentApi } from '../services/authService';
-import { getGroupsApi, FALLBACK_GROUPS } from '../services/groupService';
+import { getGroupsApi } from '../services/groupService';
 import { Footer } from '../components/layout/Footer';
 import type { ApiErrorResponse } from '../types/auth';
 import type { Group } from '../types/group';
@@ -60,7 +60,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [groups, setGroups] = useState<Group[]>(FALLBACK_GROUPS);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [isGroupsLoading, setIsGroupsLoading] = useState(true);
 
   useEffect(() => {
@@ -68,12 +68,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
     const fetchGroups = async () => {
       try {
         const data = await getGroupsApi();
-        if (isMounted && data.length > 0) {
+        if (isMounted) {
           setGroups(data);
         }
-      } catch (e) {
+      } catch {
         if (isMounted) {
-          setGroups(FALLBACK_GROUPS);
+          setGroups([]);
         }
       } finally {
         if (isMounted) {
@@ -270,7 +270,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                       } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium cursor-pointer`}
                     >
                       <option value="">
-                        {isGroupsLoading && groups.length === 0 ? 'جاري تحميل المجموعات...' : 'اختر الصف الدراسي والمجموعة'}
+                        {isGroupsLoading
+                          ? 'جاري تحميل المجموعات المتاحة...'
+                          : groups.length === 0
+                          ? 'لا تتوفر مجموعات حالياً - تواصل مع المعلم'
+                          : 'اختر الصف الدراسي والمجموعة'}
                       </option>
                       {groups.map((group) => (
                         <option key={group._id} value={group._id}>

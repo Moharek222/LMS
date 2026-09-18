@@ -1,53 +1,40 @@
-
 import apiClient from './apiClient';
-import type { Group, GroupResponse } from '../types/group';
-export const FALLBACK_GROUPS: Group[] = [
-  {
-    _id: '660000000000000000000001',
-    name: 'الصف الأول الثانوي - مجموعة السبت والأربعاء',
-    level: 'الأول الثانوي',
-    isActive: true,
-  },
-  {
-    _id: '660000000000000000000002',
-    name: 'الصف الثاني الثانوي - مجموعة الأحد والثلاثاء',
-    level: 'الثاني الثانوي',
-    isActive: true,
-  },
-  {
-    _id: '660000000000000000000003',
-    name: 'الصف الثالث الثانوي - دفعة 2026',
-    level: 'الثالث الثانوي',
-    isActive: true,
-  },
-];
+import type { Group } from '../types/group';
 
 /**
- * Fetches active groups from the backend.
- * Gracefully falls back to predefined groups if backend Group endpoint is unmounted or unreachable.
+ * Fetches active groups directly from the backend API.
  */
 export const getGroupsApi = async (): Promise<Group[]> => {
   try {
-    const response = await apiClient.get<GroupResponse>('/api/groups/', {
-      params: { page: 1, limit: 20 },
+    const response = await apiClient.get<any>('/api/groups', {
+      params: { page: 1, limit: 100 },
       headers: {
         'X-Skip-Auth-Redirect': 'true',
       },
     });
 
-    if (response.data && Array.isArray(response.data.data)) {
-      return response.data.data;
+    const resData = response.data;
+    let list: Group[] = [];
+
+    if (resData) {
+      if (Array.isArray(resData.data)) {
+        list = resData.data;
+      } else if (Array.isArray(resData.groups)) {
+        list = resData.groups;
+      } else if (Array.isArray(resData)) {
+        list = resData;
+      }
     }
-    return FALLBACK_GROUPS;
+
+    return list.filter((g) => g && g._id && g.name);
   } catch (error) {
-    // Return safe fallback groups on backend 404/401/network error to prevent UI crash
-    return FALLBACK_GROUPS;
+    console.error('Failed to fetch groups:', error);
+    return [];
   }
 };
 
 export const groupService = {
   getGroups: getGroupsApi,
-  fallbackGroups: FALLBACK_GROUPS,
 };
 
 export default groupService;

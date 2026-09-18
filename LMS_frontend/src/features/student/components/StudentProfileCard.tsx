@@ -11,7 +11,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { useAuth } from '../../../context/useAuth';
-import { getGroupsApi, FALLBACK_GROUPS } from '../../../services/groupService';
+import { getGroupsApi } from '../../../services/groupService';
 import { getMyStudentProfile } from '../api/studentProfileApi';
 import { StudentQRCode } from './StudentQRCode';
 import { StudentGradebookCard } from './StudentGradebookCard';
@@ -64,9 +64,6 @@ export const StudentProfileCard: React.FC = () => {
 
       const matchedApiGroup = groups?.find((g) => g._id === rawId);
       if (matchedApiGroup) return matchedApiGroup.name;
-
-      const matchedFallbackGroup = FALLBACK_GROUPS.find((g) => g._id === rawId);
-      if (matchedFallbackGroup) return matchedFallbackGroup.name;
     }
 
     return 'غير متوفر';
