@@ -80,6 +80,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ...updatedProfile,
           hasActiveSubscription: isVerified,
         };
+
+        if (
+          prev.name === merged.name &&
+          prev.phone === merged.phone &&
+          prev.email === merged.email &&
+          prev.groupId === merged.groupId &&
+          prev.isActive === merged.isActive &&
+          prev.hasActiveSubscription === merged.hasActiveSubscription
+        ) {
+          return prev;
+        }
+
         localStorage.setItem('lms_user', JSON.stringify(merged));
         return merged;
       });
@@ -125,10 +137,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(false);
     }
 
-    // Set up periodic 10-second polling and window focus listener for student accounts
+    // Set up periodic 60-second polling for student accounts to avoid rate-limiting
     const intervalId = setInterval(() => {
       checkStudentStatus();
-    }, 10000);
+    }, 60000);
 
     const handleFocus = () => {
       checkStudentStatus();
