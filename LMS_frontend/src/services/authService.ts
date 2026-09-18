@@ -107,12 +107,16 @@ export const refreshSessionApi = async (): Promise<string | null> => {
 };
 
 export const logoutApi = async (): Promise<LogoutResponse> => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('lms_token');
-  localStorage.removeItem('lms_refresh_token');
-  const response = await apiClient.post<LogoutResponse>('/api/auth/logout');
-  return response.data;
+  try {
+    const response = await apiClient.post<LogoutResponse>('/api/auth/logout');
+    return response.data;
+  } finally {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('lms_token');
+    localStorage.removeItem('lms_refresh_token');
+    localStorage.removeItem('lms_user');
+  }
 };
 
 export const getMeApi = async (): Promise<UserProfile | null> => {
