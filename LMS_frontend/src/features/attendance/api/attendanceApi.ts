@@ -74,8 +74,7 @@ export const getMyAttendanceStats = async (
   }
   try {
     const response = await apiClient.get<StudentAttendanceStatsResponse>(
-      `/api/groups/${groupId}/attendance/my-percentage`,
-      { headers: { 'X-Skip-Auth-Redirect': 'true' } }
+      `/api/groups/${groupId}/attendance/my-percentage`
     );
     return response.data.data;
   } catch {

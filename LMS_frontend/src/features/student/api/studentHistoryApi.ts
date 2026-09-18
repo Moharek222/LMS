@@ -13,9 +13,6 @@ export const getStudentQuizHistory = async (
       '/api/students/quiz-history',
       {
         params,
-        headers: {
-          'X-Skip-Auth-Redirect': 'true',
-        },
       }
     );
     return response.data;
@@ -39,9 +36,6 @@ export const getStudentExamHistory = async (
       '/api/students/exam-history',
       {
         params,
-        headers: {
-          'X-Skip-Auth-Redirect': 'true',
-        },
       }
     );
     return response.data;

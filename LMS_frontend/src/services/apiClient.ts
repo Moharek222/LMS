@@ -56,9 +56,10 @@ apiClient.interceptors.response.use(
       originalRequest?.headers?.['x-skip-auth-redirect'] === 'true' ||
       isPublicAuthRoute;
 
+    // Only 401 (Unauthorized - Token Expired / Unauthenticated) triggers refresh and auth redirect
     if (
       error.response &&
-      (error.response.status === 401 || error.response.status === 403) &&
+      error.response.status === 401 &&
       !originalRequest?._retry &&
       !isAuthRoute
     ) {

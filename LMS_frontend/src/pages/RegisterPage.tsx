@@ -239,7 +239,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
 
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700">
-                    رقم هاتف ولي الأمر <span className="text-slate-400 font-normal">(اختياري)</span>
+                    رقم هاتف ولي الأمر <span className="text-slate-400 font-normal"></span>
                   </label>
                   <div className="relative">
                     <input
@@ -259,7 +259,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">الصف الدراسي والمجموعة</label>
+                  <label className="block text-xs font-bold text-slate-700">المجموعة</label>
                   <div className="relative">
                     <select
                       dir="rtl"

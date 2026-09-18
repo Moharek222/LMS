@@ -8,9 +8,6 @@ export const getGroupsApi = async (): Promise<Group[]> => {
   try {
     const response = await apiClient.get<any>('/api/groups', {
       params: { page: 1, limit: 100 },
-      headers: {
-        'X-Skip-Auth-Redirect': 'true',
-      },
     });
 
     const resData = response.data;

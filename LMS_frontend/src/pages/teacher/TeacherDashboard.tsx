@@ -91,7 +91,6 @@ export const TeacherDashboard: React.FC = () => {
       try {
         const res = await apiClient.get('/api/students', {
           params: { page: 1, limit: 5 },
-          headers: { 'X-Skip-Auth-Redirect': 'true' },
         });
 
         if (isMounted && res.data) {
