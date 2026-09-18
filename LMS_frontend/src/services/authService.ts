@@ -18,9 +18,15 @@ export const loginTeacherApi = async (credentials: TeacherLoginCredentials): Pro
     password: credentials.password,
   });
 
+  if (response.data.token) {
+    localStorage.setItem('lms_token', response.data.token);
+  }
+  if (response.data.refreshToken) {
+    localStorage.setItem('lms_refresh_token', response.data.refreshToken);
+  }
+
   const backendUser = response.data.user;
 
-  
   return {
     id: backendUser._id,
     name: backendUser.name,
@@ -36,9 +42,15 @@ export const loginStudentApi = async (credentials: StudentLoginCredentials): Pro
     password: credentials.password,
   });
 
+  if (response.data.token) {
+    localStorage.setItem('lms_token', response.data.token);
+  }
+  if (response.data.refreshToken) {
+    localStorage.setItem('lms_refresh_token', response.data.refreshToken);
+  }
+
   const backendStudent = response.data.data;
 
-  
   return {
     id: backendStudent._id,
     name: backendStudent.name,
@@ -62,7 +74,28 @@ export const registerStudentApi = async (credentials: StudentRegisterCredentials
   return response.data;
 };
 
+export const refreshSessionApi = async (): Promise<string | null> => {
+  const refreshToken = localStorage.getItem('lms_refresh_token');
+  if (!refreshToken) return null;
+
+  try {
+    const response = await apiClient.post<{ token?: string; accessToken?: string }>('/api/auth/refresh-token', {
+      refreshToken,
+    });
+    const newToken = response.data.token || response.data.accessToken;
+    if (newToken) {
+      localStorage.setItem('lms_token', newToken);
+      return newToken;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 export const logoutApi = async (): Promise<LogoutResponse> => {
+  localStorage.removeItem('lms_token');
+  localStorage.removeItem('lms_refresh_token');
   const response = await apiClient.post<LogoutResponse>('/api/auth/logout');
   return response.data;
 };

@@ -36,6 +36,8 @@ export interface StudentRegisterCredentials {
 
 export interface TeacherLoginResponse {
   message: string;
+  token?: string;
+  refreshToken?: string;
   user: {
     _id: string;
     name: string;
@@ -47,6 +49,8 @@ export interface TeacherLoginResponse {
 
 export interface StudentLoginResponse {
   message: string;
+  token?: string;
+  refreshToken?: string;
   data: {
     _id: string;
     name: string;

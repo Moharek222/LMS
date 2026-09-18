@@ -8,6 +8,17 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('lms_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -22,6 +33,8 @@ apiClient.interceptors.response.use(
       isPublicAuthRoute;
 
     if (error.response && (error.response.status === 401 || error.response.status === 403) && !skipRedirect) {
+      localStorage.removeItem('lms_token');
+      localStorage.removeItem('lms_refresh_token');
       localStorage.removeItem('lms_user');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
