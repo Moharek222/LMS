@@ -131,8 +131,10 @@ export const StudentDashboard: React.FC = () => {
     const nextParams: Record<string, string> = { tab: activeTab };
     if (selectedCourseId) nextParams.courseId = selectedCourseId;
     if (selectedLessonId) nextParams.lessonId = selectedLessonId;
-    if (quizId) nextParams.quizId = quizId;
-    setSearchParams(nextParams);
+    if (quizId && quizId !== selectedQuizId) {
+      nextParams.quizId = quizId;
+    }
+    setSearchParams(nextParams, { preventScrollReset: true });
     setIsSolvingQuiz(false);
   };
 
@@ -140,7 +142,7 @@ export const StudentDashboard: React.FC = () => {
     const nextParams: Record<string, string> = { tab: activeTab };
     if (selectedCourseId) nextParams.courseId = selectedCourseId;
     if (selectedLessonId) nextParams.lessonId = selectedLessonId;
-    setSearchParams(nextParams);
+    setSearchParams(nextParams, { preventScrollReset: true });
     setIsSolvingQuiz(false);
   };
 

@@ -4,8 +4,6 @@ import { useQueries } from '@tanstack/react-query';
 import type { Lesson } from '../types/lesson';
 import { LessonVideoPlayer } from './LessonVideoPlayer';
 import { QuizList } from '../../quizzes/components/QuizList';
-import { StudentQuizPreview } from '../../quizzes/components/StudentQuizPreview';
-import { QuizRunner } from '../../quizzes/components/QuizRunner';
 import { useStudentQuizHistory } from '../../student/hooks/useStudentQuizHistory';
 import { useToast } from '../../../context/ToastContext';
 import { getLessonQuizzes } from '../../quizzes/api/quizzesApi';
@@ -311,25 +309,11 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
             lessonId={selectedLessonId}
             selectedQuizId={selectedQuizId}
             onSelectQuiz={(qId) => onSelectQuiz(qId)}
+            isSolvingQuiz={isSolvingQuiz}
+            setIsSolvingQuiz={setIsSolvingQuiz}
+            onCloseQuiz={onCloseQuiz}
+            onQuizPassed={(qId) => handleQuizPassed(qId)}
           />
-
-          {selectedQuizId && (
-            isSolvingQuiz ? (
-              <QuizRunner
-                lessonId={selectedLessonId}
-                quizId={selectedQuizId}
-                onClose={() => setIsSolvingQuiz(false)}
-                onPassed={() => handleQuizPassed(selectedQuizId)}
-              />
-            ) : (
-              <StudentQuizPreview
-                lessonId={selectedLessonId}
-                quizId={selectedQuizId}
-                onClose={onCloseQuiz}
-                onStartQuiz={() => setIsSolvingQuiz(true)}
-              />
-            )
-          )}
         </div>
       )}
 

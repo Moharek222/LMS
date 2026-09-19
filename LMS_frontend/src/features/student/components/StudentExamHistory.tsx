@@ -10,6 +10,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Award,
+  Clock,
 } from 'lucide-react';
 import { useStudentExamHistory } from '../hooks/useStudentExamHistory';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
@@ -110,6 +111,18 @@ export const StudentExamHistory: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {historyItems.map((item) => {
           const examTitle = item.examID?.title || 'امتحان شامل';
+          const isPending = item.status === 'PENDING';
+          const score = item.totalScore ?? item.score ?? 0;
+          const totalPoints = item.totalExamPoints;
+
+          const isPassed = isPending
+            ? false
+            : typeof item.isPassed === 'boolean'
+            ? item.isPassed
+            : totalPoints && totalPoints > 0
+            ? score / totalPoints >= 0.5
+            : true;
+
           return (
             <div
               key={item._id}
@@ -122,7 +135,12 @@ export const StudentExamHistory: React.FC = () => {
                     <FileCheck size={18} className="text-[#0D8A82] shrink-0" />
                     <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{examTitle}</h4>
                   </div>
-                  {item.isPassed ? (
+                  {isPending ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold shrink-0">
+                      <Clock size={13} />
+                      <span>قيد التصحيح</span>
+                    </span>
+                  ) : isPassed ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shrink-0">
                       <CheckCircle2 size={13} />
                       <span>نجح</span>
@@ -140,7 +158,13 @@ export const StudentExamHistory: React.FC = () => {
                     <Award size={15} className="text-amber-500" />
                     <span>الدرجة</span>
                   </span>
-                  <span className="text-sm font-extrabold text-slate-800">{item.score}</span>
+                  <span className="text-sm font-extrabold text-slate-800">
+                    {isPending
+                      ? 'قيد التصحيح'
+                      : totalPoints !== undefined && totalPoints !== null
+                      ? `${score} / ${totalPoints}`
+                      : score}
+                  </span>
                 </div>
               </div>
 

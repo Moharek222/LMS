@@ -37,6 +37,11 @@ export interface ExamHistoryItem extends BaseAssessmentHistoryItem {
     _id: string;
     title: string;
   };
+  totalScore?: number;
+  totalExamPoints?: number;
+  mcqScore?: number;
+  essayScore?: number;
+  status?: 'PENDING' | 'GRADED';
 }
 
 export interface ExamHistoryResponse {

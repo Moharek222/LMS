@@ -2,18 +2,28 @@ import React from 'react';
 import { FileText, AlertTriangle, Loader2 } from 'lucide-react';
 import { useLessonQuizzes } from '../hooks/useLessonQuizzes';
 import { QuizCard } from './QuizCard';
+import { StudentQuizPreview } from './StudentQuizPreview';
+import { QuizRunner } from './QuizRunner';
 import type { QuizListItem } from '../types/quiz';
 
 interface QuizListProps {
   lessonId: string;
   selectedQuizId?: string;
   onSelectQuiz?: (quizId: string) => void;
+  isSolvingQuiz?: boolean;
+  setIsSolvingQuiz?: (isSolving: boolean) => void;
+  onCloseQuiz?: () => void;
+  onQuizPassed?: (quizId: string) => void;
 }
 
 export const QuizList: React.FC<QuizListProps> = ({
   lessonId,
   selectedQuizId,
   onSelectQuiz,
+  isSolvingQuiz = false,
+  setIsSolvingQuiz,
+  onCloseQuiz,
+  onQuizPassed,
 }) => {
   const { data: quizzesData, isLoading, isError, refetch } = useLessonQuizzes(lessonId);
 
@@ -22,7 +32,6 @@ export const QuizList: React.FC<QuizListProps> = ({
   }
 
   const quizzes: QuizListItem[] = quizzesData || [];
-
   const isQuizzesLoadingState = isLoading && quizzes.length === 0;
 
   return (
@@ -56,14 +65,44 @@ export const QuizList: React.FC<QuizListProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {quizzes.map((quiz) => (
-            <QuizCard
-              key={quiz._id}
-              quiz={quiz}
-              isSelected={selectedQuizId === quiz._id}
-              onSelect={onSelectQuiz}
-            />
-          ))}
+          {quizzes.map((quiz) => {
+            const isSelected = selectedQuizId === quiz._id;
+            return (
+              <div key={quiz._id} className="space-y-3">
+                <QuizCard
+                  quiz={quiz}
+                  isSelected={isSelected}
+                  onSelect={(qId) => {
+                    if (isSelected) {
+                      onSelectQuiz?.('');
+                    } else {
+                      onSelectQuiz?.(qId);
+                    }
+                  }}
+                />
+
+                {isSelected && (
+                  <div className="pt-1 animate-in fade-in zoom-in-95 duration-200">
+                    {isSolvingQuiz ? (
+                      <QuizRunner
+                        lessonId={lessonId}
+                        quizId={quiz._id}
+                        onClose={() => setIsSolvingQuiz?.(false)}
+                        onPassed={() => onQuizPassed?.(quiz._id)}
+                      />
+                    ) : (
+                      <StudentQuizPreview
+                        lessonId={lessonId}
+                        quizId={quiz._id}
+                        onClose={onCloseQuiz || (() => onSelectQuiz?.(''))}
+                        onStartQuiz={() => setIsSolvingQuiz?.(true)}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

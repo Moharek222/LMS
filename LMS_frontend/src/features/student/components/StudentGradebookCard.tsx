@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, BookOpen, CheckCircle2, XCircle, TrendingUp, Loader2, FileCheck } from 'lucide-react';
+import { Award, BookOpen, CheckCircle2, XCircle, TrendingUp, Loader2, FileCheck, Clock } from 'lucide-react';
 import { useStudentQuizHistory } from '../hooks/useStudentQuizHistory';
 import { useStudentExamHistory } from '../hooks/useStudentExamHistory';
 
@@ -20,10 +20,19 @@ export const StudentGradebookCard: React.FC = () => {
       : 0;
 
   const totalExams = exams.length;
-  const passedExams = exams.filter((e) => e.isPassed).length;
+  const passedExams = exams.filter((e) => {
+    if (e.status === 'PENDING') return false;
+    if (typeof e.isPassed === 'boolean') return e.isPassed;
+    const score = e.totalScore ?? e.score ?? 0;
+    const totalPoints = e.totalExamPoints;
+    return totalPoints && totalPoints > 0 ? score / totalPoints >= 0.5 : score > 0;
+  }).length;
+
   const avgExamScore =
     totalExams > 0
-      ? Math.round(exams.reduce((acc, e) => acc + (e.score || 0), 0) / totalExams)
+      ? Math.round(
+          exams.reduce((acc, e) => acc + (e.totalScore ?? e.score ?? 0), 0) / totalExams
+        )
       : 0;
 
   const totalAssessments = totalQuizzes + totalExams;
@@ -111,33 +120,56 @@ export const StudentGradebookCard: React.FC = () => {
                 <span>آخر نتائج الامتحانات الشاملة:</span>
               </h4>
               <div className="space-y-2">
-                {exams.slice(0, 5).map((ex) => (
-                  <div
-                    key={ex._id}
-                    className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between text-xs font-semibold gap-2"
-                  >
-                    <div>
-                      <span className="font-extrabold text-slate-800 block">
-                        {ex.examID?.title || 'امتحان شامل'}
-                      </span>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        الدرجة المحصلة: {ex.score}
-                      </span>
-                    </div>
+                {exams.slice(0, 5).map((ex) => {
+                  const isPending = ex.status === 'PENDING';
+                  const score = ex.totalScore ?? ex.score ?? 0;
+                  const totalPoints = ex.totalExamPoints;
+                  const isPassed = isPending
+                    ? false
+                    : typeof ex.isPassed === 'boolean'
+                    ? ex.isPassed
+                    : totalPoints && totalPoints > 0
+                    ? score / totalPoints >= 0.5
+                    : true;
 
-                    {ex.isPassed ? (
-                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold flex items-center gap-1">
-                        <CheckCircle2 size={13} />
-                        <span>اجتاز الامتحان</span>
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold flex items-center gap-1">
-                        <XCircle size={13} />
-                        <span>لم يجتز الامتحان</span>
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  return (
+                    <div
+                      key={ex._id}
+                      className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 flex items-center justify-between text-xs font-semibold gap-2"
+                    >
+                      <div>
+                        <span className="font-extrabold text-slate-800 block">
+                          {ex.examID?.title || 'امتحان شامل'}
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          الدرجة المحصلة:{' '}
+                          {isPending
+                            ? 'قيد التصحيح'
+                            : totalPoints !== undefined && totalPoints !== null
+                            ? `${score} / ${totalPoints}`
+                            : score}
+                        </span>
+                      </div>
+
+                      {isPending ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold flex items-center gap-1">
+                          <Clock size={13} />
+                          <span>قيد التصحيح</span>
+                        </span>
+                      ) : isPassed ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold flex items-center gap-1">
+                          <CheckCircle2 size={13} />
+                          <span>اجتاز الامتحان</span>
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold flex items-center gap-1">
+                          <XCircle size={13} />
+                          <span>لم يجتز الامتحان</span>
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
