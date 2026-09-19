@@ -92,72 +92,78 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
     })),
   });
 
-  const isLessonUnlocked = React.useCallback(
-    (index: number): boolean => {
-      if (index === 0) return true;
-
-      for (let i = 0; i < index; i++) {
-        const prevLesson = sortedLessons[i];
-        if (!prevLesson) continue;
-
-        const prevQuizzes = lessonQuizzesQueries[i]?.data || [];
-        const hasQuizzes = prevQuizzes.length > 0;
-        const isPrevCompleted = completedLessonIds.includes(prevLesson._id);
-
-        if (hasQuizzes) {
-          const hasPassedQuiz = prevQuizzes.some((quiz) => {
-            const qIdStr = String(quiz._id).trim();
-            if (passedQuizIdsSession.has(qIdStr)) return true;
-
-            if (!quizHistoryData?.data) return false;
-            return quizHistoryData.data.some((sub) => {
-              if (!sub.isPassed) return false;
-              const subQuizId = typeof sub.quizID === 'string' ? sub.quizID : sub.quizID?._id;
-              if (!subQuizId) return false;
-              return String(subQuizId).trim() === qIdStr;
-            });
-          });
-
-          if (!hasPassedQuiz) {
-            return false;
-          }
-        } else {
-          if (!isPrevCompleted) {
-            return false;
-          }
+  const passedQuizSet = React.useMemo<Set<string>>(() => {
+    const set = new Set<string>(passedQuizIdsSession);
+    if (quizHistoryData?.data) {
+      quizHistoryData.data.forEach((sub) => {
+        if (sub.isPassed) {
+          const qId = typeof sub.quizID === 'string' ? sub.quizID : sub.quizID?._id;
+          if (qId) set.add(String(qId).trim());
         }
+      });
+    }
+    return set;
+  }, [quizHistoryData, passedQuizIdsSession]);
+
+  const completedLessonSet = React.useMemo<Set<string>>(
+    () => new Set(completedLessonIds),
+    [completedLessonIds]
+  );
+
+  const unlockedMap = React.useMemo<Map<string, boolean>>(() => {
+    const map = new Map<string, boolean>();
+    if (sortedLessons.length === 0) return map;
+
+    map.set(sortedLessons[0]._id, true);
+
+    for (let i = 0; i < sortedLessons.length - 1; i++) {
+      const currentLesson = sortedLessons[i];
+      const isCurrentUnlocked = map.get(currentLesson._id) ?? false;
+      if (!isCurrentUnlocked) break;
+
+      const quizzes = lessonQuizzesQueries[i]?.data || [];
+      const isCurrentCompleted = completedLessonSet.has(currentLesson._id);
+
+      let canUnlockNext = false;
+      if (quizzes.length > 0) {
+        canUnlockNext = quizzes.some((q) => passedQuizSet.has(String(q._id).trim()));
+      } else {
+        canUnlockNext = isCurrentCompleted;
       }
 
-      return true;
+      if (canUnlockNext) {
+        map.set(sortedLessons[i + 1]._id, true);
+      } else {
+        break;
+      }
+    }
+
+    return map;
+  }, [sortedLessons, lessonQuizzesQueries, completedLessonSet, passedQuizSet]);
+
+  const isLessonUnlocked = React.useCallback(
+    (index: number): boolean => {
+      const lesson = sortedLessons[index];
+      if (!lesson) return false;
+      return unlockedMap.get(lesson._id) ?? false;
     },
-    [sortedLessons, lessonQuizzesQueries, completedLessonIds, quizHistoryData, passedQuizIdsSession]
+    [sortedLessons, unlockedMap]
   );
 
   const effectiveCompletedLessonsCount = React.useMemo(() => {
     if (sortedLessons.length === 0) return 0;
 
     return sortedLessons.filter((lesson, idx) => {
-      if (completedLessonIds.includes(lesson._id)) return true;
+      if (completedLessonSet.has(lesson._id)) return true;
 
       const quizzes = lessonQuizzesQueries[idx]?.data || [];
       if (quizzes.length > 0) {
-        return quizzes.some((quiz) => {
-          const qIdStr = String(quiz._id).trim();
-          if (passedQuizIdsSession.has(qIdStr)) return true;
-
-          if (!quizHistoryData?.data) return false;
-          return quizHistoryData.data.some((sub) => {
-            if (!sub.isPassed) return false;
-            const subQuizId = typeof sub.quizID === 'string' ? sub.quizID : sub.quizID?._id;
-            if (!subQuizId) return false;
-            return String(subQuizId).trim() === qIdStr;
-          });
-        });
+        return quizzes.some((quiz) => passedQuizSet.has(String(quiz._id).trim()));
       }
 
       return false;
     }).length;
-  }, [sortedLessons, completedLessonIds, lessonQuizzesQueries, passedQuizIdsSession, quizHistoryData]);
+  }, [sortedLessons, completedLessonSet, lessonQuizzesQueries, passedQuizSet]);
 
   const effectiveProgressPercentage = React.useMemo(() => {
     if (sortedLessons.length === 0) return 0;
@@ -292,7 +298,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
               hasPrevious={hasPreviousLesson}
               hasNext={hasNextLesson}
               onVideoEnded={onVideoEnded}
-              isCompletedSession={completedLessonIds.includes(selectedLessonId)}
+              isCompletedSession={completedLessonSet.has(selectedLessonId)}
             />
           </div>
         )
@@ -366,7 +372,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
           {sortedLessons.map((lesson, index) => {
             const isUnlocked = isLessonUnlocked(index);
             const isSelected = selectedLessonId === lesson._id;
-            const isCompleted = completedLessonIds.includes(lesson._id);
+            const isCompleted = completedLessonSet.has(lesson._id);
 
             const lessonQuizzes = lessonQuizzesQueries[index]?.data || [];
             const hasLessonQuiz = lessonQuizzes.length > 0;
