@@ -119,7 +119,9 @@ export const StudentDashboard: React.FC = () => {
     executeOrConfirmNav(() => {
       const nextParams: Record<string, string> = { tab: activeTab };
       if (selectedCourseId) nextParams.courseId = selectedCourseId;
-      if (lessonId) nextParams.lessonId = lessonId;
+      if (lessonId && lessonId !== selectedLessonId) {
+        nextParams.lessonId = lessonId;
+      }
       setSearchParams(nextParams);
       setIsSolvingQuiz(false);
     });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, Video, BookOpen, Lock, Sparkles, Award, Play } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Video, BookOpen, Lock, Sparkles, Award, Play, X } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import type { Lesson } from '../types/lesson';
 import { LessonVideoPlayer } from './LessonVideoPlayer';
@@ -253,20 +253,48 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
             </button>
           </div>
         ) : (
-          <LessonVideoPlayer
-            lessonId={selectedLessonId}
-            courseId={selectedCourseId}
-            lessonTitle={selectedLesson?.title}
-            lessonDescription={selectedLesson?.description}
-            lessonOrder={selectedLesson?.order}
-            requiresPassing={selectedLesson?.requiresPassing}
-            onPreviousLesson={onPreviousLesson}
-            onNextLesson={handleNextLessonWithLockCheck}
-            hasPrevious={hasPreviousLesson}
-            hasNext={hasNextLesson}
-            onVideoEnded={onVideoEnded}
-            isCompletedSession={completedLessonIds.includes(selectedLessonId)}
-          />
+          <div className="space-y-3">
+            {/* Top Quick Action Bar */}
+            <div className="bg-[#091523] text-white p-3.5 sm:p-4 rounded-2xl border border-slate-800 shadow-md flex items-center justify-between gap-3 flex-wrap animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#0D8A82]/20 text-[#0D8A82] flex items-center justify-center border border-[#0D8A82]/30 shrink-0">
+                  <Video size={20} />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-extrabold text-white">
+                    {selectedLesson?.title || 'جاري عرض المحاضرة'}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-semibold mt-0.5">
+                    المحاضرة رقم {selectedLesson?.order || ''}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onSelectLesson('')}
+                className="px-4 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+              >
+                <X size={16} />
+                <span>إغلاق الفديو والعودة للقائمة</span>
+              </button>
+            </div>
+
+            <LessonVideoPlayer
+              lessonId={selectedLessonId}
+              courseId={selectedCourseId}
+              lessonTitle={selectedLesson?.title}
+              lessonDescription={selectedLesson?.description}
+              lessonOrder={selectedLesson?.order}
+              requiresPassing={selectedLesson?.requiresPassing}
+              onPreviousLesson={onPreviousLesson}
+              onNextLesson={handleNextLessonWithLockCheck}
+              hasPrevious={hasPreviousLesson}
+              hasNext={hasNextLesson}
+              onVideoEnded={onVideoEnded}
+              isCompletedSession={completedLessonIds.includes(selectedLessonId)}
+            />
+          </div>
         )
       )}
 
@@ -358,7 +386,11 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                 toast.error('هذه المحاضرة مغلقة 🔒. يجب مشاهدة المحاضرة السابقة واجتياز كويز التقييم بنجاح بنسبة النجاح المطلوبة لفتح هذه المحاضرة.');
                 return;
               }
-              onSelectLesson(lesson._id);
+              if (isSelected) {
+                onSelectLesson('');
+              } else {
+                onSelectLesson(lesson._id);
+              }
             };
 
             const handleStartQuizClick = (e: React.MouseEvent) => {
