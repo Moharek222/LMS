@@ -76,9 +76,9 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
     const video = e.currentTarget;
     if (!video.duration || hasMarkedProgressRef.current || !courseId || !lessonId) return;
 
-    // Trigger watch progress API when student views >= 85% of the video
+    // Trigger watch progress API when student views >= 50% of the video
     const progressRatio = video.currentTime / video.duration;
-    if (progressRatio >= 0.85) {
+    if (progressRatio >= 0.5) {
       hasMarkedProgressRef.current = true;
       markWatchedMutation.mutate({ courseID: courseId, lessonID: lessonId });
     }

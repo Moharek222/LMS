@@ -45,12 +45,22 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
     enabled: Boolean(isOpen && studentId),
   });
 
-  
+  // Fetch student quiz submissions for teacher view
   const { data: quizSubmissions, isLoading: isLoadingQuizSubmissions } = useQuery({
     queryKey: ['student-quiz-submissions-teacher', studentId],
     queryFn: async () => {
-      const response = await apiClient.get<{ data: any[] }>(`/api/students/quiz-history`);
-      return response.data?.data || [];
+      if (!studentId) return [];
+      try {
+        const response = await apiClient.get<{ data: any[] }>(`/api/quizzes/student-history/${studentId}`);
+        return response.data?.data || [];
+      } catch {
+        try {
+          const response = await apiClient.get<{ data: any[] }>(`/api/students/quiz-history`);
+          return response.data?.data || [];
+        } catch {
+          return [];
+        }
+      }
     },
     enabled: Boolean(isOpen && studentId),
   });
