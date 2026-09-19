@@ -420,14 +420,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                       onClick={onNavigateToRegister}
                       className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
                     >
-                      سجل الآن
+                      انشاء حساب جديد
                     </button>
                   ) : (
                     <Link
                       to="/register"
                       className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
                     >
-                      سجل الآن
+                      انشاء حساب جديد
                     </Link>
                   )}
                 </p>
