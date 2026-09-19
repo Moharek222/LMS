@@ -411,27 +411,29 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
                 <Headphones size={18} />
               </a>
 
-              <div className="text-center mt-4 pt-2">
-                <p className="text-xs text-slate-600 font-medium">
-                  ليس لديك حساب طالب؟{' '}
-                  {onNavigateToRegister ? (
-                    <button
-                      type="button"
-                      onClick={onNavigateToRegister}
-                      className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
-                    >
-                      انشاء حساب جديد
-                    </button>
-                  ) : (
-                    <Link
-                      to="/register"
-                      className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
-                    >
-                      انشاء حساب جديد
-                    </Link>
-                  )}
-                </p>
-              </div>
+              {accountType === 'student' && (
+                <div className="text-center mt-4 pt-2">
+                  <p className="text-xs text-slate-600 font-medium">
+                    ليس لديك حساب طالب؟{' '}
+                    {onNavigateToRegister ? (
+                      <button
+                        type="button"
+                        onClick={onNavigateToRegister}
+                        className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
+                      >
+                        انشاء حساب جديد
+                      </button>
+                    ) : (
+                      <Link
+                        to="/register"
+                        className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
+                      >
+                        انشاء حساب جديد
+                      </Link>
+                    )}
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-col items-center justify-center gap-1 mt-5 text-slate-400">
                 <div className="flex items-center justify-center gap-2">

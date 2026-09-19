@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   CalendarCheck,
   CheckCircle2,
@@ -34,6 +34,110 @@ export const StudentAttendanceCard: React.FC = () => {
     data: sheetsData,
     refetch: refetchSheets,
   } = useGroupAttendanceSheets(groupId, 1, 20);
+
+  // Month selector state
+  const currentDate = useMemo(() => new Date(), []);
+  const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>(currentMonthKey);
+
+  // Month options generator (full 12 months of the academic year)
+  const monthOptions = useMemo(() => {
+    const opts = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+      opts.push({ key, label });
+    }
+    return opts;
+  }, [currentDate]);
+
+  const sheets = sheetsData?.data || [];
+
+  // Filter sheets for selected month
+  const monthlySheets = useMemo(() => {
+    return sheets
+      .filter((sheet) => {
+        if (!sheet.date) return false;
+        const d = new Date(sheet.date);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        return key === selectedMonthKey;
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [sheets, selectedMonthKey]);
+
+  // Construct 8 monthly session slots
+  const monthlySlots = useMemo(() => {
+    const slots = [];
+    const hasSheets = monthlySheets.length > 0;
+    const totalRecordedSessions = hasSheets
+      ? monthlySheets.length
+      : (statsData?.totalSessions || 0);
+    const totalAttendedSessions = hasSheets
+      ? monthlySheets.filter(
+          (sheet) =>
+            Array.isArray(sheet.presentStudents) && sheet.presentStudents.includes(studentId)
+        ).length
+      : (statsData?.attendedSessions || 0);
+
+    for (let i = 1; i <= 8; i++) {
+      if (hasSheets) {
+        const sheet = monthlySheets[i - 1];
+        if (sheet) {
+          const isPresent =
+            Array.isArray(sheet.presentStudents) && sheet.presentStudents.includes(studentId);
+          const formattedDate = new Date(sheet.date).toLocaleDateString('ar-EG', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+          });
+          slots.push({
+            sessionNumber: i,
+            title: `الحصة ${i}`,
+            sheetId: sheet._id,
+            date: sheet.date,
+            formattedDate,
+            status: isPresent ? ('present' as const) : ('absent' as const),
+          });
+        } else {
+          slots.push({
+            sessionNumber: i,
+            title: `الحصة ${i}`,
+            status: 'upcoming' as const,
+          });
+        }
+      } else {
+        if (i <= totalRecordedSessions) {
+          const isPresent = i <= totalAttendedSessions;
+          slots.push({
+            sessionNumber: i,
+            title: `الحصة ${i}`,
+            formattedDate: 'تم رصد الجلسة',
+            status: isPresent ? ('present' as const) : ('absent' as const),
+          });
+        } else {
+          slots.push({
+            sessionNumber: i,
+            title: `الحصة ${i}`,
+            status: 'upcoming' as const,
+          });
+        }
+      }
+    }
+    return slots;
+  }, [monthlySheets, studentId, statsData]);
+
+  const monthlyAttendedCount = useMemo(() => {
+    return monthlySlots.filter((s) => s.status === 'present').length;
+  }, [monthlySlots]);
+
+  const monthlyAbsentCount = useMemo(() => {
+    return monthlySlots.filter((s) => s.status === 'absent').length;
+  }, [monthlySlots]);
+
+  const monthlyPercentage = useMemo(() => {
+    return Math.round((monthlyAttendedCount / 8) * 100);
+  }, [monthlyAttendedCount]);
 
   if (!studentId || !groupId) {
     return (
@@ -93,15 +197,9 @@ export const StudentAttendanceCard: React.FC = () => {
     );
   }
 
-  const totalSessions = statsData?.totalSessions ?? 0;
-  const attendedSessions = statsData?.attendedSessions ?? 0;
-  const attendancePercentage = statsData?.attendancePercentage ?? 0;
-  const absentSessions = Math.max(0, totalSessions - attendedSessions);
-  const sheets = sheetsData?.data || [];
-
   return (
     <div className="space-y-6">
-      
+      {/* Header & Overall Stats */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-3.5">
@@ -109,150 +207,159 @@ export const StudentAttendanceCard: React.FC = () => {
               <CalendarCheck size={30} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-800">سجل انضباط الحضور والغياب</h3>
+              <h3 className="text-lg font-black text-slate-800">سجل انضباط الحضور والغياب 📅</h3>
               <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                متابعة حضور المحاضرات المباشرة والجلسات التعليمية للمجموعة
+                متابعة الحضور في حصص الشهر (8 حصص شهرياً) للجلسات التعليمية للمجموعة
               </p>
             </div>
           </div>
 
-          <div className="shrink-0 self-end sm:self-auto">
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0 self-end sm:self-auto">
+            {/* Month Selector */}
+            <select
+              value={selectedMonthKey}
+              onChange={(e) => setSelectedMonthKey(e.target.value)}
+              className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-[#0D8A82]"
+            >
+              {monthOptions.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+
             <span
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold border ${
-                attendancePercentage >= 80
+                monthlyPercentage >= 80
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : attendancePercentage >= 60
+                  : monthlyPercentage >= 50
                   ? 'bg-amber-50 text-amber-700 border-amber-200'
                   : 'bg-rose-50 text-rose-700 border-rose-200'
               }`}
             >
               <Award size={16} />
-              <span>نسبة الانضباط: {attendancePercentage}%</span>
+              <span>نسبة الشهر: {monthlyPercentage}%</span>
             </span>
           </div>
         </div>
 
-        
+        {/* 3 Overview Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-         
           <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-white text-slate-700 flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
               <Calendar size={22} />
             </div>
             <div>
-              <span className="text-[11px] text-slate-400 font-bold block">إجمالي المحاضرات</span>
-              <span className="text-base font-extrabold text-slate-800">{totalSessions} محاضرة</span>
+              <span className="text-[11px] text-slate-400 font-bold block">حصص الشهر المطلوب</span>
+              <span className="text-base font-extrabold text-slate-800">8 حصص / شهر</span>
             </div>
           </div>
 
-         
           <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-200/70 flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-white text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200/60 shadow-2xs">
               <CheckCircle2 size={22} />
             </div>
             <div>
-              <span className="text-[11px] text-emerald-700 font-bold block">المحاضرات المحضورة</span>
-              <span className="text-base font-extrabold text-emerald-900">{attendedSessions} محاضرة</span>
+              <span className="text-[11px] text-emerald-700 font-bold block">الحصص المحضورة</span>
+              <span className="text-base font-extrabold text-emerald-900">{monthlyAttendedCount} من 8 حصص</span>
             </div>
           </div>
 
-         
           <div className="bg-rose-50/50 rounded-2xl p-4 border border-rose-200/70 flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-white text-rose-600 flex items-center justify-center shrink-0 border border-rose-200/60 shadow-2xs">
               <XCircle size={22} />
             </div>
             <div>
-              <span className="text-[11px] text-rose-700 font-bold block">أيام الغياب</span>
-              <span className="text-base font-extrabold text-rose-900">{absentSessions} يوم</span>
+              <span className="text-[11px] text-rose-700 font-bold block">حصص الغياب</span>
+              <span className="text-base font-extrabold text-rose-900">{monthlyAbsentCount} حصة</span>
             </div>
           </div>
         </div>
 
-       
+        {/* Progress Bar */}
         <div className="space-y-2 pt-2">
           <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-700">مؤشر الالتزام بالحضور</span>
-            <span className="text-[#0D8A82] font-extrabold">{attendancePercentage}%</span>
+            <span className="text-slate-700">مؤشر الانضباط لحصص الشهر (8 حصص)</span>
+            <span className="text-[#0D8A82] font-extrabold">{monthlyPercentage}%</span>
           </div>
           <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5">
             <div
               className="h-full bg-[#0D8A82] rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${Math.min(100, Math.max(0, attendancePercentage))}%` }}
+              style={{ width: `${Math.min(100, Math.max(0, monthlyPercentage))}%` }}
             />
           </div>
         </div>
       </div>
 
-      
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+      {/* 8-Sessions Monthly Interactive Grid */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 flex-wrap gap-2">
           <h4 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
             <Clock size={18} className="text-[#0D8A82]" />
-            <span>سجل المحاضرات والجلسات المسجلة</span>
+            <span>كشف حصص الشهر (8 حصص شهرياً)</span>
           </h4>
-          <span className="text-xs font-bold text-slate-400">
-            عدد المحاضرات: {sheets.length}
+          <span className="text-xs font-bold text-slate-500 bg-teal-50 px-3 py-1 rounded-xl border border-teal-100">
+            {monthOptions.find((m) => m.key === selectedMonthKey)?.label || 'الشهر الحالي'}
           </span>
         </div>
 
-        {sheets.length === 0 ? (
-          <div className="py-10 text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100">
-              <CalendarCheck size={24} />
-            </div>
-            <h5 className="text-sm font-bold text-slate-700">لا يوجد كشف حضور مسجل لهذه المجموعة حتى الآن</h5>
-            <p className="text-xs text-slate-400 font-semibold">
-              سيتم إضافة وسجل الحضور تلقائياً فور رصد الجلسات المباشرة.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {sheets.map((sheet) => {
-              const isPresent = Array.isArray(sheet.presentStudents) && sheet.presentStudents.includes(studentId);
-              const formattedDate = new Date(sheet.date).toLocaleDateString('ar-EG', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              });
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          {monthlySlots.map((slot) => {
+            const isPresent = slot.status === 'present';
+            const isAbsent = slot.status === 'absent';
 
-              return (
-                <div
-                  key={sheet._id}
-                  className="rounded-2xl p-4 border border-slate-200/90 bg-slate-50/50 hover:bg-slate-50 transition flex items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                        isPresent
-                          ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
-                          : 'bg-rose-100 text-rose-700 border-rose-300'
-                      }`}
-                    >
-                      {isPresent ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
-                    </div>
-                    <div>
-                      <h5 className="text-xs font-extrabold text-slate-800">{formattedDate}</h5>
-                      <span className="text-[11px] text-slate-400 font-semibold block mt-0.5">
-                        جلسة تعليمية مباشرة
-                      </span>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`px-3 py-1 rounded-xl text-xs font-extrabold border shrink-0 ${
+            return (
+              <div
+                key={slot.sessionNumber}
+                className={`p-4 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
+                  isPresent
+                    ? 'bg-emerald-50/70 border-emerald-200 hover:border-emerald-300'
+                    : isAbsent
+                    ? 'bg-rose-50/70 border-rose-200 hover:border-rose-300'
+                    : 'bg-slate-50/60 border-slate-200/80 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-800">{slot.title}</span>
+                  <div
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center border text-xs font-bold ${
                       isPresent
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                        : isAbsent
+                        ? 'bg-rose-100 text-rose-700 border-rose-300'
+                        : 'bg-white text-slate-400 border-slate-200'
                     }`}
                   >
-                    {isPresent ? 'حاضر' : 'غائب'}
+                    {isPresent ? (
+                      <CheckCircle2 size={16} />
+                    ) : isAbsent ? (
+                      <XCircle size={16} />
+                    ) : (
+                      <Clock size={15} />
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[11px] font-semibold text-slate-500 block">
+                    {slot.formattedDate || 'لم تُسجل بعد'}
+                  </span>
+                  <span
+                    className={`inline-block mt-1 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold border ${
+                      isPresent
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                        : isAbsent
+                        ? 'bg-rose-100 text-rose-800 border-rose-200'
+                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    {isPresent ? 'حاضر ✅' : isAbsent ? 'غائب ❌' : 'قادمة ⚪'}
                   </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
