@@ -53,15 +53,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!prev) return null;
         const userId = updatedProfile.id || prev.id;
         
-        let isVerified = updatedProfile.hasActiveSubscription;
+        let isVerified = false;
         if (parsedUser.role === 'student') {
             isVerified = Boolean(
-              prev.hasActiveSubscription ||
-              updatedProfile.hasActiveSubscription ||
-              (userId && (
+              userId && (
                 sessionStorage.getItem(`lms_code_verified_${userId}`) === 'true' ||
                 localStorage.getItem(`lms_code_verified_${userId}`) === 'true'
-              ))
+              )
             );
         }
 
@@ -112,14 +110,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const profile = await loginStudentApi(credentials);
       const studentId = profile.id;
-      const isVerified = Boolean(
-        profile.hasActiveSubscription ||
-        (studentId && (
-          sessionStorage.getItem(`lms_code_verified_${studentId}`) === 'true' ||
-          localStorage.getItem(`lms_code_verified_${studentId}`) === 'true'
-        ))
-      );
-      const fullProfile: UserProfile = { ...profile, hasActiveSubscription: isVerified };
+      if (studentId) {
+        localStorage.removeItem(`lms_code_verified_${studentId}`);
+        sessionStorage.removeItem(`lms_code_verified_${studentId}`);
+      }
+      const fullProfile: UserProfile = { ...profile, hasActiveSubscription: false };
       setUser(fullProfile);
       localStorage.setItem('lms_user', JSON.stringify(fullProfile));
     } finally {
