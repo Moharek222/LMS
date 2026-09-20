@@ -19,7 +19,7 @@ import progressRouter from "./src/progress/progress-router";
 
 dotenv.config();
 const app = express();
-
+app.set('trust proxy', 1);
 const PORT = Number(process.env.PORT) || 3000;
 const URI = process.env.DB_URL;
 const DB_NAME = process.env.DB_NAME;
