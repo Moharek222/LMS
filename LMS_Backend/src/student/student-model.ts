@@ -7,7 +7,7 @@ interface IStudent extends mongoose.Document {
     name: string;
     phone: string;
     password:string;
-    parentPhone?: string;
+    parentPhone?: string | null;
     role:Role;
     isActive: boolean;
     activeToken?: string | null;
@@ -47,7 +47,8 @@ const studentSchema = new mongoose.Schema<IStudent>({
     },
     parentPhone: {
         type: String,
-        trim: true
+        trim: true,
+        default: null
     },
     isActive: {
         type: Boolean,

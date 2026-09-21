@@ -18,7 +18,11 @@ export const registerValidation = [
                 .isLength({ min: 11, max: 11 }).withMessage("Phone number must be 11 digits long"), // اتعدلت لـ 11
         body("groupID") 
                 .notEmpty().withMessage("Group ID is required")
-                .isMongoId().withMessage("Invalid Group ID format")
+                .isMongoId().withMessage("Invalid Group ID format"),
+        body("parentPhone")
+                .optional({ checkFalsy: true })
+                .trim()
+                .isLength({ min: 11, max: 11 }).withMessage("Parent phone number must be 11 digits long"),
 ];
 
 interface IRegisterBody {
@@ -26,18 +30,25 @@ interface IRegisterBody {
         password: string;
         phone: string;
         groupID: string;
+        parentPhone?: string;
 }
 
 export const registerHandler: RequestHandler<{}, {}, IRegisterBody> = async (req, res, next) => {
         try {
-                const { name, password, phone, groupID } = req.body;
+                const { name, password, phone, parentPhone, groupID } = req.body;
 
                 const student = await Student.findOne({ phone }).exec();
                 if (student) return res.status(StatusCodes.CONFLICT).json({ message: "Phone number is already registered" });
 
                 const hashed = await bcrypt.hash(password, 10);
                 
-                const newStudent = new Student({ phone, password: hashed, name, groupID: groupID || (req.body as any).groupID });
+                const newStudent = new Student({ 
+                        phone,
+                        parentPhone: parentPhone ? parentPhone : null,
+                        password: hashed,
+                        name,
+                        groupID: groupID || (req.body as any).groupID
+                });
                 await newStudent.save();
                 
                 const studentObj = newStudent.toObject();
