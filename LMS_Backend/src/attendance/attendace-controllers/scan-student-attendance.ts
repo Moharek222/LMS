@@ -38,7 +38,7 @@ export const scanStudentAttendance: RequestHandler<{ groupID: string }, {}, { st
         const attendance = await Attendance.findOneAndUpdate(
             { groupID, date: today },
             { $addToSet: { presentStudents: studentID } },
-            { new: true, upsert: true } 
+            { returnDocument: "after", upsert: true } 
         ).populate("presentStudents", "name");
 
         res.status(StatusCodes.OK).json({
