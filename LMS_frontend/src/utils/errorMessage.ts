@@ -13,7 +13,18 @@ export const toArabicErrorMessage = (error: unknown, fallbackMessage = 'حدث �
   if (axios.isAxiosError(error)) {
     if (error.response) {
       const status = error.response.status;
-      const backendMsg = error.response.data?.message;
+      const responseData = error.response.data;
+      const backendMsg = responseData?.message;
+
+      // Extract first error from express-validator array
+      if (responseData?.errors && Array.isArray(responseData.errors) && responseData.errors.length > 0) {
+        const firstErr = responseData.errors[0]?.msg || responseData.errors[0]?.message;
+        if (typeof firstErr === 'string') {
+          const translated = translateEnglishText(firstErr);
+          if (translated) return translated;
+          return firstErr;
+        }
+      }
 
       if (backendMsg && typeof backendMsg === 'string') {
         const translated = translateEnglishText(backendMsg);
@@ -33,17 +44,13 @@ export const toArabicErrorMessage = (error: unknown, fallbackMessage = 'حدث �
         return 'البيانات المدخلة موجودة أو مسجلة بالفعل.';
       }
       if (status === 422 || status === 400) {
-        if (error.response.data?.errors && Array.isArray(error.response.data.errors) && error.response.data.errors.length > 0) {
-          const firstErr = error.response.data.errors[0]?.message;
-          if (firstErr) return translateEnglishText(firstErr) || firstErr;
-        }
-        return backendMsg || 'يرجى مراجعة وتدقيق البيانات المدخلة.';
+        return (backendMsg && typeof backendMsg === 'string' ? translateEnglishText(backendMsg) || backendMsg : null) || 'يرجى مراجعة وتدقيق البيانات المدخلة.';
       }
       if (status >= 500) {
-        return 'حدث خطأ داخلي في سيرفر المنصة (500). يرجى التأكد من تشغيل الباك إند والإعدادات.';
+        return 'تعذر معالجة الطلب حالياً بسبب خطأ مؤقت في السيرفر. يرجى المحاولة بعد قليل أو التواصل مع الدعم.';
       }
     } else if (error.request) {
-      return 'تعذر الاتصال بالشبكة والسيرفر. يرجى التأكد من تشغيل سيرفر الباك إند والاتصال بالإنترنت.';
+      return 'تعذر الاتصال بسيرفر المنصة. يرجى التأكد من الاتصال بالإنترنت .';
     }
 
     if (error.message) {
