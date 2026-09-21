@@ -45,7 +45,7 @@ export const updateCourse: RequestHandler<{ courseID: string }, IResponse, IRequ
         const course = await Course.findOneAndUpdate(
             { _id: courseID },
             { $set: updateData },
-            { new: true, runValidators: true })
+            { returnDocument: "after", runValidators: true })
             .lean()
             .exec();
         if (!course) {

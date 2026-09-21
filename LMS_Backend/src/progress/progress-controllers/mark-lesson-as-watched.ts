@@ -9,7 +9,7 @@ export const markLessonAsWatched: RequestHandler = async (req, res, next) => {
         await Progress.findOneAndUpdate(
             { studentID, courseID },
             { $addToSet: { watchedLessons: lessonID } },
-            { new: true, upsert: true }
+            {  returnDocument:"after",upsert: true  }
         );
 
         res.status(StatusCodes.OK).json({
