@@ -175,8 +175,10 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                             <span>الهاتف: {student.phone || 'غير متوفر'}</span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <Phone size={12} className="text-slate-400 shrink-0" />
-                            <span>ولي الأمر: {student.parentPhone || 'غير متوفر'}</span>
+                            <Phone size={12} className="text-amber-600 shrink-0" />
+                            <span className={student.parentPhone ? "text-amber-800 font-bold" : "text-slate-400"}>
+                              ولي الأمر: {student.parentPhone || 'غير مسجل'}
+                            </span>
                           </div>
                         </div>
                       </div>

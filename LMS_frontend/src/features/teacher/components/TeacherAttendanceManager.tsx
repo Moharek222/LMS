@@ -41,6 +41,7 @@ export const TeacherAttendanceManager: React.FC = () => {
     id: string;
     name: string;
     phone?: string;
+    parentPhone?: string;
   } | null>(null);
 
   // Month selector state
@@ -494,6 +495,12 @@ export const TeacherAttendanceManager: React.FC = () => {
                             <span>{student.phone}</span>
                           </div>
                         )}
+                        {student.parentPhone && (
+                          <div className="flex items-center gap-1 text-[11px] text-amber-700 font-semibold dir-ltr text-right">
+                            <Phone size={11} className="text-amber-500" />
+                            <span>ولي الأمر: {student.parentPhone}</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
@@ -504,6 +511,7 @@ export const TeacherAttendanceManager: React.FC = () => {
                               id: student._id,
                               name: student.name,
                               phone: student.phone,
+                              parentPhone: student.parentPhone,
                             })
                           }
                           className="px-2.5 py-1.5 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer flex items-center gap-1"
@@ -800,6 +808,7 @@ export const TeacherAttendanceManager: React.FC = () => {
           studentId={printStudentTarget.id}
           studentName={printStudentTarget.name}
           studentPhone={printStudentTarget.phone}
+          parentPhone={printStudentTarget.parentPhone}
           groupName={activeGroups.find((g) => g._id === selectedGroupId)?.name}
         />
       )}

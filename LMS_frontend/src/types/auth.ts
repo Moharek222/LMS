@@ -55,6 +55,7 @@ export interface StudentLoginResponse {
     _id: string;
     name: string;
     phone: string;
+    parentPhone?: string;
     groupID: string;
     hasActiveSubscription: boolean;
   };

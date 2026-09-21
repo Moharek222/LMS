@@ -201,7 +201,9 @@ export const DeactivatedStudentsManager: React.FC = () => {
                       <Phone size={12} className="text-slate-400" />
                       <span>ولي الأمر:</span>
                     </span>
-                    <span className="font-extrabold text-slate-700">{student.parentPhone || 'غير متوفر'}</span>
+                    <span className={student.parentPhone ? "font-extrabold text-amber-700 dir-ltr" : "font-semibold text-slate-400"}>
+                      {student.parentPhone || 'غير مسجل'}
+                    </span>
                   </div>
                 </div>
 

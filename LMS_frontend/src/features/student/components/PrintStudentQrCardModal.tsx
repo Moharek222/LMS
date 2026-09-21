@@ -8,6 +8,7 @@ interface PrintStudentQrCardModalProps {
   studentId: string;
   studentName: string;
   studentPhone?: string;
+  parentPhone?: string;
   groupName?: string;
 }
 
@@ -17,6 +18,7 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
   studentId,
   studentName,
   studentPhone,
+  parentPhone,
   groupName,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -115,7 +117,14 @@ export const PrintStudentQrCardModal: React.FC<PrintStudentQrCardModalProps> = (
               {studentPhone && (
                 <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold dir-ltr text-right">
                   <Phone size={13} className="text-teal-400" />
-                  <span>{studentPhone}</span>
+                  <span>الطالب: {studentPhone}</span>
+                </div>
+              )}
+
+              {parentPhone && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-300 font-semibold dir-ltr text-right">
+                  <Phone size={13} className="text-amber-400" />
+                  <span>ولي الأمر: {parentPhone}</span>
                 </div>
               )}
 

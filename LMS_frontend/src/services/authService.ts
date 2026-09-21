@@ -59,6 +59,7 @@ export const loginStudentApi = async (credentials: StudentLoginCredentials): Pro
     id: backendStudent._id,
     name: backendStudent.name,
     phone: backendStudent.phone,
+    parentPhone: backendStudent.parentPhone,
     role: 'student',
     groupId: backendStudent.groupID,
     hasActiveSubscription: backendStudent.hasActiveSubscription,
@@ -66,10 +67,10 @@ export const loginStudentApi = async (credentials: StudentLoginCredentials): Pro
 };
 
 export const registerStudentApi = async (credentials: StudentRegisterCredentials): Promise<StudentRegisterResponse> => {
-  
   const payload = {
     name: credentials.name,
     phone: credentials.phone,
+    parentPhone: credentials.parentPhone,
     password: credentials.password,
     groupID: credentials.groupId,
   };

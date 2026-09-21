@@ -108,7 +108,9 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone size={13} className="text-amber-600" />
-                  <span>ولي الأمر: {student.parentPhone || 'غير متوفر'}</span>
+                  <span className={student.parentPhone ? "text-amber-900 font-bold" : "text-slate-400"}>
+                    ولي الأمر: {student.parentPhone || 'غير مسجل'}
+                  </span>
                 </div>
               </div>
             </div>
