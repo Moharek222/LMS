@@ -17,6 +17,21 @@ import {
 } from '../hooks/useStudentAttendance';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
+const MONTH_NAMES_AR = [
+  { value: '01', label: 'يناير (شهر 1)' },
+  { value: '02', label: 'فبراير (شهر 2)' },
+  { value: '03', label: 'مارس (شهر 3)' },
+  { value: '04', label: 'أبريل (شهر 4)' },
+  { value: '05', label: 'مايو (شهر 5)' },
+  { value: '06', label: 'يونيو (شهر 6)' },
+  { value: '07', label: 'يوليو (شهر 7)' },
+  { value: '08', label: 'أغسطس (شهر 8)' },
+  { value: '09', label: 'سبتمبر (شهر 9)' },
+  { value: '10', label: 'أكتوبر (شهر 10)' },
+  { value: '11', label: 'نوفمبر (شهر 11)' },
+  { value: '12', label: 'ديسمبر (شهر 12)' },
+];
+
 export const StudentAttendanceCard: React.FC = () => {
   const { user } = useAuth();
   const studentId = user?.id || '';
@@ -35,22 +50,31 @@ export const StudentAttendanceCard: React.FC = () => {
     refetch: refetchSheets,
   } = useGroupAttendanceSheets(groupId, 1, 20);
 
-  // Month selector state
+  // Date, Year & Month selector states
   const currentDate = useMemo(() => new Date(), []);
-  const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-  const [selectedMonthKey, setSelectedMonthKey] = useState<string>(currentMonthKey);
+  const [selectedYear, setSelectedYear] = useState<string>(() => String(currentDate.getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => String(currentDate.getMonth() + 1).padStart(2, '0'));
 
-  // Month options generator (full 12 months of the academic year)
-  const monthOptions = useMemo(() => {
-    const opts = [];
-    for (let i = 0; i < 12; i++) {
-      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-      opts.push({ key, label });
-    }
-    return opts;
-  }, [currentDate]);
+  const selectedMonthKey = `${selectedYear}-${selectedMonth}`;
+
+  // Dynamically compute available years (current year +-2 and any year from sheets)
+  const availableYears = useMemo(() => {
+    const currentY = currentDate.getFullYear();
+    const yearsSet = new Set<number>([currentY - 2, currentY - 1, currentY, currentY + 1, currentY + 2]);
+    (sheetsData?.data || []).forEach((s) => {
+      if (s.date) {
+        const y = new Date(s.date).getFullYear();
+        if (!isNaN(y)) yearsSet.add(y);
+      }
+    });
+    return Array.from(yearsSet).sort((a, b) => b - a);
+  }, [currentDate, sheetsData]);
+
+  const selectedMonthLabel = useMemo(() => {
+    const mObj = MONTH_NAMES_AR.find((m) => m.value === selectedMonth);
+    const mName = mObj ? mObj.label.split(' ')[0] : '';
+    return `${mName} ${selectedYear}`;
+  }, [selectedMonth, selectedYear]);
 
   const sheets = sheetsData?.data || [];
 
@@ -214,15 +238,28 @@ export const StudentAttendanceCard: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0 self-end sm:self-auto">
+          <div className="flex items-center gap-2 flex-wrap shrink-0 self-end sm:self-auto">
+            {/* Year Selector */}
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-[#0D8A82]"
+            >
+              {availableYears.map((y) => (
+                <option key={y} value={y}>
+                  سنة {y}
+                </option>
+              ))}
+            </select>
+
             {/* Month Selector */}
             <select
-              value={selectedMonthKey}
-              onChange={(e) => setSelectedMonthKey(e.target.value)}
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
               className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-[#0D8A82]"
             >
-              {monthOptions.map((m) => (
-                <option key={m.key} value={m.key}>
+              {MONTH_NAMES_AR.map((m) => (
+                <option key={m.value} value={m.value}>
                   {m.label}
                 </option>
               ))}
@@ -299,7 +336,7 @@ export const StudentAttendanceCard: React.FC = () => {
             <span>كشف حصص الشهر (8 حصص شهرياً)</span>
           </h4>
           <span className="text-xs font-bold text-slate-500 bg-teal-50 px-3 py-1 rounded-xl border border-teal-100">
-            {monthOptions.find((m) => m.key === selectedMonthKey)?.label || 'الشهر الحالي'}
+            {selectedMonthLabel}
           </span>
         </div>
 

@@ -27,7 +27,20 @@ import {
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
 import { QrAttendanceScannerModal } from './attendance/QrAttendanceScannerModal';
-import { PrintStudentQrCardModal } from '../../student/components/PrintStudentQrCardModal';
+const MONTH_NAMES_AR = [
+  { value: '01', label: 'يناير (شهر 1)' },
+  { value: '02', label: 'فبراير (شهر 2)' },
+  { value: '03', label: 'مارس (شهر 3)' },
+  { value: '04', label: 'أبريل (شهر 4)' },
+  { value: '05', label: 'مايو (شهر 5)' },
+  { value: '06', label: 'يونيو (شهر 6)' },
+  { value: '07', label: 'يوليو (شهر 7)' },
+  { value: '08', label: 'أغسطس (شهر 8)' },
+  { value: '09', label: 'سبتمبر (شهر 9)' },
+  { value: '10', label: 'أكتوبر (شهر 10)' },
+  { value: '11', label: 'نوفمبر (شهر 11)' },
+  { value: '12', label: 'ديسمبر (شهر 12)' },
+];
 
 export const TeacherAttendanceManager: React.FC = () => {
   const toast = useToast();
@@ -44,22 +57,12 @@ export const TeacherAttendanceManager: React.FC = () => {
     parentPhone?: string;
   } | null>(null);
 
-  // Month selector state
+  // Date, Year & Month selector states
   const currentDate = useMemo(() => new Date(), []);
-  const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-  const [selectedMonthKey, setSelectedMonthKey] = useState<string>(currentMonthKey);
+  const [selectedYear, setSelectedYear] = useState<string>(() => String(currentDate.getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => String(currentDate.getMonth() + 1).padStart(2, '0'));
 
-  // Month options generator (full 12 months of the academic year)
-  const monthOptions = useMemo(() => {
-    const opts = [];
-    for (let i = 0; i < 12; i++) {
-      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-      opts.push({ key, label });
-    }
-    return opts;
-  }, [currentDate]);
+  const selectedMonthKey = `${selectedYear}-${selectedMonth}`;
 
   // Fetch Teacher Groups
   const {
@@ -89,6 +92,25 @@ export const TeacherAttendanceManager: React.FC = () => {
     error: errorSheets,
     refetch: refetchSheets,
   } = useGroupAttendanceSheets(selectedGroupId, sheetsPage, 100);
+
+  // Dynamically compute available years (current year +-2 and any year from sheets)
+  const availableYears = useMemo(() => {
+    const currentY = currentDate.getFullYear();
+    const yearsSet = new Set<number>([currentY - 2, currentY - 1, currentY, currentY + 1, currentY + 2]);
+    (sheetsData?.data || []).forEach((s) => {
+      if (s.date) {
+        const y = new Date(s.date).getFullYear();
+        if (!isNaN(y)) yearsSet.add(y);
+      }
+    });
+    return Array.from(yearsSet).sort((a, b) => b - a);
+  }, [currentDate, sheetsData]);
+
+  const selectedMonthLabel = useMemo(() => {
+    const mObj = MONTH_NAMES_AR.find((m) => m.value === selectedMonth);
+    const mName = mObj ? mObj.label.split(' ')[0] : '';
+    return `${mName} ${selectedYear}`;
+  }, [selectedMonth, selectedYear]);
 
   // Fetch Details of a single sheet
   const {
@@ -227,9 +249,9 @@ export const TeacherAttendanceManager: React.FC = () => {
         )}
       </div>
 
-      {/* Group & Month Selectors */}
+      {/* Group, Year & Month Selectors */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700">
               المجموعة الدراسية <span className="text-rose-500">*</span>
@@ -274,23 +296,45 @@ export const TeacherAttendanceManager: React.FC = () => {
           </div>
 
           {selectedGroupId && (
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                الشهر المستهدف (8 حصص شهرياً)
-              </label>
-              <select
-                dir="rtl"
-                value={selectedMonthKey}
-                onChange={(e) => setSelectedMonthKey(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-right text-sm font-medium focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] transition outline-none bg-slate-50/50"
-              >
-                {monthOptions.map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <>
+              {/* Year Selector */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">
+                  تحديد السنة الدراسية 📅
+                </label>
+                <select
+                  dir="rtl"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-right text-sm font-medium focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] transition outline-none bg-slate-50/50"
+                >
+                  {availableYears.map((y) => (
+                    <option key={y} value={y}>
+                      سنة {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Month Selector */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">
+                  تحديد الشهر (8 حصص شهرياً) 🗓️
+                </label>
+                <select
+                  dir="rtl"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-right text-sm font-medium focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] transition outline-none bg-slate-50/50"
+                >
+                  {MONTH_NAMES_AR.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -309,7 +353,7 @@ export const TeacherAttendanceManager: React.FC = () => {
                 </h4>
                 <p className="text-xs text-slate-500 font-semibold mt-0.5">
                   عرض كشوف الحصص الـ 8 المحددة للمجموعة لشهـر{' '}
-                  {monthOptions.find((m) => m.key === selectedMonthKey)?.label}
+                  {selectedMonthLabel}
                 </p>
               </div>
             </div>
