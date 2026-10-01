@@ -16,6 +16,7 @@ import courseRouter from "./src/course/course-router";
 import lessonRouter from "./src/lesson/lesson-router";
 import studentRouter from "./src/student/student-router";
 import progressRouter from "./src/progress/progress-router";
+import { checkServiceStatus } from "./src/middlewares/check-service-status";
 
 dotenv.config();
 const app = express();
@@ -71,6 +72,7 @@ app.use(
 app.use(cookieParser());
 app.use(express.static("public"));
 app.use(express.json());
+app.use(checkServiceStatus);
 // API Routes
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
