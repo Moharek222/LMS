@@ -112,6 +112,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
     const map = new Map<string, boolean>();
     if (sortedLessons.length === 0) return map;
 
+    // First lesson is always unlocked
     map.set(sortedLessons[0]._id, true);
 
     for (let i = 0; i < sortedLessons.length - 1; i++) {
@@ -120,13 +121,15 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
       if (!isCurrentUnlocked) break;
 
       const quizzes = lessonQuizzesQueries[i]?.data || [];
-      const isCurrentCompleted = completedLessonSet.has(currentLesson._id);
+      const hasQuizzes = Array.isArray(quizzes) && quizzes.length > 0;
 
       let canUnlockNext = false;
-      if (quizzes.length > 0) {
+      if (hasQuizzes) {
+        // If the lesson has quizzes, unlocking next requires passing at least one quiz
         canUnlockNext = quizzes.some((q) => passedQuizSet.has(String(q._id).trim()));
       } else {
-        canUnlockNext = isCurrentCompleted;
+        // If the lesson has NO quizzes, it automatically passes and unlocks the next lesson
+        canUnlockNext = true;
       }
 
       if (canUnlockNext) {
@@ -137,7 +140,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
     }
 
     return map;
-  }, [sortedLessons, lessonQuizzesQueries, completedLessonSet, passedQuizSet]);
+  }, [sortedLessons, lessonQuizzesQueries, passedQuizSet]);
 
   const isLessonUnlocked = React.useCallback(
     (index: number): boolean => {
@@ -159,9 +162,14 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
         return quizzes.some((quiz) => passedQuizSet.has(String(quiz._id).trim()));
       }
 
-      return false;
+      // If no quiz, and subsequent lesson is unlocked, consider it completed/passed
+      const isNextUnlocked = idx + 1 < sortedLessons.length
+        ? (unlockedMap.get(sortedLessons[idx + 1]._id) ?? false)
+        : (unlockedMap.get(lesson._id) ?? false);
+
+      return isNextUnlocked;
     }).length;
-  }, [sortedLessons, completedLessonSet, lessonQuizzesQueries, passedQuizSet]);
+  }, [sortedLessons, completedLessonSet, lessonQuizzesQueries, passedQuizSet, unlockedMap]);
 
   const effectiveProgressPercentage = React.useMemo(() => {
     if (sortedLessons.length === 0) return 0;
@@ -181,7 +189,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
       if (isLessonUnlocked(nextIndex)) {
         onNextLesson();
       } else {
-        toast.error('المحاضرة التالية مغلقة 🔒. يجب مشاهدة المحاضرة السابقة واجتياز كويز التقييم الخاص بها بنجاح بنسبة النجاح المطلوبة.');
+        toast.error('المحاضرة التالية مغلقة 🔒. يجب اجتياز كويز المحاضرة الحالية بنجاح بنسبة النجاح المطلوبة لفتح المحاضرة التالية.');
       }
     }
   };
@@ -373,7 +381,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
 
             const handleLessonClick = () => {
               if (!isUnlocked) {
-                toast.error('هذه المحاضرة مغلقة 🔒. يجب مشاهدة المحاضرة السابقة واجتياز كويز التقييم بنجاح بنسبة النجاح المطلوبة لفتح هذه المحاضرة.');
+                toast.error('هذه المحاضرة مغلقة 🔒. يجب اجتياز كويز المحاضرة السابقة بنجاح بنسبة النجاح المطلوبة لفتح هذه المحاضرة.');
                 return;
               }
               if (isSelected) {
@@ -448,6 +456,11 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                             <span>يتطلب اجتياز كويز</span>
                           </span>
                         )
+                      )}
+                      {!hasLessonQuiz && isUnlocked && !isCompleted && (
+                        <span className="px-2.5 py-0.5 rounded-lg bg-teal-50 text-teal-700 text-[10px] font-bold border border-teal-200 inline-flex items-center gap-1 shadow-2xs">
+                          <span>متاح للمشاهدة المباشرة</span>
+                        </span>
                       )}
                     </div>
                     {lesson.description && (

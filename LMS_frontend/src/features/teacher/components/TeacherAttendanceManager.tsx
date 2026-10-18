@@ -27,6 +27,7 @@ import {
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
 import { QrAttendanceScannerModal } from './attendance/QrAttendanceScannerModal';
+import { PrintStudentQrCardModal } from '../../student/components/PrintStudentQrCardModal';
 const MONTH_NAMES_AR = [
   { value: '01', label: 'يناير (شهر 1)' },
   { value: '02', label: 'فبراير (شهر 2)' },

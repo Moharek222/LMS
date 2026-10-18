@@ -35,6 +35,7 @@ import {
 
 import StudentLessonsView from '../../features/lessons/components/StudentLessonsView';
 import RedeemAccessCodeModal from '../../features/student/components/RedeemAccessCodeModal';
+import { useStudentWatchHistory } from '../../features/lessons/hooks/useProgress';
 
 const studentNavItems = [
   { id: 'home', label: 'الرئيسية', icon: <Home size={20} /> },
@@ -111,7 +112,6 @@ export const StudentDashboard: React.FC = () => {
       const nextParams: Record<string, string> = { tab: targetTab, courseId };
       setSearchParams(nextParams);
       setIsSolvingQuiz(false);
-      setCompletedLessonIds([]);
     });
   };
 
@@ -163,6 +163,28 @@ export const StudentDashboard: React.FC = () => {
       return [];
     }
   });
+
+  const studentId = user?.id || '';
+  const { data: watchHistoryData } = useStudentWatchHistory(studentId);
+
+  const backendWatchedLessonIds = React.useMemo(() => {
+    if (!watchHistoryData || !Array.isArray(watchHistoryData)) return [];
+    const matched = watchHistoryData.find((item) => {
+      const cId = typeof item.courseID === 'string' ? item.courseID : item.courseID?._id;
+      return cId === selectedCourseId;
+    });
+    if (!matched || !Array.isArray(matched.watchedLessons)) return [];
+    return matched.watchedLessons.map((l) => (typeof l === 'string' ? l : l._id)).filter(Boolean);
+  }, [watchHistoryData, selectedCourseId]);
+
+  React.useEffect(() => {
+    if (backendWatchedLessonIds.length > 0) {
+      setCompletedLessonIds((prev) => {
+        const merged = new Set([...prev, ...backendWatchedLessonIds]);
+        return Array.from(merged);
+      });
+    }
+  }, [backendWatchedLessonIds]);
 
   React.useEffect(() => {
     try {
