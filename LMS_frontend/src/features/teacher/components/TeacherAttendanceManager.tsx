@@ -16,6 +16,7 @@ import {
   Printer,
   Award,
   Calendar,
+  Search,
 } from 'lucide-react';
 import { useTeacherGroups } from '../hooks/useTeacherGroups';
 import { useGroupStudents } from '../hooks/useGroupStudents';
@@ -85,6 +86,31 @@ export const TeacherAttendanceManager: React.FC = () => {
     refetch: refetchStudents,
   } = useGroupStudents(selectedGroupId);
 
+  // Student Search Query & Filter Logic
+  const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
+
+  const normalizeArabic = (text: string) => {
+    return text
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u065F]/g, '');
+  };
+
+  const filteredStudents = useMemo(() => {
+    if (!students) return [];
+    if (!studentSearchQuery.trim()) return students;
+    const q = normalizeArabic(studentSearchQuery);
+    return students.filter((s) => {
+      const nameMatch = normalizeArabic(s.name || '').includes(q);
+      const phoneMatch = (s.phone || '').includes(studentSearchQuery.trim());
+      const parentMatch = (s.parentPhone || '').includes(studentSearchQuery.trim());
+      return nameMatch || phoneMatch || parentMatch;
+    });
+  }, [students, studentSearchQuery]);
+
   // Fetch Attendance Sheets (limit 100 to support monthly view)
   const {
     data: sheetsData,
@@ -129,6 +155,7 @@ export const TeacherAttendanceManager: React.FC = () => {
     setSelectedGroupId(e.target.value);
     setSheetsPage(1);
     setSelectedSheetId(null);
+    setStudentSearchQuery('');
   };
 
   const handleRecordAttendance = (studentId: string, studentName: string) => {
@@ -483,17 +510,43 @@ export const TeacherAttendanceManager: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Group Students Roster */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4 flex flex-col min-h-96">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
               <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
                 <Users size={18} className="text-[#0D8A82]" />
                 <span>قائمة طلاب المجموعة</span>
               </h4>
               {students && (
                 <span className="px-2.5 py-0.5 rounded-lg bg-teal-50 text-[#0D8A82] text-xs font-bold border border-teal-100">
-                  {students.length} طالب
+                  {studentSearchQuery.trim()
+                    ? `النتائج: ${filteredStudents.length} من ${students.length}`
+                    : `${students.length} طالب`}
                 </span>
               )}
             </div>
+
+            {/* Instant Student Search Bar */}
+            {students && students.length > 0 && (
+              <div className="relative">
+                <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={studentSearchQuery}
+                  onChange={(e) => setStudentSearchQuery(e.target.value)}
+                  placeholder="ابحث باسم الطالب، رقم هاتفه، أو هاتف ولي الأمر..."
+                  className="w-full pr-10 pl-9 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-slate-50/70 transition"
+                />
+                {studentSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setStudentSearchQuery('')}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                    title="مسح البحث"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            )}
 
             {isLoadingStudents ? (
               <div className="py-12 flex flex-col items-center justify-center text-center space-y-2">
@@ -519,9 +572,24 @@ export const TeacherAttendanceManager: React.FC = () => {
                 </div>
                 <h5 className="text-xs font-bold text-slate-700">لا يوجد طلاب في هذه المجموعة</h5>
               </div>
+            ) : filteredStudents.length === 0 ? (
+              <div className="py-12 text-center space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto border border-amber-200">
+                  <Search size={20} />
+                </div>
+                <h5 className="text-xs font-bold text-slate-700">لا توجد نتائج مطابقة لبحثك</h5>
+                <p className="text-[11px] text-slate-400">"{studentSearchQuery}"</p>
+                <button
+                  type="button"
+                  onClick={() => setStudentSearchQuery('')}
+                  className="text-xs text-[#0D8A82] font-bold hover:underline cursor-pointer pt-1"
+                >
+                  مسح البحث وعرض جميع الطلاب
+                </button>
+              </div>
             ) : (
               <div className="space-y-3 overflow-y-auto max-h-115 pr-1">
-                {students.map((student) => {
+                {filteredStudents.map((student) => {
                   const isRecordingThis = recordingStudentId === student._id;
 
                   return (

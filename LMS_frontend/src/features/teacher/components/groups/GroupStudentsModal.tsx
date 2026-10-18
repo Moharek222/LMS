@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, User, UserX, UserCheck, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X, BarChart3 } from 'lucide-react';
+import { Users, User, UserX, UserCheck, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X, BarChart3, Search } from 'lucide-react';
 import { useGroupStudents } from '../../hooks/useGroupStudents';
 import { useDeactivateStudent } from '../../hooks/useDeactivateStudent';
 import { useActivateStudent } from '../../hooks/useActivateStudent';
@@ -33,8 +33,35 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
 
   const [studentToDeactivate, setStudentToDeactivate] = React.useState<GroupStudent | null>(null);
   const [selectedStudentForDetails, setSelectedStudentForDetails] = React.useState<GroupStudent | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
 
-  const displayStudents = students || [];
+  const filteredStudents = React.useMemo(() => {
+    if (!students) return [];
+    if (!searchQuery.trim()) return students;
+    const q = searchQuery
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u065F]/g, '');
+
+    return students.filter((s) => {
+      const normName = (s.name || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[\u064B-\u065F]/g, '');
+      const nameMatch = normName.includes(q);
+      const phoneMatch = (s.phone || '').includes(searchQuery.trim());
+      const parentMatch = (s.parentPhone || '').includes(searchQuery.trim());
+      return nameMatch || phoneMatch || parentMatch;
+    });
+  }, [students, searchQuery]);
+
+  const displayStudents = filteredStudents;
 
   const handleConfirmDeactivate = (student: GroupStudent) => {
     deactivateStudentMutation.mutate(student._id, {
@@ -103,6 +130,30 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
             </button>
           </div>
 
+          {/* Instant Student Search Bar */}
+          {!isLoading && !isError && students && students.length > 0 && (
+            <div className="relative shrink-0">
+              <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث باسم الطالب، رقم هاتفه، أو هاتف ولي الأمر..."
+                className="w-full pr-10 pl-9 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-slate-50/70 transition"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  title="مسح البحث"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="overflow-y-auto min-h-60 flex-1 space-y-4 pr-1 custom-scrollbar">
             {isLoading && (
               <div className="py-16 flex flex-col items-center justify-center text-center space-y-3">
@@ -131,7 +182,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
               </div>
             )}
 
-            {!isLoading && !isError && (!displayStudents || displayStudents.length === 0) && (
+            {!isLoading && !isError && (!students || students.length === 0) && (
               <div className="py-16 text-center space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto border border-slate-200">
                   <Users size={24} />
@@ -140,6 +191,23 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                 <p className="text-xs text-slate-400 font-semibold max-w-xs mx-auto">
                   يمكنك إضافة الطلاب ونقلهم بين المجموعات عند بدء التنشيط.
                 </p>
+              </div>
+            )}
+
+            {!isLoading && !isError && students && students.length > 0 && displayStudents.length === 0 && (
+              <div className="py-16 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto border border-amber-200">
+                  <Search size={22} />
+                </div>
+                <h4 className="text-sm font-bold text-slate-700">لا توجد نتائج مطابقة لبحثك</h4>
+                <p className="text-xs text-slate-400 font-semibold">"{searchQuery}"</p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-xs text-[#0D8A82] font-bold hover:underline cursor-pointer"
+                >
+                  مسح البحث وعرض جميع الطلاب ({students.length})
+                </button>
               </div>
             )}
 

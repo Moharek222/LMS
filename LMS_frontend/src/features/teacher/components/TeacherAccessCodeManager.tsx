@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   KeyRound,
   Plus,
@@ -8,6 +8,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Printer,
+  Search,
+  X,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { useTeacherAccessCodes } from '../hooks/useTeacherAccessCodes';
 import { AccessCodeCard } from './accessCodes/AccessCodeCard';
@@ -17,15 +21,67 @@ import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
 export const TeacherAccessCodeManager: React.FC = () => {
   const [page, setPage] = useState<number>(1);
-  const limit = 10;
+  const limit = 50;
 
   const [isGenerateOpen, setIsGenerateOpen] = useState<boolean>(false);
   const [isPrintOpen, setIsPrintOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all');
 
   const { data, isLoading, isError, error, refetch } = useTeacherAccessCodes({
     page,
     limit,
   });
+
+  const normalizeArabic = (text: string) => {
+    return text
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u065F]/g, '');
+  };
+
+  const accessCodes = data?.data || [];
+  const totalPages = data?.totalPages || 1;
+  const totalItems = data?.total || 0;
+
+  const activeCount = useMemo(() => {
+    return accessCodes.filter((c) => (c.status || '').toLowerCase() === 'active').length;
+  }, [accessCodes]);
+
+  const expiredCount = useMemo(() => {
+    return accessCodes.filter((c) => (c.status || '').toLowerCase() === 'expired').length;
+  }, [accessCodes]);
+
+  const filteredAccessCodes = useMemo(() => {
+    let result = accessCodes;
+
+    if (statusFilter !== 'all') {
+      result = result.filter((code) => (code.status || '').toLowerCase() === statusFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const q = normalizeArabic(searchQuery);
+      const rawQuery = searchQuery.trim().toLowerCase();
+
+      result = result.filter((code) => {
+        const student = typeof code.studentID === 'object' && code.studentID !== null ? code.studentID : null;
+        const studentName = normalizeArabic(student?.name || '');
+        const studentPhone = student?.phone || '';
+        const codeStr = (code.code || '').toLowerCase();
+
+        return (
+          codeStr.includes(rawQuery) ||
+          studentName.includes(q) ||
+          studentPhone.includes(searchQuery.trim())
+        );
+      });
+    }
+
+    return result;
+  }, [accessCodes, statusFilter, searchQuery]);
 
   if (isLoading) {
     return (
@@ -58,10 +114,6 @@ export const TeacherAccessCodeManager: React.FC = () => {
     );
   }
 
-  const accessCodes = data?.data || [];
-  const totalPages = data?.totalPages || 1;
-  const totalItems = data?.total || 0;
-
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
@@ -86,7 +138,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {accessCodes.length > 0 && (
+          {filteredAccessCodes.length > 0 && (
             <button
               type="button"
               onClick={() => setIsPrintOpen(true)}
@@ -108,6 +160,72 @@ export const TeacherAccessCodeManager: React.FC = () => {
         </div>
       </div>
 
+      {/* Search and Filters Bar */}
+      {accessCodes.length > 0 && (
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Instant Search Input */}
+          <div className="relative w-full md:max-w-md">
+            <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ابحث برمز الكود (Code)، اسم الطالب، أو رقم هاتفه..."
+              className="w-full pr-10 pl-9 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-slate-50/70 transition"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                title="مسح البحث"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Status Quick Filter Buttons */}
+          <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                statusFilter === 'all'
+                  ? 'bg-[#0D8A82] text-white shadow-2xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              الكل ({accessCodes.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('active')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
+                statusFilter === 'active'
+                  ? 'bg-emerald-600 text-white shadow-2xs'
+                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+              }`}
+            >
+              <CheckCircle2 size={13} />
+              <span>النشطة ({activeCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('expired')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
+                statusFilter === 'expired'
+                  ? 'bg-rose-600 text-white shadow-2xs'
+                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+              }`}
+            >
+              <XCircle size={13} />
+              <span>المنتهية ({expiredCount})</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Access Codes List */}
       {accessCodes.length === 0 ? (
         <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-xs text-center space-y-3">
@@ -119,16 +237,36 @@ export const TeacherAccessCodeManager: React.FC = () => {
             قم بإنشاء كود تفعيل مخصص للطلاب لتفعيل صلاحيات الوصول بالمنصة.
           </p>
         </div>
+      ) : filteredAccessCodes.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 border border-slate-200 shadow-xs text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto border border-amber-200">
+            <Search size={22} />
+          </div>
+          <h4 className="text-sm font-bold text-slate-700">لا توجد أكواد مطابقة لمعايير البحث</h4>
+          <p className="text-xs text-slate-400">
+            {searchQuery ? `البحث: "${searchQuery}"` : ''} {statusFilter !== 'all' ? `(الحالة: ${statusFilter})` : ''}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('all');
+            }}
+            className="text-xs text-[#0D8A82] font-bold hover:underline cursor-pointer"
+          >
+            إعادة تعيين الفلاتر وعرض جميع الأكواد ({accessCodes.length})
+          </button>
+        </div>
       ) : (
         <div className="space-y-3">
-          {accessCodes.map((code) => (
+          {filteredAccessCodes.map((code) => (
             <AccessCodeCard key={code._id} accessCode={code} />
           ))}
         </div>
       )}
 
       {/* Server Pagination */}
-      {totalPages > 1 && (
+      {totalPages > 1 && !searchQuery && (
         <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex items-center justify-between gap-3">
           <button
             type="button"
@@ -156,7 +294,6 @@ export const TeacherAccessCodeManager: React.FC = () => {
         </div>
       )}
 
-     
       <GenerateAccessCodeModal
         isOpen={isGenerateOpen}
         onClose={() => setIsGenerateOpen(false)}
@@ -165,7 +302,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
       <PrintAccessCodesModal
         isOpen={isPrintOpen}
         onClose={() => setIsPrintOpen(false)}
-        accessCodes={accessCodes}
+        accessCodes={filteredAccessCodes}
       />
     </div>
   );

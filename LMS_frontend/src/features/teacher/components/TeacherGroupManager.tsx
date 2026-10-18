@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FolderKanban,
   Plus,
@@ -7,6 +7,8 @@ import {
   RefreshCw,
   ChevronRight,
   ChevronLeft,
+  Search,
+  X,
 } from 'lucide-react';
 import { useTeacherGroups } from '../hooks/useTeacherGroups';
 import type { Group, GroupStudent } from '../types/groupManagement';
@@ -21,7 +23,7 @@ import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
 export const TeacherGroupManager: React.FC = () => {
   const [page, setPage] = useState<number>(1);
-  const limit = 10;
+  const limit = 20;
 
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
@@ -38,11 +40,39 @@ export const TeacherGroupManager: React.FC = () => {
     student: GroupStudent;
     currentGroup: Group;
   } | null>(null);
+  const [groupSearchQuery, setGroupSearchQuery] = useState<string>('');
 
   const { data, isLoading, isError, error, refetch } = useTeacherGroups({
     page,
     limit,
   });
+
+  const groups = data?.data || [];
+  const totalPages = data?.totalPages || 1;
+  const totalItems = data?.total || 0;
+
+  const filteredGroups = useMemo(() => {
+    if (!groups) return [];
+    if (!groupSearchQuery.trim()) return groups;
+    const q = groupSearchQuery
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u065F]/g, '');
+
+    return groups.filter((g) => {
+      const name = (g.name || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[\u064B-\u065F]/g, '');
+      return name.includes(q);
+    });
+  }, [groups, groupSearchQuery]);
 
   if (isLoading) {
     return (
@@ -75,13 +105,8 @@ export const TeacherGroupManager: React.FC = () => {
     );
   }
 
-  const groups = data?.data || [];
-  const totalPages = data?.totalPages || 1;
-  const totalItems = data?.total || 0;
-
   return (
     <div className="space-y-6">
-      
       <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
@@ -112,7 +137,38 @@ export const TeacherGroupManager: React.FC = () => {
         </button>
       </div>
 
-      
+      {/* Group Instant Search Bar */}
+      {groups.length > 0 && (
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex items-center justify-between gap-4">
+          <div className="relative w-full max-w-md">
+            <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={groupSearchQuery}
+              onChange={(e) => setGroupSearchQuery(e.target.value)}
+              placeholder="ابحث باسم المجموعة أو الموعد (مثال: السبت، أولى ثانوي)..."
+              className="w-full pr-10 pl-9 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-slate-50/70 transition"
+            />
+            {groupSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setGroupSearchQuery('')}
+                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                title="مسح البحث"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {groupSearchQuery && (
+            <span className="text-xs font-bold text-[#0D8A82] bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-100 shrink-0">
+              النتائج: {filteredGroups.length} من {groups.length}
+            </span>
+          )}
+        </div>
+      )}
+
       {groups.length === 0 ? (
         <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-xs text-center space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100">
@@ -123,9 +179,24 @@ export const TeacherGroupManager: React.FC = () => {
             قم بإضافة مجموعاتك الدراسية لتنظيم الطلاب ومتابعة الحضور وتوليد أكواد التفعيل.
           </p>
         </div>
+      ) : filteredGroups.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 border border-slate-200 shadow-xs text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto border border-amber-200">
+            <Search size={22} />
+          </div>
+          <h4 className="text-sm font-bold text-slate-700">لا توجد مجموعات مطابقة لبحثك</h4>
+          <p className="text-xs text-slate-400">"{groupSearchQuery}"</p>
+          <button
+            type="button"
+            onClick={() => setGroupSearchQuery('')}
+            className="text-xs text-[#0D8A82] font-bold hover:underline cursor-pointer"
+          >
+            مسح البحث وعرض جميع المجموعات ({groups.length})
+          </button>
+        </div>
       ) : (
         <div className="space-y-3">
-          {groups.map((group) => (
+          {filteredGroups.map((group) => (
             <GroupCard
               key={group._id}
               group={group}
