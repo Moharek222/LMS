@@ -13,6 +13,7 @@ import {
   RotateCw,
   PlayCircle,
   Sparkles,
+  Gauge,
 } from 'lucide-react';
 import { useLessonVideo } from '../hooks/useLessonVideo';
 import { useMarkLessonAsWatched } from '../hooks/useProgress';
@@ -55,6 +56,20 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const [watermarkPosIndex, setWatermarkPosIndex] = useState<number>(0);
   const [isWindowBlurred, setIsWindowBlurred] = useState<boolean>(false);
 
+  // Playback Speed Controls
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState<boolean>(false);
+  const speedOptions = [0.75, 1, 1.25, 1.5, 1.75, 2];
+
+  const handleSpeedChange = (speed: number) => {
+    setPlaybackSpeed(speed);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
+    setIsSpeedMenuOpen(false);
+  };
+
   const hasAutoRefetchedRef = useRef<boolean>(false);
   const hasMarkedProgressRef = useRef<boolean>(false);
 
@@ -63,7 +78,10 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   useEffect(() => {
     hasAutoRefetchedRef.current = false;
     hasMarkedProgressRef.current = false;
-  }, [lessonId, videoSrc]);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+    }
+  }, [lessonId, videoSrc, playbackSpeed]);
 
   const handleVideoError = () => {
     if (!hasAutoRefetchedRef.current) {
@@ -213,6 +231,56 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
+          {/* Playback Speed Menu */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsSpeedMenuOpen((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                isCinemaMode
+                  ? 'bg-slate-800 text-teal-300 border-slate-700 hover:bg-slate-700'
+                  : 'bg-teal-50 text-[#0D8A82] border-teal-200/80 hover:bg-teal-100'
+              }`}
+              title="سرعة تشغيل الفيديو"
+            >
+              <Gauge size={15} />
+              <span>السرعة: {playbackSpeed}x</span>
+            </button>
+
+            {isSpeedMenuOpen && (
+              <div
+                className={`absolute left-0 mt-1.5 w-28 rounded-2xl shadow-xl border p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in duration-150 ${
+                  isCinemaMode
+                    ? 'bg-slate-900 border-slate-700 text-white'
+                    : 'bg-white border-slate-200 text-slate-800'
+                }`}
+              >
+                <div className="text-[10px] font-bold text-slate-400 px-2 py-1 border-b border-slate-100 dark:border-slate-800 mb-1">
+                  سرعة التشغيل
+                </div>
+                {speedOptions.map((speed) => (
+                  <button
+                    key={speed}
+                    type="button"
+                    onClick={() => handleSpeedChange(speed)}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center justify-between transition cursor-pointer ${
+                      playbackSpeed === speed
+                        ? isCinemaMode
+                          ? 'bg-[#0D8A82] text-white'
+                          : 'bg-[#0D8A82] text-white'
+                        : isCinemaMode
+                        ? 'hover:bg-slate-800 text-slate-300'
+                        : 'hover:bg-teal-50 text-slate-700'
+                    }`}
+                  >
+                    <span>{speed === 1 ? '1x (عادي)' : `${speed}x`}</span>
+                    {playbackSpeed === speed && <CheckCircle2 size={12} />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setIsCinemaMode((prev) => !prev)}
             className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
@@ -303,9 +371,10 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
         ) : (
           <>
             <video
+              ref={videoRef}
               key={videoSrc}
               controls
-              controlsList="nodownload noplaybackrate noremoteplayback"
+              controlsList="nodownload noremoteplayback"
               disablePictureInPicture
               playsInline
               onTimeUpdate={handleTimeUpdate}
