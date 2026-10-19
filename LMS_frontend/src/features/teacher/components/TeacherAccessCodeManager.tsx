@@ -20,17 +20,18 @@ import { PrintAccessCodesModal } from './accessCodes/PrintAccessCodesModal';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
 export const TeacherAccessCodeManager: React.FC = () => {
-  const [page, setPage] = useState<number>(1);
-  const limit = 50;
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 50;
 
   const [isGenerateOpen, setIsGenerateOpen] = useState<boolean>(false);
   const [isPrintOpen, setIsPrintOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all');
 
+  // Fetch all access codes (limit 1000) so search and counters cover ALL records
   const { data, isLoading, isError, error, refetch } = useTeacherAccessCodes({
-    page,
-    limit,
+    page: 1,
+    limit: 1000,
   });
 
   const normalizeArabic = (text: string) => {
@@ -44,9 +45,9 @@ export const TeacherAccessCodeManager: React.FC = () => {
   };
 
   const accessCodes = data?.data || [];
-  const totalPages = data?.totalPages || 1;
-  const totalItems = data?.total || 0;
+  const totalItems = data?.total || accessCodes.length;
 
+  // True full counts across all access codes in the database
   const activeCount = useMemo(() => {
     return accessCodes.filter((c) => (c.status || '').toLowerCase() === 'active').length;
   }, [accessCodes]);
@@ -55,6 +56,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
     return accessCodes.filter((c) => (c.status || '').toLowerCase() === 'expired').length;
   }, [accessCodes]);
 
+  // Comprehensive filter across ALL access codes
   const filteredAccessCodes = useMemo(() => {
     let result = accessCodes;
 
@@ -83,11 +85,24 @@ export const TeacherAccessCodeManager: React.FC = () => {
     return result;
   }, [accessCodes, statusFilter, searchQuery]);
 
+  // Reset to first page when search query or filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAccessCodes.length / pageSize));
+
+  // Current page slice for smooth rendering
+  const paginatedAccessCodes = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredAccessCodes.slice(start, start + pageSize);
+  }, [filteredAccessCodes, currentPage, pageSize]);
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-3xl p-12 border border-slate-200 shadow-xs flex flex-col items-center justify-center text-center space-y-3 min-h-65">
         <Loader2 size={36} className="animate-spin text-[#0D8A82]" />
-        <p className="text-xs font-bold text-slate-600">جاري تحميل أكواد التفعيل...</p>
+        <p className="text-xs font-bold text-slate-600">جاري تحميل كافة أكواد التفعيل...</p>
       </div>
     );
   }
@@ -125,14 +140,15 @@ export const TeacherAccessCodeManager: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base font-extrabold text-slate-800">أكواد التفعيل</h3>
-              {data?.total !== undefined && (
-                <span className="px-2.5 py-0.5 rounded-lg bg-teal-50 text-[#0D8A82] text-xs font-bold border border-teal-100">
-                  إجمالي الأكواد: {totalItems}
-                </span>
-              )}
+              <span className="px-2.5 py-0.5 rounded-lg bg-teal-50 text-[#0D8A82] text-xs font-bold border border-teal-100">
+                إجمالي الأكواد: {totalItems}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+                الأكواد النشطة الحالية: {activeCount}
+              </span>
             </div>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              توليد ومتابعة أكواد شحن تفعيل حسابات وإشتراكات الطلاب
+              توليد ومتابعة أكواد شحن تفعيل حسابات وإشتراكات الطلاب والبحث في كامل السجلات
             </p>
           </div>
         </div>
@@ -145,7 +161,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-50 text-[#0D8A82] border border-teal-200 hover:bg-teal-100 text-xs font-bold transition cursor-pointer shadow-2xs"
             >
               <Printer size={16} />
-              <span>طباعة كشف الأكواد (PDF) 🖨️</span>
+              <span>طباعة كشف الأكواد (PDF) 🖨️ ({filteredAccessCodes.length})</span>
             </button>
           )}
 
@@ -170,7 +186,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث برمز الكود (Code)، اسم الطالب، أو رقم هاتفه..."
+              placeholder="ابحث في جميع الأكواد (الكود، اسم الطالب، رقم الهاتف)..."
               className="w-full pr-10 pl-9 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-slate-50/70 transition"
             />
             {searchQuery && (
@@ -259,19 +275,19 @@ export const TeacherAccessCodeManager: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredAccessCodes.map((code) => (
+          {paginatedAccessCodes.map((code) => (
             <AccessCodeCard key={code._id} accessCode={code} />
           ))}
         </div>
       )}
 
-      {/* Server Pagination */}
-      {totalPages > 1 && !searchQuery && (
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex items-center justify-between gap-3">
+      {/* Smooth Pagination Bar */}
+      {totalPages > 1 && (
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
-            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-            disabled={page <= 1}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage <= 1}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
           >
             <ChevronRight size={16} />
@@ -279,13 +295,13 @@ export const TeacherAccessCodeManager: React.FC = () => {
           </button>
 
           <span className="text-xs font-bold text-slate-600">
-            صفحة {page} من {totalPages}
+            صفحة {currentPage} من {totalPages} (معروض {paginatedAccessCodes.length} من {filteredAccessCodes.length} كود)
           </span>
 
           <button
             type="button"
-            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={page >= totalPages}
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage >= totalPages}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
           >
             <span>التالي</span>
