@@ -8,7 +8,7 @@ export const getAllAccessCode:RequestHandler = async (req, res) => {
     try {
         const page=Math.max(1,Number(req.query.page) || 1);
         const limit=Math.max(1,Number(req.query.limit) || 10);
-        const accessCode = await AccessCode.find({statu:Status.Active})
+        const accessCode = await AccessCode.find({status:Status.Active})
         .populate("studentID","name phone")
         .sort({createdAt:-1})
         .skip((page-1)*limit)
