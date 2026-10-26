@@ -15,7 +15,7 @@ export const getAllAccessCode:RequestHandler = async (req, res) => {
         .limit(limit)
         .lean()
         .exec();
-        const total = await AccessCode.countDocuments({statu:Status.Active});
+        const total = await AccessCode.countDocuments({status:Status.Active});
         res.status(StatusCodes.OK).json({
             message:"Access Code fetched successfully",
             page,
