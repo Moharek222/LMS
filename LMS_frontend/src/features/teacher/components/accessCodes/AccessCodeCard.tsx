@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { KeyRound, Copy, Check, User, Phone, Calendar } from 'lucide-react';
 import type { AccessCode } from '../../types/groupManagement';
 import { useToast } from '../../../../context/ToastContext';
+import { isAccessCodeExpired } from '../../utils/accessCodeUtils';
 
 interface AccessCodeCardProps {
   accessCode: AccessCode;
@@ -10,6 +11,8 @@ interface AccessCodeCardProps {
 export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) => {
   const toast = useToast();
   const [copied, setCopied] = useState<boolean>(false);
+
+  const isExpired = isAccessCodeExpired(accessCode);
 
   const handleCopyCode = async () => {
     if (!accessCode.code) return;
@@ -45,16 +48,8 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
       : null;
 
   
-  const getStatusBadge = (status: string) => {
-    const lower = (status || '').toLowerCase();
-    if (lower === 'active') {
-      return (
-        <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
-          نشط
-        </span>
-      );
-    }
-    if (lower === 'expired') {
+  const getStatusBadge = () => {
+    if (isExpired) {
       return (
         <span className="px-2.5 py-0.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
           منتهي
@@ -62,8 +57,8 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
       );
     }
     return (
-      <span className="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
-        {status || 'غير معروف'}
+      <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+        نشط
       </span>
     );
   };
@@ -113,7 +108,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
             )}
           </button>
 
-          {getStatusBadge(accessCode.status)}
+          {getStatusBadge()}
         </div>
 
         <div className="flex items-center gap-4 text-xs font-bold text-slate-700 flex-wrap">

@@ -16,6 +16,7 @@ import { getMyStudentProfile } from '../api/studentProfileApi';
 import { StudentQRCode } from './StudentQRCode';
 import { StudentGradebookCard } from './StudentGradebookCard';
 import { EditStudentProfileModal } from './EditStudentProfileModal';
+import { isStudentVerified } from '../../../utils/subscriptionUtils';
 
 export const StudentProfileCard: React.FC = () => {
   const { user } = useAuth();
@@ -39,10 +40,7 @@ export const StudentProfileCard: React.FC = () => {
   const hasActiveSubscription = Boolean(
     myProfile?.hasActiveSubscription ??
     user?.hasActiveSubscription ??
-    (userId && (
-      sessionStorage.getItem(`lms_code_verified_${userId}`) === 'true' ||
-      localStorage.getItem(`lms_code_verified_${userId}`) === 'true'
-    ))
+    isStudentVerified(userId)
   );
 
   const getResolvedGroupName = (): string => {

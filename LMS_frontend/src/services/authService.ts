@@ -86,11 +86,11 @@ export const refreshSessionApi = async (): Promise<string | null> => {
   try {
     let response: any = null;
     try {
-      response = await apiClient.post<{ token?: string; accessToken?: string }>('/api/auth/refreshSession', {
+      response = await apiClient.post<{ token?: string; accessToken?: string }>('/api/auth/refresh', {
         refreshToken,
       });
     } catch {
-      response = await apiClient.post<{ token?: string; accessToken?: string }>('/api/auth/refresh', {
+      response = await apiClient.post<{ token?: string; accessToken?: string }>('/api/auth/refreshSession', {
         refreshToken,
       });
     }

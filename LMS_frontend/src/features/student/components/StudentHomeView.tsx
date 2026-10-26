@@ -14,6 +14,7 @@ import { NextActionWidget } from '../../../components/dashboard/NextActionWidget
 import { useStudentQuizHistory } from '../hooks/useStudentQuizHistory';
 import { useStudentWatchHistory } from '../../lessons/hooks/useProgress';
 import { useMyAttendanceStats } from '../../attendance/hooks/useStudentAttendance';
+import { isStudentVerified } from '../../../utils/subscriptionUtils';
 
 export interface CourseItem {
   _id: string;
@@ -70,13 +71,7 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
   const isSubscriptionActive = React.useMemo(() => {
     const userId = user?.id || user?._id;
     if (user?.hasActiveSubscription) return true;
-    if (userId) {
-      return (
-        sessionStorage.getItem(`lms_code_verified_${userId}`) === 'true' ||
-        localStorage.getItem(`lms_code_verified_${userId}`) === 'true'
-      );
-    }
-    return false;
+    return isStudentVerified(userId);
   }, [user]);
 
   const coursesCount = isLoadingCourses ? '—' : effectiveCourses.length;

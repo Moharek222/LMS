@@ -1,6 +1,7 @@
 import React from 'react';
 import { Printer, X, KeyRound} from 'lucide-react';
 import type { AccessCode } from '../../types/groupManagement';
+import { isAccessCodeExpired } from '../../utils/accessCodeUtils';
 
 interface PrintAccessCodesModalProps {
   isOpen: boolean;
@@ -99,7 +100,7 @@ export const PrintAccessCodesModal: React.FC<PrintAccessCodesModalProps> = ({
                   ? codeItem.studentID.phone
                   : null;
 
-              const isUsed = codeItem.status?.toLowerCase() === 'used';
+              const isExpired = isAccessCodeExpired(codeItem);
 
               return (
                 <div
@@ -123,12 +124,12 @@ export const PrintAccessCodesModal: React.FC<PrintAccessCodesModalProps> = ({
 
                     <span
                       className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                        isUsed
-                          ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                        isExpired
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
                           : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       }`}
                     >
-                      {isUsed ? 'مُستخدم' : 'نشط'}
+                      {isExpired ? 'منتهي' : 'نشط'}
                     </span>
                   </div>
 

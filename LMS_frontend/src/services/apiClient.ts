@@ -88,12 +88,12 @@ apiClient.interceptors.response.use(
           let refreshRes: any = null;
           try {
             refreshRes = await axios.post<{ token?: string; accessToken?: string }>(
-              `${BASE_URL}/api/auth/refreshSession`,
+              `${BASE_URL}/api/auth/refresh`,
               { refreshToken }
             );
           } catch {
             refreshRes = await axios.post<{ token?: string; accessToken?: string }>(
-              `${BASE_URL}/api/auth/refresh`,
+              `${BASE_URL}/api/auth/refreshSession`,
               { refreshToken }
             );
           }

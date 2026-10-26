@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, type Rea
 import axios from 'axios';
 import type { UserProfile, TeacherLoginCredentials, StudentLoginCredentials } from '../types/auth';
 import { loginTeacherApi, loginStudentApi, logoutApi, getMeApi } from '../services/authService';
+import { isStudentVerified, setStudentVerified, clearStudentVerified } from '../utils/subscriptionUtils';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -56,10 +57,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         let isVerified = false;
         if (parsedUser.role === 'student') {
             isVerified = Boolean(
-              userId && (
-                sessionStorage.getItem(`lms_code_verified_${userId}`) === 'true' ||
-                localStorage.getItem(`lms_code_verified_${userId}`) === 'true'
-              )
+              updatedProfile.hasActiveSubscription ||
+              isStudentVerified(userId)
             );
         }
 
@@ -110,11 +109,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const profile = await loginStudentApi(credentials);
       const studentId = profile.id;
-      if (studentId) {
-        localStorage.removeItem(`lms_code_verified_${studentId}`);
-        sessionStorage.removeItem(`lms_code_verified_${studentId}`);
+      const hasActive = Boolean(profile.hasActiveSubscription);
+      if (!hasActive && studentId) {
+        clearStudentVerified(studentId);
+      } else if (hasActive && studentId) {
+        setStudentVerified(studentId);
       }
-      const fullProfile: UserProfile = { ...profile, hasActiveSubscription: false };
+      const fullProfile: UserProfile = { ...profile, hasActiveSubscription: hasActive };
       setUser(fullProfile);
       localStorage.setItem('lms_user', JSON.stringify(fullProfile));
     } finally {

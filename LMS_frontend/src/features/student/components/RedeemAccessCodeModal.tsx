@@ -4,6 +4,7 @@ import { useVerifyAccessCode } from '../hooks/useVerifyAccessCode';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/useAuth';
+import { setStudentVerified } from '../../../utils/subscriptionUtils';
 
 interface RedeemAccessCodeModalProps {
   isOpen: boolean;
@@ -37,8 +38,8 @@ export const RedeemAccessCodeModal: React.FC<RedeemAccessCodeModalProps> = ({
       onSuccess: (res) => {
         toast.success(res.message || 'تم تفعيل كود الوصول والاشتراك بنجاح! 🎉');
         if (user?.id) {
-          sessionStorage.setItem(`lms_code_verified_${user.id}`, 'true');
-          localStorage.setItem(`lms_code_verified_${user.id}`, 'true');
+          const expiresAt = res?.data?.expiresAt;
+          setStudentVerified(user.id, expiresAt);
         }
         updateUser({ hasActiveSubscription: true });
         setCode('');

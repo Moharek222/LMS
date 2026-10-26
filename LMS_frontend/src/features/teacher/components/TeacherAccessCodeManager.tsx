@@ -18,6 +18,7 @@ import { AccessCodeCard } from './accessCodes/AccessCodeCard';
 import { GenerateAccessCodeModal } from './accessCodes/GenerateAccessCodeModal';
 import { PrintAccessCodesModal } from './accessCodes/PrintAccessCodesModal';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
+import { isAccessCodeExpired } from '../utils/accessCodeUtils';
 
 export const TeacherAccessCodeManager: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -47,21 +48,23 @@ export const TeacherAccessCodeManager: React.FC = () => {
   const accessCodes = data?.data || [];
   const totalItems = data?.total || accessCodes.length;
 
-  // True full counts across all access codes in the database
+  // True full counts across all access codes with real-time expiration awareness
   const activeCount = useMemo(() => {
-    return accessCodes.filter((c) => (c.status || '').toLowerCase() === 'active').length;
+    return accessCodes.filter((c) => !isAccessCodeExpired(c)).length;
   }, [accessCodes]);
 
   const expiredCount = useMemo(() => {
-    return accessCodes.filter((c) => (c.status || '').toLowerCase() === 'expired').length;
+    return accessCodes.filter((c) => isAccessCodeExpired(c)).length;
   }, [accessCodes]);
 
   // Comprehensive filter across ALL access codes
   const filteredAccessCodes = useMemo(() => {
     let result = accessCodes;
 
-    if (statusFilter !== 'all') {
-      result = result.filter((code) => (code.status || '').toLowerCase() === statusFilter);
+    if (statusFilter === 'active') {
+      result = result.filter((code) => !isAccessCodeExpired(code));
+    } else if (statusFilter === 'expired') {
+      result = result.filter((code) => isAccessCodeExpired(code));
     }
 
     if (searchQuery.trim()) {

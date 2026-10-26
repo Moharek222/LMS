@@ -36,6 +36,7 @@ import {
 import StudentLessonsView from '../../features/lessons/components/StudentLessonsView';
 import RedeemAccessCodeModal from '../../features/student/components/RedeemAccessCodeModal';
 import { useStudentWatchHistory } from '../../features/lessons/hooks/useProgress';
+import { isStudentVerified } from '../../utils/subscriptionUtils';
 
 const studentNavItems = [
   { id: 'home', label: 'الرئيسية', icon: <Home size={20} /> },
@@ -266,17 +267,13 @@ const sortedLessons = React.useMemo(() => {
   };
 
   const [verifiedState, setVerifiedState] = useState<boolean>(() => {
-    if (!user?.id) return false;
-    return (
-      sessionStorage.getItem(`lms_code_verified_${user.id}`) === 'true' ||
-      localStorage.getItem(`lms_code_verified_${user.id}`) === 'true'
-    );
+    return isStudentVerified(user?.id);
   });
 
   const selectedLesson = effectiveLessons.find((l) => l._id === selectedLessonId);
   const isSubscriptionActive =
     user?.role === 'student'
-      ? Boolean(user?.hasActiveSubscription || verifiedState)
+      ? Boolean(user?.hasActiveSubscription || isStudentVerified(user?.id) || verifiedState)
       : true;
 
   return (
