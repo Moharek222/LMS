@@ -8,6 +8,7 @@ import { generateStudentAccessCode, generateCodeValidation } from "./access-code
 import { getAllAccessCode } from "./access-code-contollers/get-all-access-code";
 import { getAccessCodes } from "./access-code-contollers/get-student-access-codes";
 import { verifyAccessCode, verifyCodeValidation } from "./access-code-contollers/verify-access-code";
+import { generateGroupAccessCodes, generateGroupCodesValidation } from "./access-code-contollers/generate-group-codes";
 
 const router = Router();
 
@@ -19,6 +20,12 @@ router.post("/generate",
     generateCodeValidation,
     handleValidationErrors,
     generateStudentAccessCode
+);
+router.post("/generate-group-codes",
+    isAuthorized(Role.Admin, Role.Teacher),
+    generateGroupCodesValidation,
+    handleValidationErrors,
+    generateGroupAccessCodes
 );
 
 router.get("/",
