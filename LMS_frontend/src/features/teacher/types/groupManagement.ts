@@ -122,5 +122,30 @@ export interface GenerateAccessCodePayload {
   studentID: string;
 }
 
+export interface GroupGeneratedCodeItem {
+  studentID: string;
+  code: string;
+  expiresAt: string;
+}
+
+export interface GroupSkippedCodeItem {
+  studentID: string;
+  reason: string;
+}
+
+export interface GenerateGroupAccessCodesPayload {
+  studentIDs: string[];
+}
+
+export interface GenerateGroupAccessCodesResult {
+  generated: GroupGeneratedCodeItem[];
+  skipped: GroupSkippedCodeItem[];
+}
+
+export interface GenerateGroupAccessCodesResponse {
+  message: string;
+  data: GenerateGroupAccessCodesResult;
+}
+
 export type GroupQueryParams = BaseQueryParams;
 export type AccessCodeQueryParams = BaseQueryParams;

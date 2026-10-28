@@ -12,10 +12,11 @@ import {
   X,
   CheckCircle2,
   XCircle,
+  Sparkles,
 } from 'lucide-react';
 import { useTeacherAccessCodes } from '../hooks/useTeacherAccessCodes';
 import { AccessCodeCard } from './accessCodes/AccessCodeCard';
-import { GenerateAccessCodeModal } from './accessCodes/GenerateAccessCodeModal';
+import { GenerateAccessCodeModal, type GenerationMode } from './accessCodes/GenerateAccessCodeModal';
 import { PrintAccessCodesModal } from './accessCodes/PrintAccessCodesModal';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { isAccessCodeExpired } from '../utils/accessCodeUtils';
@@ -25,6 +26,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
   const pageSize = 50;
 
   const [isGenerateOpen, setIsGenerateOpen] = useState<boolean>(false);
+  const [generateModalMode, setGenerateModalMode] = useState<GenerationMode>('single');
   const [isPrintOpen, setIsPrintOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all');
@@ -170,11 +172,26 @@ export const TeacherAccessCodeManager: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setIsGenerateOpen(true)}
+            onClick={() => {
+              setGenerateModalMode('group');
+              setIsGenerateOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black transition cursor-pointer shadow-xs"
+          >
+            <Sparkles size={16} />
+            <span>توليد أكواد جماعية</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setGenerateModalMode('single');
+              setIsGenerateOpen(true);
+            }}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
           >
             <Plus size={16} />
-            <span>إنشاء كود تفعيل</span>
+            <span>إنشاء كود فردي</span>
           </button>
         </div>
       </div>
@@ -314,8 +331,10 @@ export const TeacherAccessCodeManager: React.FC = () => {
       )}
 
       <GenerateAccessCodeModal
+        key={isGenerateOpen ? `modal-${generateModalMode}` : 'modal-closed'}
         isOpen={isGenerateOpen}
         onClose={() => setIsGenerateOpen(false)}
+        initialMode={generateModalMode}
       />
 
       <PrintAccessCodesModal
