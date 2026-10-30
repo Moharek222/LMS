@@ -37,11 +37,7 @@ export const StudentProfileCard: React.FC = () => {
   const name = myProfile?.name || user?.name || 'غير متوفر';
   const phone = myProfile?.phone || user?.phone || 'غير متوفر';
   const userId = user?.id;
-  const hasActiveSubscription = Boolean(
-    myProfile?.hasActiveSubscription ??
-    user?.hasActiveSubscription ??
-    isStudentVerified(userId)
-  );
+  const hasActiveSubscription = Boolean(isStudentVerified(userId));
 
   const getResolvedGroupName = (): string => {
     if (myProfile?.groupID) {

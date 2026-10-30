@@ -70,7 +70,6 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
 
   const isSubscriptionActive = React.useMemo(() => {
     const userId = user?.id || user?._id;
-    if (user?.hasActiveSubscription) return true;
     return isStudentVerified(userId);
   }, [user]);
 

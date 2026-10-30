@@ -273,7 +273,7 @@ const sortedLessons = React.useMemo(() => {
   const selectedLesson = effectiveLessons.find((l) => l._id === selectedLessonId);
   const isSubscriptionActive =
     user?.role === 'student'
-      ? Boolean(user?.hasActiveSubscription || isStudentVerified(user?.id) || verifiedState)
+      ? Boolean(isStudentVerified(user?.id) || verifiedState)
       : true;
 
   return (
