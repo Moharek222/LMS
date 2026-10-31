@@ -5,6 +5,7 @@ export interface ILesson extends mongoose.Document {
     courseID: mongoose.Types.ObjectId;
     description?: string;
     contentUrl: string;
+    pdfKey?: string;
     order: number;
     requiresPassing: boolean;
     isActive: boolean;
@@ -32,6 +33,11 @@ const lessonSchema = new mongoose.Schema<ILesson>({
     contentUrl: {
         type: String,
         required: true,
+        trim: true
+    },
+    pdfKey: {
+        type: String,
+        required: false,
         trim: true
     },
     order: {

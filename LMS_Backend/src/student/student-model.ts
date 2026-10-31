@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Role } from "../user/user-model";
+import { Grade } from "../interfaces/grade";
 
 
 interface IStudent extends mongoose.Document {
@@ -9,6 +10,7 @@ interface IStudent extends mongoose.Document {
     password:string;
     parentPhone?: string | null;
     role:Role;
+    grade:Grade
     isActive: boolean;
     activeToken?: string | null;
     createdAt?: Date;
@@ -44,6 +46,11 @@ const studentSchema = new mongoose.Schema<IStudent>({
         type: String,
         enum: Object.values(Role),
         default: Role.Student
+    },
+    grade: {
+        type: String,
+        enum: Object.values(Grade),
+        required: true
     },
     parentPhone: {
         type: String,

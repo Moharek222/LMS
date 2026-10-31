@@ -31,13 +31,23 @@ export const deleteLesson: RequestHandler<{ lessonID: string }, any, any> = asyn
             });
         }
 
-        if (lesson.contentUrl) {
+        if (lesson.contentUrl && lesson.contentUrl !== "Deleted") {
             const deleteCommand = new DeleteObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
                 Key: lesson.contentUrl, 
             });
             
             await r2Client.send(deleteCommand);
+        }
+
+        if (lesson.pdfKey) {
+            const deletePdfCommand = new DeleteObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: lesson.pdfKey,
+            });
+
+            await r2Client.send(deletePdfCommand);
+            lesson.pdfKey = undefined;
         }
 
         lesson.isActive = false;

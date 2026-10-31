@@ -22,6 +22,20 @@ export const addLessonValidation = [
         .notEmpty().withMessage("Content URL (or File Key) is required")
         .isString().withMessage("Content URL must be a string"),
         
+    body("pdfKey")
+        .optional()
+        .isString().withMessage("PDF key must be a string")
+        .bail()
+        .trim()
+        .notEmpty().withMessage("PDF key cannot be empty")
+        .bail()
+        .custom((value: string) => {
+            if (!value.startsWith("lessons/pdfs/") || !value.endsWith(".pdf")) {
+                throw new Error("Invalid PDF key");
+            }
+            return true;
+        }),
+
     body("order")
         .notEmpty().withMessage("Order is required")
         .isNumeric().withMessage("Order must be a number"),
@@ -35,6 +49,7 @@ interface IRequest {
     title: string;
     description?: string;
     contentUrl: string;
+    pdfKey?: string;
     order: number;
     requiresPassing?: boolean;
 }
@@ -47,7 +62,7 @@ interface IResponse {
 export const createLesson: RequestHandler<{courseID: string}, IResponse, IRequest> = async (req, res, next) => {
     try {
         const { courseID } = req.params;
-        const { title, description, contentUrl, order, requiresPassing , } = req.body;
+        const { title, description, contentUrl, pdfKey, order, requiresPassing } = req.body;
         if(!mongoose.Types.ObjectId.isValid(courseID)){
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Invalid course ID format"
@@ -65,6 +80,7 @@ export const createLesson: RequestHandler<{courseID: string}, IResponse, IReques
             courseID,
             description,
             contentUrl,
+            pdfKey,
             order,
             requiresPassing
         });

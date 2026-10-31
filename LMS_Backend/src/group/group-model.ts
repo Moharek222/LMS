@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
+import { Grade } from "../interfaces/grade";
 
 interface IGroup extends mongoose.Document{
     name:string,
-    isActive:boolean
+    isActive:boolean,
+    grade:Grade,
     createdAt?:Date,
     updatedAt?:Date
 }
@@ -18,6 +20,11 @@ const groupSchema = new mongoose.Schema<IGroup>({
     isActive: {
         type: Boolean,
         default: true
+    },
+    grade: {
+        type: String,
+        enum: Object.values(Grade),
+        required: true
     }
 }, {
     timestamps: true,

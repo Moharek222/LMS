@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
 import { Course } from "../course-model";
 import { body } from "express-validator";
+import { Grade } from "../../interfaces/grade";
 
 
 export const updateCourseValidation = [

@@ -49,13 +49,23 @@ export const moveStudent: RequestHandler<{ studentID: string }, IResponse, IRequ
             });
         }
 
+        if (!student.grade || !group.grade) {
+            return res.status(StatusCodes.CONFLICT).json({
+                message: "Student or group grade has not been assigned yet"
+            });
+        }
+        if (group.grade !== student.grade) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Cannot move student to a group with a different grade"
+            });
+        }
+
         if (student.groupID?.toString() === newGroupID) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: "Student is already in this group"
             });
         }
 
-        // Update the student's group
         student.groupID = new mongoose.Types.ObjectId(newGroupID);
         await student.save();
 

@@ -17,6 +17,7 @@ import lessonRouter from "./src/lesson/lesson-router";
 import studentRouter from "./src/student/student-router";
 import progressRouter from "./src/progress/progress-router";
 import { checkServiceStatus } from "./src/middlewares/check-service-status";
+import { startExpireAccessCodesJob } from "./src/group/expire-access-codes";
 
 dotenv.config();
 const app = express();
@@ -34,7 +35,10 @@ mongoose
     .connect(URI, {
         dbName: DB_NAME
     })
-    .then(() => console.log("MongoDB connected successfully"))
+    .then(() => {
+        console.log("MongoDB connected successfully");  
+        startExpireAccessCodesJob();
+    })
     .catch((err) => {
         console.error("MongoDB connection error:", err);
         process.exit(1);

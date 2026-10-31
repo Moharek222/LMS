@@ -10,6 +10,8 @@ import { deleteLesson } from "./lesson-controllers/delete-lesson";
 import { getLessonById } from "./lesson-controllers/get-lesson-by-id";
 import { getCourseLessons } from "./lesson-controllers/get-course-lessons";
 import { generateUploadUrl, generateUploadUrlValidation } from "./lesson-controllers/upload-controller";
+import { generatePdfUploadUrl, generatePdfUploadUrlValidation } from "./lesson-controllers/upload-pdf-controller";
+import { getLessonPdfPreview } from "./lesson-controllers/get-lesson-pdf-preview";
 import quizRouter from "../quiz/quiz-router";
 import { requireActiveSubscription } from "../middlewares/is-active-code";
 
@@ -24,6 +26,14 @@ router.post("/generate-upload-url",
     generateUploadUrlValidation,
     handleValidationErrors,
     generateUploadUrl
+);
+
+
+router.post("/generate-pdf-upload-url",
+    isAuthorized(Role.Admin, Role.Teacher),
+    generatePdfUploadUrlValidation,
+    handleValidationErrors,
+    generatePdfUploadUrl
 );
 
 router.post("/:courseID",
@@ -49,6 +59,12 @@ router.get("/:lessonID/video",
     isAuthorized(Role.Student,Role.Admin, Role.Teacher),
     requireActiveSubscription,
     getLessonById
+);
+
+router.get("/:lessonID/pdf",
+    isAuthorized(Role.Student, Role.Admin, Role.Teacher),
+    requireActiveSubscription,
+    getLessonPdfPreview
 );
 
 router.get("/:courseID",
