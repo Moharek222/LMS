@@ -39,6 +39,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
   const isSubmittingRef = useRef<boolean>(false);
   const draftAnswersKey = `lms_quiz_draft_answers_${quizId}`;
+  const reviewCacheKey = `lms_quiz_review_answers_${quizId}`;
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isRetrying, setIsRetrying] = useState<boolean>(false);
@@ -95,16 +96,39 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
   React.useEffect(() => {
     if (!isRetrying && existingSubmissionFromHistory && !submissionResult) {
+      let cachedCorrectAnswers: string[] | undefined = undefined;
+      try {
+        const savedReview = localStorage.getItem(reviewCacheKey);
+        if (savedReview) {
+          const parsed = JSON.parse(savedReview);
+          if (Array.isArray(parsed?.correctAnswers)) {
+            cachedCorrectAnswers = parsed.correctAnswers;
+          }
+        }
+      } catch {
+        // Ignore storage errors
+      }
+
       setSubmissionResult({
         score: existingSubmissionFromHistory.score,
+        answers: cachedCorrectAnswers,
         totalQuestions: questions.length || 1,
         isPassed: existingSubmissionFromHistory.isPassed,
+        submission: {
+          _id: existingSubmissionFromHistory._id,
+          studentID: existingSubmissionFromHistory.studentID?._id || '',
+          quizID: String(quizId),
+          selectedOption: existingSubmissionFromHistory.selectedOption || [],
+          score: existingSubmissionFromHistory.score,
+          isPassed: existingSubmissionFromHistory.isPassed,
+          createdAt: existingSubmissionFromHistory.createdAt,
+        },
       });
       if (existingSubmissionFromHistory.isPassed) {
         onPassed?.();
       }
     }
-  }, [existingSubmissionFromHistory, submissionResult, questions.length, onPassed, isRetrying]);
+  }, [existingSubmissionFromHistory, submissionResult, questions.length, onPassed, isRetrying, quizId, reviewCacheKey]);
 
   const handleSelectOption = (questionId: string, optionText: string) => {
     setAnswers((prev) => {
@@ -163,6 +187,15 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
           isSubmittingRef.current = false;
           try {
             localStorage.removeItem(draftAnswersKey);
+            if (Array.isArray(data.answers) && data.answers.length > 0) {
+              localStorage.setItem(
+                reviewCacheKey,
+                JSON.stringify({
+                  correctAnswers: data.answers,
+                  selectedAnswers: answers,
+                })
+              );
+            }
           } catch {
             // Ignore storage errors
           }
@@ -244,6 +277,29 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
     const percentage = Math.round((score / total) * 100);
     const isPassed = submissionResult.isPassed !== undefined ? submissionResult.isPassed : percentage >= 50;
 
+    const correctAnswersList: string[] = Array.isArray(submissionResult.answers)
+      ? submissionResult.answers
+      : [];
+
+    const studentSelectedMap = new Map<string, string>();
+    Object.entries(answers).forEach(([qId, ans]) => {
+      if (qId && ans) studentSelectedMap.set(String(qId).trim(), String(ans).trim());
+    });
+    if (existingSubmissionFromHistory?.selectedOption) {
+      existingSubmissionFromHistory.selectedOption.forEach((item) => {
+        if (item?.QuestionId && item?.selectedAnswer) {
+          studentSelectedMap.set(String(item.QuestionId).trim(), String(item.selectedAnswer).trim());
+        }
+      });
+    }
+    if (submissionResult.submission?.selectedOption) {
+      submissionResult.submission.selectedOption.forEach((item) => {
+        if (item?.QuestionId && item?.selectedAnswer) {
+          studentSelectedMap.set(String(item.QuestionId).trim(), String(item.selectedAnswer).trim());
+        }
+      });
+    }
+
     return (
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6 text-center">
         <div
@@ -263,7 +319,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
           <p className="text-xs text-slate-500 font-semibold leading-relaxed">
             {isPassed
               ? 'أحسنت الاستيعاب، استمر في التقدم والمراجعة الفعالة!'
-              : 'يمكنك مراجعة الشرح التفاعلي وإعادة المحاولة مجدداً.'}
+              : 'يمكنك مراجعة الإجابات بالأسفل لمعرفة أخطائك وإعادة المحاولة مجدداً.'}
           </p>
         </div>
 
@@ -322,6 +378,167 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
             العودة لقائمة الدروس
           </button>
         </div>
+
+        {/* Detailed Questions & Answers Review Section */}
+        {questions.length > 0 && (
+          <div className="pt-6 border-t border-slate-200 text-right space-y-4">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h4 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-2">
+                <HelpCircle size={18} className="text-[#0D8A82]" />
+                <span>مراجعة أسئلة وإجابات الاختبار بالتفصيل</span>
+              </h4>
+              <div className="flex items-center gap-2 text-[11px] font-bold">
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  صحيحة: {score}
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200">
+                  خاطئة: {Math.max(0, total - score)}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {questions.map((q, qIndex) => {
+                const studentAnswer = studentSelectedMap.get(String(q._id).trim()) || '';
+                const correctAnswer =
+                  correctAnswersList[qIndex] !== undefined
+                    ? String(correctAnswersList[qIndex]).trim()
+                    : '';
+                const hasCorrectAnswerKey = Boolean(correctAnswer);
+                const isQuestionCorrect =
+                  hasCorrectAnswerKey && studentAnswer === correctAnswer;
+
+                return (
+                  <div
+                    key={q._id || qIndex}
+                    className={`rounded-2xl p-4 sm:p-5 border transition-all ${
+                      hasCorrectAnswerKey
+                        ? isQuestionCorrect
+                          ? 'bg-emerald-50/30 border-emerald-200'
+                          : 'bg-rose-50/30 border-rose-200'
+                        : 'bg-slate-50/70 border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-start gap-2.5">
+                        <span
+                          className={`w-7 h-7 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 border ${
+                            hasCorrectAnswerKey
+                              ? isQuestionCorrect
+                                ? 'bg-emerald-600 text-white border-emerald-600'
+                                : 'bg-rose-600 text-white border-rose-600'
+                              : 'bg-slate-200 text-slate-700 border-slate-300'
+                          }`}
+                        >
+                          {qIndex + 1}
+                        </span>
+                        <h5 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-relaxed pt-0.5">
+                          {q.question}
+                        </h5>
+                      </div>
+
+                      {hasCorrectAnswerKey && (
+                        <span
+                          className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold shrink-0 inline-flex items-center gap-1 border ${
+                            isQuestionCorrect
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-rose-100 text-rose-800 border-rose-300'
+                          }`}
+                        >
+                          {isQuestionCorrect ? (
+                            <>
+                              <CheckCircle2 size={13} />
+                              <span>إجابة صحيحة</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle size={13} />
+                              <span>إجابة خاطئة</span>
+                            </>
+                          )}
+                        </span>
+                      )}
+                    </div>
+
+                    {q.questionImage?.trim() && (
+                      <div className="mb-3 rounded-xl border border-slate-200 bg-white p-2 flex items-center justify-center">
+                        <img
+                          src={q.questionImage.trim()}
+                          alt="صورة السؤال"
+                          className="max-h-52 object-contain rounded-lg"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2 pr-1 sm:pr-9">
+                      {q.options.map((optionText, optIndex) => {
+                        const trimmedOption = String(optionText).trim();
+                        const isStudentChoice = studentAnswer === trimmedOption;
+                        const isRightOption = hasCorrectAnswerKey && correctAnswer === trimmedOption;
+
+                        let optionStyle = 'bg-white border-slate-200 text-slate-600 opacity-85';
+                        if (isRightOption) {
+                          optionStyle =
+                            'bg-emerald-50 border-emerald-400 text-emerald-900 ring-1 ring-emerald-400 font-bold';
+                        } else if (isStudentChoice && hasCorrectAnswerKey && !isRightOption) {
+                          optionStyle =
+                            'bg-rose-50 border-rose-300 text-rose-900 ring-1 ring-rose-300 font-bold';
+                        } else if (isStudentChoice && !hasCorrectAnswerKey) {
+                          optionStyle =
+                            'bg-teal-50 border-[#0D8A82] text-[#0D8A82] ring-1 ring-[#0D8A82] font-bold';
+                        }
+
+                        return (
+                          <div
+                            key={optIndex}
+                            className={`flex items-center justify-between gap-3 p-3 rounded-xl border text-xs transition-all ${optionStyle}`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              {isRightOption ? (
+                                <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                              ) : isStudentChoice && hasCorrectAnswerKey ? (
+                                <XCircle size={16} className="text-rose-600 shrink-0" />
+                              ) : (
+                                <span className="w-4 h-4 rounded-full border border-slate-300 shrink-0 inline-block" />
+                              )}
+                              <span className="leading-relaxed">{optionText}</span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {isRightOption && isStudentChoice && (
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-extrabold">
+                                  إجابتك الصحيحة ✓
+                                </span>
+                              )}
+                              {isRightOption && !isStudentChoice && (
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-extrabold">
+                                  الإجابة الصحيحة ✓
+                                </span>
+                              )}
+                              {isStudentChoice && hasCorrectAnswerKey && !isRightOption && (
+                                <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-extrabold">
+                                  إجابتك الخاطئة ✗
+                                </span>
+                              )}
+                              {isStudentChoice && !hasCorrectAnswerKey && (
+                                <span className="px-2 py-0.5 rounded-md bg-[#0D8A82] text-white text-[10px] font-extrabold">
+                                  إجابتك المختارة
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
