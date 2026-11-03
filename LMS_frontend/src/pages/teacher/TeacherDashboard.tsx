@@ -96,7 +96,7 @@ export const TeacherDashboard: React.FC = () => {
         if (isMounted && res.data) {
           setTotalStudentsCount(res.data.total || 0);
           if (Array.isArray(res.data.data)) {
-            const mappedStudents: JoinedStudent[] = res.data.data.map((s: any) => ({
+            const mappedStudents: JoinedStudent[] = res.data.data.map((s: { _id: string; name: string; phone?: string; groupID?: { name?: string } }) => ({
               id: s._id,
               name: s.name,
               groupName: s.groupID?.name || s.phone || 'طالب مسجل',

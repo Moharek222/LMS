@@ -4,6 +4,8 @@ export interface Lesson {
   title: string;
   description?: string;
   contentUrl?: string;
+  pdfKey?: string;
+  hasPdf?: boolean;
   order: number;
   requiresPassing: boolean;
   isActive: boolean;
@@ -30,10 +32,21 @@ export interface GetLessonVideoResponse {
   data: LessonVideoData;
 }
 
+export interface LessonPdfData {
+  title: string;
+  pdfPreviewUrl: string;
+}
+
+export interface GetLessonPdfResponse {
+  message: string;
+  data: LessonPdfData;
+}
+
 export interface UpdateLessonPayload {
   title?: string;
   description?: string;
   contentUrl?: string;
+  pdfKey?: string;
   order?: number;
   requiresPassing?: boolean;
   isActive?: boolean;

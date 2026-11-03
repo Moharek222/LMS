@@ -30,9 +30,9 @@ apiClient.interceptors.request.use(
 );
 
 let isRefreshing = false;
-let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
+let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -85,7 +85,7 @@ apiClient.interceptors.response.use(
         isRefreshing = true;
 
         try {
-          let refreshRes: any = null;
+          let refreshRes;
           try {
             refreshRes = await axios.post<{ token?: string; accessToken?: string }>(
               `${BASE_URL}/api/auth/refresh`,

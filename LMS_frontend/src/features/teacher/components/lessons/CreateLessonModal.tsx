@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { UploadCloud, Plus, Loader2, CheckCircle2, AlertTriangle, FileVideo, X } from 'lucide-react';
 import { useCreateLesson } from '../../hooks/useCreateLesson';
-import { generateUploadUrl, uploadVideoToR2 } from '../../api/teacherApi';
+import { generateUploadUrl, uploadVideoToR2, generatePdfUploadUrl, uploadPdfToR2 } from '../../api/teacherApi';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import { LessonPdfAttachmentField } from './LessonPdfAttachmentField';
 
 interface CreateLessonModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
   const [requiresPassing, setRequiresPassing] = useState(false);
 
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [uploadStatusText, setUploadStatusText] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -73,13 +75,22 @@ export const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
     setUploadProgress(0);
 
     try {
-      setUploadStatusText('جاري تجهيز رابط الرفع في السحابة (R2)...');
+      setUploadStatusText('جاري تجهيز رابط رفع الفيديو في السحابة (R2)...');
       const { uploadUrl, fileKey } = await generateUploadUrl(videoFile.type || 'video/mp4');
 
       setUploadStatusText('جاري رفع الفيديو للسحابة...');
       await uploadVideoToR2(uploadUrl, videoFile, (percent) => {
         setUploadProgress(percent);
       });
+
+      let uploadedPdfKey: string | undefined = undefined;
+      if (pdfFile) {
+        setUploadStatusText('جاري تجهيز رابط رفع مذكرة الـ PDF...');
+        const pdfRes = await generatePdfUploadUrl();
+        setUploadStatusText('جاري رفع مذكرة الـ PDF للسحابة...');
+        await uploadPdfToR2(pdfRes.uploadUrl, pdfFile);
+        uploadedPdfKey = pdfRes.pdfKey;
+      }
 
       setUploadStatusText('جاري حفظ الدرس في قاعدة البيانات...');
       createLessonMutation.mutate(
@@ -89,6 +100,7 @@ export const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
             title: title.trim(),
             description: description.trim() || undefined,
             contentUrl: fileKey,
+            pdfKey: uploadedPdfKey,
             order: Number(order) || 1,
             requiresPassing,
           },
@@ -98,9 +110,10 @@ export const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
             setTitle('');
             setDescription('');
             setVideoFile(null);
+            setPdfFile(null);
             setOrder((prev) => prev + 1);
             onClose();
-            toast.success('تم رفع الفيديو وإنشاء الدرس بنجاح 🎬✨');
+            toast.success('تم رفع الفيديو ومذكرة الدرس بنجاح 🎬✨');
           },
           onError: (err) => {
             const msg = toArabicErrorMessage(err, 'حدث خطأ أثناء حفظ الدرس في قاعدة البيانات');
@@ -263,6 +276,14 @@ export const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
               </label>
             </div>
           </div>
+
+          <LessonPdfAttachmentField
+            pdfFile={pdfFile}
+            onPdfFileChange={setPdfFile}
+            onValidationError={setValidationError}
+            disabled={isUploading}
+            inputId="create-pdf-upload-input"
+          />
 
           {isUploading && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl space-y-2">

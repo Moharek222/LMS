@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
   QrCode,
   X,
@@ -16,6 +16,12 @@ import { useRecordStudentAttendance } from '../../../attendance/hooks/useStudent
 import { useGroupStudents } from '../../hooks/useGroupStudents';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import {
+  playAttendanceBeep,
+  extractStudentIdFromQr,
+  isValidMongoId,
+  decodeQrFromImageFile,
+} from '../../utils/qrAttendanceUtils';
 
 interface QrAttendanceScannerModalProps {
   isOpen: boolean;
@@ -55,63 +61,14 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
 
   const cooldownRef = useRef<boolean>(false);
 
-  const playBeep = () => {
-    if (!soundEnabled) return;
-    try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.18);
-    } catch {
-      // Ignore audio errors
-    }
-  };
-
-  const extractStudentId = (raw: string): string => {
-    const trimmed = raw.trim();
-    if (!trimmed) return '';
-
-    
-    const hexMatch = trimmed.match(/[0-9a-fA-F]{24}/);
-    if (hexMatch) {
-      return hexMatch[0];
-    }
-
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed === 'object') {
-        const val = parsed.studentId || parsed.studentID || parsed.id || parsed._id;
-        if (val && typeof val === 'string') {
-          return val.trim();
-        }
-      }
-    } catch {
-      // Ignore JSON error
-    }
-    return trimmed;
-  };
-
-  const isMongoId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
-
   const processAttendance = (rawId: string) => {
-    const studentId = extractStudentId(rawId);
+    const studentId = extractStudentIdFromQr(rawId);
     if (!studentId || recordAttendanceMutation.isPending || cooldownRef.current) return;
 
     setErrorMsg(null);
 
-    if (!isMongoId(studentId)) {
-      playBeep();
+    if (!isValidMongoId(studentId)) {
+      playAttendanceBeep(soundEnabled);
       const msg = 'رمز الـ QR غير مجسد بشكل صحيح لحساب الطالب.';
       setErrorMsg(msg);
       toast.error(msg);
@@ -124,7 +81,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
       { groupId, studentId },
       {
         onSuccess: () => {
-          playBeep();
+          playAttendanceBeep(soundEnabled);
           setLastScannedId(studentId);
           const sName = getStudentName(studentId);
           const displayName = sName ? `(${sName})` : '';
@@ -152,7 +109,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           }, 3000);
         },
         onError: (err) => {
-          playBeep();
+          playAttendanceBeep(soundEnabled);
           const msg = toArabicErrorMessage(err, 'فشل تسجيل حضور الطالب بالكود الممسوح');
           setErrorMsg(msg);
           toast.error(msg);
@@ -163,6 +120,11 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
       }
     );
   };
+
+  const processAttendanceRef = useRef(processAttendance);
+  useEffect(() => {
+    processAttendanceRef.current = processAttendance;
+  });
 
   const handleQrImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -177,72 +139,7 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
     setErrorMsg(null);
 
     try {
-      const tempId = 'temp-qr-file-reader-box';
-      let tempEl = document.getElementById(tempId);
-      if (!tempEl) {
-        tempEl = document.createElement('div');
-        tempEl.id = tempId;
-        tempEl.style.display = 'none';
-        document.body.appendChild(tempEl);
-      }
-
-      const html5Qrcode = new Html5Qrcode(tempId);
-      let decodedText: string | null = null;
-
-      
-      try {
-        decodedText = await html5Qrcode.scanFile(file, false);
-      } catch {
-        // Direct scan failed (e.g. image contains surrounding card borders or text)
-      }
-
-      
-      if (!decodedText) {
-        try {
-          const croppedBlob = await new Promise<Blob | null>((resolve) => {
-            const img = new Image();
-            const url = URL.createObjectURL(file);
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              if (!ctx) {
-                URL.revokeObjectURL(url);
-                return resolve(null);
-              }
-
-              
-              const minDim = Math.min(img.width, img.height);
-              const cropSize = Math.floor(minDim * 0.78);
-              const cropX = Math.floor((img.width - cropSize) / 2);
-              const cropY = Math.floor((img.height - cropSize) / 2);
-
-              canvas.width = cropSize;
-              canvas.height = cropSize;
-
-              ctx.fillStyle = '#FFFFFF';
-              ctx.fillRect(0, 0, cropSize, cropSize);
-              ctx.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, cropSize, cropSize);
-
-              URL.revokeObjectURL(url);
-              canvas.toBlob((blob) => resolve(blob), 'image/png');
-            };
-            img.onerror = () => {
-              URL.revokeObjectURL(url);
-              resolve(null);
-            };
-            img.src = url;
-          });
-
-          if (croppedBlob) {
-            const croppedFile = new File([croppedBlob], 'qr_cropped.png', { type: 'image/png' });
-            decodedText = await html5Qrcode.scanFile(croppedFile, false);
-          }
-        } catch {
-          // Cropped scan failed
-        }
-      }
-
-      html5Qrcode.clear();
+      const decodedText = await decodeQrFromImageFile(file);
 
       if (decodedText) {
         processAttendance(decodedText);
@@ -286,13 +183,14 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
         scanner.render(
           (decodedText) => {
             if (decodedText) {
-              processAttendance(decodedText);
+              processAttendanceRef.current(decodedText);
             }
           },
           () => {}
         );
-      } catch (err: any) {
-        setCameraError(err?.message || 'تعذر بدء ماسح الـ QR الضوئي');
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : 'تعذر بدء ماسح الـ QR الضوئي';
+        setCameraError(errMsg);
       }
     }, 200);
 
@@ -301,7 +199,9 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
       if (scanner) {
         try {
           scanner.clear().catch(() => {});
-        } catch {}
+        } catch {
+          // Ignore scanner clear errors
+        }
       }
     };
   }, [isOpen]);
@@ -345,8 +245,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
       `}</style>
 
       <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-5 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-        
-       
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -379,7 +277,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         </div>
 
-        
         <div className="space-y-4 flex-1 overflow-y-auto">
           <div className="relative rounded-2xl bg-slate-950 p-2 border-2 border-slate-800 flex flex-col items-center justify-center min-h-72 overflow-hidden">
             {cameraError ? (
@@ -402,7 +299,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
             )}
           </div>
 
-          
           <div className="flex flex-col items-center justify-center gap-2">
             <label
               htmlFor="qr-file-upload-input"
@@ -429,7 +325,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </p>
         </div>
 
-       
         {errorMsg && (
           <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 flex items-center gap-2 shrink-0">
             <AlertCircle size={16} className="shrink-0" />
@@ -437,7 +332,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-        
         {lastScannedId && (
           <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 flex items-center gap-2.5 shadow-2xs shrink-0 animate-in fade-in">
             <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
@@ -452,7 +346,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-       
         {sessionLog.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-slate-100 shrink-0">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700">
@@ -485,7 +378,6 @@ export const QrAttendanceScannerModal: React.FC<QrAttendanceScannerModalProps> =
           </div>
         )}
 
-       
         <div className="pt-2 border-t border-slate-100 flex justify-end shrink-0">
           <button
             type="button"

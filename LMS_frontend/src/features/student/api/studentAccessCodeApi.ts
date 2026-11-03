@@ -6,7 +6,10 @@ export interface VerifyAccessCodePayload {
 
 export interface VerifyAccessCodeResponse {
   message: string;
-  data?: any;
+  data?: {
+    expiresAt?: string;
+    status?: string;
+  };
 }
 
 export const verifyAccessCode = async (code: string): Promise<VerifyAccessCodeResponse> => {

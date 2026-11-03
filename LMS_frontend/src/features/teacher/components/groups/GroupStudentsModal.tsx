@@ -3,12 +3,10 @@ import { Users, User, UserX, UserCheck, Phone, ArrowLeftRight, KeyRound, Loader2
 import { useGroupStudents } from '../../hooks/useGroupStudents';
 import { useDeactivateStudent } from '../../hooks/useDeactivateStudent';
 import { useActivateStudent } from '../../hooks/useActivateStudent';
-import { moveStudent } from '../../api/teacherGroupsApi';
 import type { Group, GroupStudent } from '../../types/groupManagement';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
 import { StudentDetailsModal } from './StudentDetailsModal';
-import { addDeactivatedStudent } from '../../utils/deactivatedStudentsStorage';
 
 interface GroupStudentsModalProps {
   isOpen: boolean;
@@ -66,15 +64,6 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   const handleConfirmDeactivate = (student: GroupStudent) => {
     deactivateStudentMutation.mutate(student._id, {
       onSuccess: () => {
-        addDeactivatedStudent({
-          _id: student._id,
-          name: student.name,
-          phone: student.phone,
-          parentPhone: student.parentPhone,
-          groupId: group?._id,
-          groupName: group?.name,
-          deactivatedAt: new Date().toISOString(),
-        });
         toast.success(`تم تعطيل حساب الطالب (${student.name}) ونقله لصفحة (تفعيل الطلاب) 🔴`);
         setStudentToDeactivate(null);
         refetch();
@@ -88,16 +77,10 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   const handleActivateStudent = async (student: GroupStudent) => {
     try {
       await activateStudentMutation.mutateAsync(student._id);
-      
-      // Assign back to group if needed
-      if (groupId) {
-        await moveStudent(student._id, { newGroupID: groupId }).catch(() => {});
-      }
-
       toast.success(`تم إعادة تفعيل حساب الطالب (${student.name}) بنجاح! 🟢`);
       refetch();
     } catch (err) {
-      toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء إعادت تفعيل حساب الطالب'));
+      toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء إعادة تفعيل حساب الطالب'));
     }
   };
 

@@ -1,3 +1,5 @@
+import { Grade } from '../../../types/grade';
+
 export interface PaginatedResponse<T> {
   message: string;
   page: number;
@@ -15,6 +17,7 @@ export interface BaseQueryParams {
 export interface Group {
   _id: string;
   name: string;
+  grade?: Grade;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -25,6 +28,7 @@ export interface GroupStudent {
   name: string;
   phone: string;
   parentPhone: string;
+  grade?: Grade;
   isDeactivated?: boolean;
   isActive?: boolean;
 }
@@ -107,10 +111,12 @@ export interface GenerateAccessCodeResponse {
 
 export interface CreateGroupPayload {
   name: string;
+  grade: Grade;
 }
 
 export interface UpdateGroupPayload {
   name?: string;
+  grade?: Grade;
   isActive?: boolean;
 }
 

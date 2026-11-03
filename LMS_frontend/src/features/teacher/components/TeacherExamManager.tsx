@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Award, Plus, Loader2, AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
 import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useCourseExams } from '../../exams/hooks/useCourseExams';
 import { useUpdateExam } from '../hooks/useUpdateExam';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
+import { getGradeShortLabel } from '../../../types/grade';
 import type { ExamListItem } from '../../exams/types/exam';
 import { ExamCard } from './exams/ExamCard';
 import { CreateExamModal } from './exams/CreateExamModal';
@@ -23,13 +24,9 @@ export const TeacherExamManager: React.FC = () => {
     refetch: refetchCourses,
   } = useTeacherCourses();
 
-  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
-
-  useEffect(() => {
-    if (courses && courses.length > 0 && !selectedCourseId) {
-      setSelectedCourseId(courses[0]._id);
-    }
-  }, [courses, selectedCourseId]);
+  const [selectedCourseIdState, setSelectedCourseId] = useState<string>('');
+  const selectedCourseId =
+    selectedCourseIdState || (courses && courses.length > 0 ? courses[0]._id : '');
 
   const {
     data: exams,
@@ -93,7 +90,9 @@ export const TeacherExamManager: React.FC = () => {
               }
               try {
                 localStorage.setItem('teacher_draft_exams', JSON.stringify(nextMap));
-              } catch {}
+              } catch {
+                // Ignore storage errors
+              }
               return nextMap;
             });
           }
@@ -118,7 +117,9 @@ export const TeacherExamManager: React.FC = () => {
           const nextMap = { ...prev, [newExam._id]: newExam };
           try {
             localStorage.setItem('teacher_draft_exams', JSON.stringify(nextMap));
-          } catch {}
+          } catch {
+            // Ignore storage errors
+          }
           return nextMap;
         });
       }
@@ -164,7 +165,6 @@ export const TeacherExamManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
@@ -196,7 +196,6 @@ export const TeacherExamManager: React.FC = () => {
         </button>
       </div>
 
-      
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center justify-between gap-2">
           <label className="text-xs font-extrabold text-slate-700 flex items-center gap-2">
@@ -244,14 +243,13 @@ export const TeacherExamManager: React.FC = () => {
           >
             {courses.map((course) => (
               <option key={course._id} value={course._id}>
-                {course.title}
+                {course.title} {course.grade ? `— (${getGradeShortLabel(course.grade)})` : ''}
               </option>
             ))}
           </select>
         )}
       </div>
 
-    
       {!selectedCourseId ? (
         <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-xs text-center space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
@@ -320,7 +318,6 @@ export const TeacherExamManager: React.FC = () => {
         </div>
       )}
 
-      
       <CreateExamModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}

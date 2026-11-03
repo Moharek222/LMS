@@ -86,6 +86,36 @@ const translateEnglishText = (text: string): string | null => {
   if (lower.includes('only video formats are supported')) {
     return 'يسمح فقط برفع صيغ الفيديو (MP4, WebM, Mov).';
   }
+  if (lower.includes('only pdf files are supported') || lower.includes('invalid pdf key')) {
+    return 'يسمح فقط برفع ملفات بصيغة PDF صالحة.';
+  }
+  if (lower.includes('this lesson does not have a pdf file')) {
+    return 'هذا الدرس لا يحتوي على مذكرة PDF مرفقة.';
+  }
+  if (lower.includes('selected grade does not match the selected group')) {
+    return 'المرحلة الدراسية المختارة لا تتطابق مع المرحلة الدراسية للمجموعة.';
+  }
+  if (lower.includes('group grade has not been configured yet')) {
+    return 'لم يتم تحديد المرحلة الدراسية لهذه المجموعة بعد، يرجى مراجعة المعلم.';
+  }
+  if (lower.includes('cannot register in an inactive group')) {
+    return 'لا يمكن التسجيل في مجموعة غير نشطة.';
+  }
+  if (lower.includes('student grade has not been assigned yet') || lower.includes('student or course grade is not configured') || lower.includes('student or group grade has not been assigned yet')) {
+    return 'لم يتم تحديد المرحلة الدراسية للطالب أو المقرر بعد.';
+  }
+  if (lower.includes('you are not authorized to access this course')) {
+    return 'غير مصرح لك بالوصول لهذا المقرر لأنه يتبع مرحلة دراسية أخرى.';
+  }
+  if (lower.includes('cannot change group grade while students are assigned to it')) {
+    return 'لا يمكن تغيير المرحلة الدراسية للمجموعة طالما يوجد طلاب مسجلون بها.';
+  }
+  if (lower.includes('cannot move student to a group with a different grade')) {
+    return 'لا يمكن نقل الطالب إلى مجموعة تتبع مرحلة دراسية مختلفة.';
+  }
+  if (lower.includes('invalid grade') || lower.includes('grade is required')) {
+    return 'يرجى اختيار مرحلة دراسية صحيحة.';
+  }
   if (lower.includes('invalid credentials') || lower.includes('invalid email or password') || lower.includes('invalid phone number or password')) {
     return 'بيانات الدخول غير صحيحة، يرجى التأكد من رقم الهاتف/البريد وكلمة المرور.';
   }

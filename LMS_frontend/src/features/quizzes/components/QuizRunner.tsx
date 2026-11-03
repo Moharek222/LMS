@@ -4,12 +4,9 @@ import {
   Award,
   AlertTriangle,
   Loader2,
-  CheckCircle2,
-  XCircle,
   ArrowRight,
   Send,
   HelpCircle,
-  RotateCcw,
 } from 'lucide-react';
 import { useStudentQuiz } from '../hooks/useStudentQuiz';
 import { useSubmitQuiz } from '../hooks/useSubmitQuiz';
@@ -18,6 +15,7 @@ import type { StudentQuiz } from '../types/quiz';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
 import type { QuizSubmissionData } from '../api/quizSubmissionApi';
+import { QuizResultCard, QuizActionModals } from './QuizResultCard';
 
 interface QuizRunnerProps {
   lessonId: string;
@@ -40,47 +38,27 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   const isSubmittingRef = useRef<boolean>(false);
   const draftAnswersKey = `lms_quiz_draft_answers_${quizId}`;
 
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [isRetrying, setIsRetrying] = useState<boolean>(false);
-
-  // Restore draft answers safely on mount
-  React.useEffect(() => {
+  const [answers, setAnswers] = useState<Record<string, string>>(() => {
     try {
-      const savedDraft = localStorage.getItem(draftAnswersKey);
+      const savedDraft = localStorage.getItem(`lms_quiz_draft_answers_${quizId}`);
       if (savedDraft) {
         const parsed = JSON.parse(savedDraft);
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          setAnswers(parsed);
-        } else {
-          localStorage.removeItem(draftAnswersKey);
+          return parsed;
         }
-      } else {
-        setAnswers({});
+        localStorage.removeItem(`lms_quiz_draft_answers_${quizId}`);
       }
     } catch {
       // Ignore storage errors
     }
-  }, [quizId, draftAnswersKey]);
+    return {};
+  });
+  const [isRetrying, setIsRetrying] = useState<boolean>(false);
 
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [showExitModal, setShowExitModal] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string>('');
   const [submissionResult, setSubmissionResult] = useState<QuizSubmissionData | null>(null);
-
-  React.useEffect(() => {
-    const hasUnsavedAnswers = Object.keys(answers).length > 0 && !submissionResult;
-    if (!hasUnsavedAnswers) return;
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [answers, submissionResult]);
 
   const quiz: StudentQuiz | undefined = quizData;
   const questions = quiz?.questions || [];
@@ -93,18 +71,38 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
     });
   }, [quizHistoryData, quizId]);
 
-  React.useEffect(() => {
-    if (!isRetrying && existingSubmissionFromHistory && !submissionResult) {
-      setSubmissionResult({
+  const effectiveSubmissionResult = React.useMemo<QuizSubmissionData | null>(() => {
+    if (submissionResult) return submissionResult;
+    if (!isRetrying && existingSubmissionFromHistory) {
+      return {
         score: existingSubmissionFromHistory.score,
         totalQuestions: questions.length || 1,
         isPassed: existingSubmissionFromHistory.isPassed,
-      });
-      if (existingSubmissionFromHistory.isPassed) {
-        onPassed?.();
-      }
+      };
     }
-  }, [existingSubmissionFromHistory, submissionResult, questions.length, onPassed, isRetrying]);
+    return null;
+  }, [submissionResult, isRetrying, existingSubmissionFromHistory, questions.length]);
+
+  React.useEffect(() => {
+    if (!isRetrying && existingSubmissionFromHistory?.isPassed) {
+      onPassed?.();
+    }
+  }, [existingSubmissionFromHistory, onPassed, isRetrying]);
+
+  React.useEffect(() => {
+    const hasUnsavedAnswers = Object.keys(answers).length > 0 && !effectiveSubmissionResult;
+    if (!hasUnsavedAnswers) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [answers, effectiveSubmissionResult]);
 
   const handleSelectOption = (questionId: string, optionText: string) => {
     setAnswers((prev) => {
@@ -138,7 +136,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   };
 
   const handleExecuteSubmission = () => {
-    if (submitQuizMutation.isPending || isSubmittingRef.current || submissionResult) {
+    if (submitQuizMutation.isPending || isSubmittingRef.current || effectiveSubmissionResult) {
       return;
     }
 
@@ -174,10 +172,14 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
             toast.warning(`تم تسليم الاختبار. حصلت على ${data.score} من ${data.totalQuestions}. يمكنك المراجعة والمحاولة مجدداً 💪`);
           }
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
           isSubmittingRef.current = false;
-          const status = err?.response?.status;
-          const msg = err?.message || err?.response?.data?.message || '';
+          const errObj = err as {
+            response?: { status?: number; data?: { message?: string } };
+            message?: string;
+          };
+          const status = errObj?.response?.status;
+          const msg = errObj?.message || errObj?.response?.data?.message || '';
 
           if (status === 409 || msg.includes('already submitted') || msg.includes('409') || msg.includes('CONFLICT')) {
             try {
@@ -202,7 +204,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   };
 
   const handleBackClick = () => {
-    if (submissionResult) {
+    if (effectiveSubmissionResult) {
       onClose();
       return;
     }
@@ -237,92 +239,24 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
     );
   }
 
-  /* Result screen */
-  if (submissionResult) {
-    const score = submissionResult.score ?? (submissionResult as any).totalScore ?? 0;
-    const total = submissionResult.totalQuestions || (submissionResult as any).totalExamPoints || questions.length || 1;
-    const percentage = Math.round((score / total) * 100);
-    const isPassed = submissionResult.isPassed !== undefined ? submissionResult.isPassed : percentage >= 50;
-
+  if (effectiveSubmissionResult) {
     return (
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6 text-center">
-        <div
-          className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto border shadow-sm ${
-            isPassed
-              ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-              : 'bg-amber-50 text-amber-600 border-amber-200'
-          }`}
-        >
-          {isPassed ? <CheckCircle2 size={46} /> : <XCircle size={46} />}
-        </div>
-
-        <div className="space-y-2 max-w-md mx-auto">
-          <h3 className="text-xl sm:text-2xl font-black text-slate-800">
-            {isPassed ? 'مبروك 🎉 تم اجتياز الاختبار بنجاح' : 'لم تحقق درجة النجاح المطلوبة هذه المرة'}
-          </h3>
-          <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-            {isPassed
-              ? 'أحسنت الاستيعاب، استمر في التقدم والمراجعة الفعالة!'
-              : 'يمكنك مراجعة الشرح التفاعلي وإعادة المحاولة مجدداً.'}
-          </p>
-        </div>
-
-        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/90 max-w-sm mx-auto flex items-center justify-around gap-4 shadow-2xs">
-          <div>
-            <span className="text-[11px] text-slate-400 font-bold block mb-0.5">درجتك النهائية</span>
-            <span className="text-2xl font-black text-slate-800">
-              {score} / {total}
-            </span>
-          </div>
-
-          <div className="h-8 w-px bg-slate-200" />
-
-          <div>
-            <span className="text-[11px] text-slate-400 font-bold block mb-0.5">النسبة المئوية</span>
-            <span
-              className={`text-2xl font-black ${
-                isPassed ? 'text-emerald-600' : 'text-amber-600'
-              }`}
-            >
-              {percentage}%
-            </span>
-          </div>
-        </div>
-
-        {quiz?.passingPercentage !== undefined && (
-          <p className="text-xs text-slate-400 font-semibold">
-            درجة النجاح المطلوبة لاجتياز الاختبار: {quiz.passingPercentage}%
-          </p>
-        )}
-
-        <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
-          {!isPassed && (
-            <button
-              onClick={() => {
-                setIsRetrying(true);
-                setSubmissionResult(null);
-                setAnswers({});
-                try {
-                  localStorage.removeItem(draftAnswersKey);
-                } catch {
-                  // Ignore storage errors
-                }
-              }}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition cursor-pointer shadow-sm"
-            >
-              <RotateCcw size={15} />
-              <span>إعادة محاولة حل الاختبار 🔄</span>
-            </button>
-          )}
-
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm"
-          >
-            العودة لقائمة الدروس
-          </button>
-        </div>
-      </div>
+      <QuizResultCard
+        submissionResult={effectiveSubmissionResult}
+        questionsCount={questions.length}
+        passingPercentage={quiz?.passingPercentage}
+        onRetry={() => {
+          setIsRetrying(true);
+          setSubmissionResult(null);
+          setAnswers({});
+          try {
+            localStorage.removeItem(draftAnswersKey);
+          } catch {
+            // Ignore storage errors
+          }
+        }}
+        onClose={onClose}
+      />
     );
   }
 
@@ -330,7 +264,6 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-6 relative">
-      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
           <button
@@ -367,7 +300,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
         <button
           onClick={handleValidateBeforeSubmit}
-          disabled={submitQuizMutation.isPending || isSubmittingRef.current}
+          disabled={submitQuizMutation.isPending}
           className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition cursor-pointer shadow-sm disabled:opacity-50 shrink-0 self-end sm:self-auto"
         >
           <Send size={15} />
@@ -375,7 +308,6 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         </button>
       </div>
 
-      
       {validationError && (
         <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 flex items-center justify-between gap-3 text-amber-800 text-xs font-bold animate-fade-in">
           <div className="flex items-center gap-2">
@@ -386,7 +318,6 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         </div>
       )}
 
-      
       {submitQuizMutation.isError && (
         <div className="bg-red-50 rounded-2xl p-4 border border-red-200 flex items-center justify-between gap-3 text-red-800 text-xs font-bold animate-fade-in">
           <div className="flex items-center gap-2">
@@ -478,7 +409,6 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         })}
       </div>
 
-      
       <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-4 flex-wrap">
         <span className="text-xs text-slate-500 font-semibold">
           تم الإجابة على {answeredCount} من إجمالي {questions.length} سؤال
@@ -486,7 +416,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
         <button
           onClick={handleValidateBeforeSubmit}
-          disabled={submitQuizMutation.isPending || isSubmittingRef.current}
+          disabled={submitQuizMutation.isPending}
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm disabled:opacity-50"
         >
           <Send size={15} />
@@ -494,67 +424,15 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         </button>
       </div>
 
-      
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
-            <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100">
-              <Send size={26} />
-            </div>
-            <h4 className="text-base font-extrabold text-slate-800">تأكيد تسليم الاختبار</h4>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              هل أنت متأكد من رغبتك في تسليم الاختبار واحتساب الإجابات؟
-            </p>
-
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={handleExecuteSubmission}
-                disabled={submitQuizMutation.isPending || isSubmittingRef.current}
-                className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs disabled:opacity-50"
-              >
-                {submitQuizMutation.isPending ? 'جاري التسليم...' : 'تسليم الاختبار'}
-              </button>
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={submitQuizMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
-              >
-                إلغاء
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-     
-      {showExitModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
-              <AlertTriangle size={26} />
-            </div>
-            <h4 className="text-base font-extrabold text-slate-800">مغادرة الاختبار</h4>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              لديك إجابات لم تقم بتسليمها بعد. هل تريد مغادرة شاشة الاختبار؟
-            </p>
-
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={() => setShowExitModal(false)}
-                className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
-              >
-                متابعة الحل
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
-              >
-                الخروج
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <QuizActionModals
+        showConfirmModal={showConfirmModal}
+        showExitModal={showExitModal}
+        isSubmitting={submitQuizMutation.isPending}
+        onConfirmSubmit={handleExecuteSubmission}
+        onCancelConfirm={() => setShowConfirmModal(false)}
+        onCancelExit={() => setShowExitModal(false)}
+        onConfirmExit={onClose}
+      />
     </div>
   );
 };

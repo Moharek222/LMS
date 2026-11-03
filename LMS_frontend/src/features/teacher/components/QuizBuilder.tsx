@@ -4,6 +4,7 @@ import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useCourseLessons } from '../../lessons/hooks/useCourseLessons';
 import { useLessonQuizzes } from '../../quizzes/hooks/useLessonQuizzes';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
+import { getGradeShortLabel } from '../../../types/grade';
 import type { QuizListItem } from '../../quizzes/types/quiz';
 import { QuizCard } from './quizzes/QuizCard';
 import { CreateQuizModal } from './quizzes/CreateQuizModal';
@@ -57,7 +58,7 @@ export const QuizBuilder: React.FC = () => {
                 <option value="">-- اختر كورس --</option>
                 {courses?.map((c) => (
                   <option key={c._id} value={c._id}>
-                    {c.title}
+                    {c.title} {c.grade ? `— (${getGradeShortLabel(c.grade)})` : ''}
                   </option>
                 ))}
               </select>

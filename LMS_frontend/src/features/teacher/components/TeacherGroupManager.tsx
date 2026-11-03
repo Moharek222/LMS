@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTeacherGroups } from '../hooks/useTeacherGroups';
 import type { Group, GroupStudent } from '../types/groupManagement';
+import { Grade, GRADE_OPTIONS } from '../../../types/grade';
 import { GroupCard } from './groups/GroupCard';
 import { CreateGroupModal } from './groups/CreateGroupModal';
 import { EditGroupModal } from './groups/EditGroupModal';
@@ -23,7 +24,7 @@ import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
 export const TeacherGroupManager: React.FC = () => {
   const [page, setPage] = useState<number>(1);
-  const limit = 20;
+  const limit = 100;
 
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
@@ -41,19 +42,26 @@ export const TeacherGroupManager: React.FC = () => {
     currentGroup: Group;
   } | null>(null);
   const [groupSearchQuery, setGroupSearchQuery] = useState<string>('');
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
 
   const { data, isLoading, isError, error, refetch } = useTeacherGroups({
     page,
     limit,
   });
 
-  const groups = data?.data || [];
+  const groups = useMemo(() => data?.data || [], [data]);
   const totalPages = data?.totalPages || 1;
   const totalItems = data?.total || 0;
 
   const filteredGroups = useMemo(() => {
     if (!groups) return [];
-    if (!groupSearchQuery.trim()) return groups;
+    let list = groups;
+
+    if (selectedGradeFilter !== 'ALL') {
+      list = list.filter((g) => g.grade === selectedGradeFilter);
+    }
+
+    if (!groupSearchQuery.trim()) return list;
     const q = groupSearchQuery
       .trim()
       .toLowerCase()
@@ -62,7 +70,7 @@ export const TeacherGroupManager: React.FC = () => {
       .replace(/ى/g, 'ي')
       .replace(/[\u064B-\u065F]/g, '');
 
-    return groups.filter((g) => {
+    return list.filter((g) => {
       const name = (g.name || '')
         .trim()
         .toLowerCase()
@@ -72,7 +80,7 @@ export const TeacherGroupManager: React.FC = () => {
         .replace(/[\u064B-\u065F]/g, '');
       return name.includes(q);
     });
-  }, [groups, groupSearchQuery]);
+  }, [groups, selectedGradeFilter, groupSearchQuery]);
 
   if (isLoading) {
     return (
@@ -137,35 +145,68 @@ export const TeacherGroupManager: React.FC = () => {
         </button>
       </div>
 
-      {/* Group Instant Search Bar */}
+      {/* Grade Filter Tabs + Instant Search Bar */}
       {groups.length > 0 && (
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex items-center justify-between gap-4">
-          <div className="relative w-full max-w-md">
-            <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={groupSearchQuery}
-              onChange={(e) => setGroupSearchQuery(e.target.value)}
-              placeholder="ابحث باسم المجموعة أو الموعد (مثال: السبت، أولى ثانوي)..."
-              className="w-full pr-10 pl-9 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-slate-50/70 transition"
-            />
-            {groupSearchQuery && (
-              <button
-                type="button"
-                onClick={() => setGroupSearchQuery('')}
-                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition cursor-pointer"
-                title="مسح البحث"
-              >
-                <X size={14} />
-              </button>
-            )}
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-3">
+          {/* Grade Filter Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setSelectedGradeFilter('ALL')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
+                selectedGradeFilter === 'ALL'
+                  ? 'bg-[#0D8A82] text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              جميع المراحل ({groups.length})
+            </button>
+            {GRADE_OPTIONS.map((opt) => {
+              const count = groups.filter((g) => g.grade === opt.value).length;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
+                    selectedGradeFilter === opt.value
+                      ? 'bg-[#0D8A82] text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {opt.label} ({count})
+                </button>
+              );
+            })}
           </div>
 
-          {groupSearchQuery && (
-            <span className="text-xs font-bold text-[#0D8A82] bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-100 shrink-0">
-              النتائج: {filteredGroups.length} من {groups.length}
+          {/* Search bar & results counter */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <div className="relative w-full max-w-md">
+              <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={groupSearchQuery}
+                onChange={(e) => setGroupSearchQuery(e.target.value)}
+                placeholder="ابحث باسم المجموعة أو الموعد (مثال: السبت)..."
+                className="w-full pr-10 pl-9 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-slate-50/70 transition"
+              />
+              {groupSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setGroupSearchQuery('')}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  title="مسح البحث"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <span className="text-xs font-bold text-[#0D8A82] bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-100 self-start sm:self-auto shrink-0">
+              المعروض: {filteredGroups.length} من {groups.length}
             </span>
-          )}
+          </div>
         </div>
       )}
 

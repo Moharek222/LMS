@@ -10,64 +10,49 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useActivateStudent } from '../hooks/useActivateStudent';
-import { moveStudent } from '../api/teacherGroupsApi';
-import {
-  getDeactivatedStudents,
-  removeDeactivatedStudent,
-  type DeactivatedStudentItem,
-} from '../utils/deactivatedStudentsStorage';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useDeactivatedStudents } from '../hooks/useDeactivatedStudents';
 import { useToast } from '../../../context/ToastContext';
+import type { DeactivatedStudent } from '../types/groupManagement';
+
+export interface DeactivatedStudentViewItem {
+  _id: string;
+  name: string;
+  phone: string;
+  parentPhone: string;
+  groupId?: string;
+  groupName?: string;
+  deactivatedAt: string;
+}
 
 export const DeactivatedStudentsManager: React.FC = () => {
   const toast = useToast();
   const activateStudentMutation = useActivateStudent();
-  const { data: apiData, isLoading, refetch } = useDeactivatedStudents();
+  const { data: apiData, isLoading, refetch } = useDeactivatedStudents({ page: 1, limit: 100 });
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activatingId, setActivatingId] = useState<string | null>(null);
 
-  const displayStudents = React.useMemo(() => {
-    const map = new Map<string, DeactivatedStudentItem>();
-
-    // 1. Add local deactivated storage items
-    getDeactivatedStudents().forEach((s) => {
-      map.set(s._id, s);
+  const displayStudents = React.useMemo<DeactivatedStudentViewItem[]>(() => {
+    if (!apiData?.data || !Array.isArray(apiData.data)) return [];
+    return apiData.data.map((s: DeactivatedStudent) => {
+      const groupObj = typeof s.groupID === 'object' ? s.groupID : null;
+      return {
+        _id: s._id,
+        name: s.name,
+        phone: s.phone || '',
+        parentPhone: s.parentPhone || '',
+        groupId: groupObj?._id || (typeof s.groupID === 'string' ? s.groupID : undefined),
+        groupName: groupObj?.name || 'مجموعة دراسية',
+        deactivatedAt: s.updatedAt || s.createdAt || '',
+      };
     });
-
-    // 2. Add/override with real API response items from backend
-    if (apiData?.data && Array.isArray(apiData.data)) {
-      apiData.data.forEach((s: any) => {
-        const groupObj = typeof s.groupID === 'object' ? s.groupID : null;
-        map.set(s._id, {
-          _id: s._id,
-          name: s.name,
-          phone: s.phone || '',
-          parentPhone: s.parentPhone || '',
-          groupId: groupObj?._id || (typeof s.groupID === 'string' ? s.groupID : undefined),
-          groupName: groupObj?.name || 'مجموعة دراسية',
-          deactivatedAt: s.updatedAt || s.createdAt || new Date().toISOString(),
-        });
-      });
-    }
-
-    return Array.from(map.values());
   }, [apiData]);
 
-  const handleActivate = async (student: DeactivatedStudentItem) => {
+  const handleActivate = async (student: DeactivatedStudentViewItem) => {
     setActivatingId(student._id);
     try {
-      // 1. Activate student in backend
       await activateStudentMutation.mutateAsync(student._id);
-
-      // 2. Move student back to original group if present
-      if (student.groupId) {
-        await moveStudent(student._id, { newGroupID: student.groupId }).catch(() => {});
-      }
-
-      // 3. Remove from local storage and refetch backend query
-      removeDeactivatedStudent(student._id);
       await refetch();
 
       toast.success(

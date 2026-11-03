@@ -8,7 +8,6 @@ import {
   Mail,
   Eye,
   EyeOff,
-  ShieldCheck,
   Headphones,
   LogIn,
   User,
@@ -18,7 +17,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
-import { Footer } from '../components/layout/Footer';
+import { AuthSplitLayout } from '../components/layout/AuthSplitLayout';
 import type { ApiErrorResponse } from '../types/auth';
 
 const teacherSchema = z.object({
@@ -129,335 +128,287 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
   };
 
   return (
-    <div dir="rtl" className="min-h-screen lg:h-screen w-full flex flex-col lg:grid lg:grid-cols-5 font-sans bg-[#091523] lg:bg-slate-50 overflow-y-auto lg:overflow-hidden">
-      
-      {/* Mobile Header Image Banner */}
-      <div className="lg:hidden relative w-full h-64 sm:h-72 bg-[#091523] shrink-0 overflow-hidden">
-        <img
-          src="/newmobile.png"
-          alt="منصة الصادق في الكيمياء"
-          className="w-full h-full object-cover object-top"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#091523]/20 to-[#091523]/80 pointer-events-none" />
+    <AuthSplitLayout securityText="منصة آمنة ومحمية">
+      <div className="text-center mb-6 sm:mb-7">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-1.5">مرحباً بك</h1>
+        <p className="text-slate-500 text-xs sm:text-sm font-semibold">اختر نوع الحساب للمتابعة</p>
       </div>
 
-      {/* Form Card Container */}
-      <div className="lg:col-span-2 flex flex-col justify-center items-center px-6 py-8 sm:px-10 lg:px-12 bg-[#FAFBFC] rounded-t-[2.5rem] lg:rounded-none -mt-10 lg:mt-0 relative z-20 shadow-2xl lg:shadow-lg min-h-[calc(100vh-13rem)] lg:min-h-full lg:overflow-y-auto">
-        <div className="w-full max-w-md my-auto">
-          
-          {/* Header Title */}
-          <div className="text-center mb-6 sm:mb-7">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-1.5">مرحباً بك</h1>
-            <p className="text-slate-500 text-xs sm:text-sm font-semibold">اختر نوع الحساب للمتابعة</p>
+      {isAuthenticated && user ? (
+        <Navigate to={user.role === 'student' ? '/student/dashboard' : '/teacher/dashboard'} replace />
+      ) : (
+        <>
+          {/* Account Type Selector Buttons */}
+          <div className="grid grid-cols-2 gap-3 mb-2">
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountType('student');
+                  setServerError(null);
+                }}
+                className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
+                  accountType === 'student'
+                    ? 'bg-[#0D8A82] text-white shadow-md shadow-teal-700/25 hover:bg-[#0B766F] hover:shadow-lg hover:-translate-y-0.5'
+                    : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-slate-50 hover:border-[#0D8A82]/50 hover:text-[#0D8A82] hover:shadow-sm hover:-translate-y-0.5'
+                }`}
+              >
+                <GraduationCap size={20} />
+                <span>طالب</span>
+                {accountType === 'student' && <CheckCircle2 size={18} className="text-white fill-white/20" />}
+              </button>
+              <div className={`h-1 w-12 rounded-full mt-2 transition-all duration-300 ${accountType === 'student' ? 'bg-[#0D8A82]' : 'bg-transparent'}`} />
+            </div>
+
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountType('teacher');
+                  setServerError(null);
+                }}
+                className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
+                  accountType === 'teacher'
+                    ? 'bg-[#0D8A82] text-white shadow-md shadow-teal-700/25 hover:bg-[#0B766F] hover:shadow-lg hover:-translate-y-0.5'
+                    : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-slate-50 hover:border-[#0D8A82]/50 hover:text-[#0D8A82] hover:shadow-sm hover:-translate-y-0.5'
+                }`}
+              >
+                <User size={20} />
+                <span>مدرس</span>
+                {accountType === 'teacher' && <CheckCircle2 size={18} className="text-white fill-white/20" />}
+              </button>
+              <div className={`h-1 w-12 rounded-full mt-2 transition-all duration-300 ${accountType === 'teacher' ? 'bg-[#0D8A82]' : 'bg-transparent'}`} />
+            </div>
           </div>
 
-          {isAuthenticated && user ? (
-            <Navigate to={user.role === 'student' ? '/student/dashboard' : '/teacher/dashboard'} replace />
-          ) : (
-            <>
-              {/* Account Type Selector Buttons */}
-              <div className="grid grid-cols-2 gap-3 mb-2">
-                
-                {/* Student Tab Button */}
-                <div className="flex flex-col items-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAccountType('student');
-                      setServerError(null);
-                    }}
-                    className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
-                      accountType === 'student'
-                        ? 'bg-[#0D8A82] text-white shadow-md shadow-teal-700/25 hover:bg-[#0B766F] hover:shadow-lg hover:-translate-y-0.5'
-                        : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-slate-50 hover:border-[#0D8A82]/50 hover:text-[#0D8A82] hover:shadow-sm hover:-translate-y-0.5'
-                    }`}
-                  >
-                    <GraduationCap size={20} />
-                    <span>طالب</span>
-                    {accountType === 'student' && <CheckCircle2 size={18} className="text-white fill-white/20" />}
-                  </button>
-                  
-                  <div className={`h-1 w-12 rounded-full mt-2 transition-all duration-300 ${accountType === 'student' ? 'bg-[#0D8A82]' : 'bg-transparent'}`}></div>
-                </div>
+          <div className="flex items-center justify-center gap-2 mb-6 mt-2">
+            <span className="text-base font-bold text-slate-800">
+              {accountType === 'teacher' ? 'تسجيل دخول المدرس' : 'تسجيل دخول الطالب'}
+            </span>
+            {accountType === 'teacher' ? (
+              <User size={20} className="text-[#0D8A82]" />
+            ) : (
+              <GraduationCap size={20} className="text-[#0D8A82]" />
+            )}
+          </div>
 
-                {/* Teacher Tab Button */}
-                <div className="flex flex-col items-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAccountType('teacher');
-                      setServerError(null);
-                    }}
-                    className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
-                      accountType === 'teacher'
-                        ? 'bg-[#0D8A82] text-white shadow-md shadow-teal-700/25 hover:bg-[#0B766F] hover:shadow-lg hover:-translate-y-0.5'
-                        : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-slate-50 hover:border-[#0D8A82]/50 hover:text-[#0D8A82] hover:shadow-sm hover:-translate-y-0.5'
-                    }`}
-                  >
-                    <User size={20} />
-                    <span>مدرس</span>
-                    {accountType === 'teacher' && <CheckCircle2 size={18} className="text-white fill-white/20" />}
-                  </button>
-                  
-                  <div className={`h-1 w-12 rounded-full mt-2 transition-all duration-300 ${accountType === 'teacher' ? 'bg-[#0D8A82]' : 'bg-transparent'}`}></div>
-                </div>
-              </div>
+          {serverError && (
+            <div className="flex items-center gap-2.5 p-3.5 mb-5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm font-bold">
+              <AlertCircle size={20} className="shrink-0" />
+              <span>{serverError}</span>
+            </div>
+          )}
 
-              {/* Subtitle Badge */}
-              <div className="flex items-center justify-center gap-2 mb-6 mt-2">
-                <span className="text-base font-bold text-slate-800">
-                  {accountType === 'teacher' ? 'تسجيل دخول المدرس' : 'تسجيل دخول الطالب'}
-                </span>
-                {accountType === 'teacher' ? (
-                  <User size={20} className="text-[#0D8A82]" />
-                ) : (
-                  <GraduationCap size={20} className="text-[#0D8A82]" />
+          {accountType === 'teacher' ? (
+            <form className="space-y-4" onSubmit={teacherForm.handleSubmit(onTeacherSubmit)}>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">البريد الإلكتروني</label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    dir="rtl"
+                    placeholder="أدخل بريدك الإلكتروني"
+                    {...teacherForm.register('email')}
+                    className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
+                      teacherForm.formState.errors.email ? 'border-red-400' : 'border-slate-200'
+                    } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
+                  />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                </div>
+                {teacherForm.formState.errors.email && (
+                  <p className="text-xs font-semibold text-red-600 mt-1">
+                    {teacherForm.formState.errors.email.message}
+                  </p>
                 )}
               </div>
 
-              {/* Server Error Alert */}
-              {serverError && (
-                <div className="flex items-center gap-2.5 p-3.5 mb-5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm font-bold">
-                  <AlertCircle size={20} className="shrink-0" />
-                  <span>{serverError}</span>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    dir="rtl"
+                    placeholder="أدخل كلمة المرور"
+                    {...teacherForm.register('password')}
+                    className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
+                      teacherForm.formState.errors.password ? 'border-red-400' : 'border-slate-200'
+                    } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0D8A82] transition-colors p-1 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
-              )}
-
-              {/* Teacher Form */}
-              {accountType === 'teacher' ? (
-                <form className="space-y-4" onSubmit={teacherForm.handleSubmit(onTeacherSubmit)}>
-                  
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">البريد الإلكتروني</label>
-                    <div className="relative">
-                      <input
-                        type="email"
-                        dir="rtl"
-                        placeholder="أدخل بريدك الإلكتروني"
-                        {...teacherForm.register('email')}
-                        className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
-                          teacherForm.formState.errors.email ? 'border-red-400' : 'border-slate-200'
-                        } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
-                      />
-                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                    </div>
-                    {teacherForm.formState.errors.email && (
-                      <p className="text-xs font-semibold text-red-600 mt-1">
-                        {teacherForm.formState.errors.email.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        dir="rtl"
-                        placeholder="أدخل كلمة المرور"
-                        {...teacherForm.register('password')}
-                        className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
-                          teacherForm.formState.errors.password ? 'border-red-400' : 'border-slate-200'
-                        } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        tabIndex={-1}
-                        aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0D8A82] transition-colors p-1 cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                    {teacherForm.formState.errors.password && (
-                      <p className="text-xs font-semibold text-red-600 mt-1">
-                        {teacherForm.formState.errors.password.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <a
-                      href="#forgot-password"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        alert('تواصل مع الدعم الفني لإعادة تعيين كلمة المرور الخاصة بك.');
-                      }}
-                      className="text-xs font-bold text-[#0D8A82] hover:underline transition"
-                    >
-                      نسيت كلمة المرور؟
-                    </a>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
-                      <input
-                        type="checkbox"
-                        {...teacherForm.register('rememberMe')}
-                        className="w-4 h-4 rounded border-slate-300 text-[#0D8A82] focus:ring-[#0D8A82] cursor-pointer accent-[#0D8A82]"
-                      />
-                    </label>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer text-sm"
-                  >
-                    {isLoading ? (
-                      <span>جاري تسجيل الدخول...</span>
-                    ) : (
-                      <>
-                        <span>تسجيل الدخول</span>
-                        <LogIn size={18} className="rotate-180" />
-                      </>
-                    )}
-                  </button>
-                </form>
-              ) : (
-                /* Student Form */
-                <form className="space-y-4" onSubmit={studentForm.handleSubmit(onStudentSubmit)}>
-                  
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">رقم الهاتف</label>
-                    <div className="relative">
-                      <input
-                        type="tel"
-                        dir="rtl"
-                        placeholder="أدخل رقم الهاتف (مثال: 01012345678)"
-                        {...studentForm.register('phone')}
-                        className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
-                          studentForm.formState.errors.phone ? 'border-red-400' : 'border-slate-200'
-                        } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
-                      />
-                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                    </div>
-                    {studentForm.formState.errors.phone && (
-                      <p className="text-xs font-semibold text-red-600 mt-1">
-                        {studentForm.formState.errors.phone.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        dir="rtl"
-                        placeholder="أدخل كلمة المرور"
-                        {...studentForm.register('password')}
-                        className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
-                          studentForm.formState.errors.password ? 'border-red-400' : 'border-slate-200'
-                        } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        tabIndex={-1}
-                        aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0D8A82] transition-colors p-1 cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                    {studentForm.formState.errors.password && (
-                      <p className="text-xs font-semibold text-red-600 mt-1">
-                        {studentForm.formState.errors.password.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
-                      <input
-                        type="checkbox"
-                        {...studentForm.register('rememberMe')}
-                        className="w-4 h-4 rounded border-slate-300 text-[#0D8A82] focus:ring-[#0D8A82] cursor-pointer accent-[#0D8A82]"
-                      />
-                    </label>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer text-sm"
-                  >
-                    {isLoading ? (
-                      <span>جاري تسجيل الدخول...</span>
-                    ) : (
-                      <>
-                        <span>تسجيل الدخول</span>
-                        <LogIn size={18} className="rotate-180" />
-                      </>
-                    )}
-                  </button>
-                </form>
-              )}
-
-              <div className="flex items-center gap-4 my-5">
-                <div className="flex-1 h-px bg-slate-200"></div>
-                <span className="text-slate-400 text-xs font-medium">أو</span>
-                <div className="flex-1 h-px bg-slate-200"></div>
-              </div>
-
-              <a
-                href="https://wa.me/mahmoud_3zb"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-white border border-slate-200/90 hover:bg-slate-50 text-[#0D8A82] font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer text-sm"
-              >
-                <span>تواصل معنا للمساعدة</span>
-                <Headphones size={18} />
-              </a>
-
-              {accountType === 'student' && (
-                <div className="text-center mt-4 pt-2">
-                  <p className="text-xs text-slate-600 font-medium">
-                    ليس لديك حساب طالب؟{' '}
-                    {onNavigateToRegister ? (
-                      <button
-                        type="button"
-                        onClick={onNavigateToRegister}
-                        className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
-                      >
-                        انشاء حساب جديد
-                      </button>
-                    ) : (
-                      <Link
-                        to="/register"
-                        className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
-                      >
-                        انشاء حساب جديد
-                      </Link>
-                    )}
+                {teacherForm.formState.errors.password && (
+                  <p className="text-xs font-semibold text-red-600 mt-1">
+                    {teacherForm.formState.errors.password.message}
                   </p>
-                </div>
-              )}
-
-              <div className="flex flex-col items-center justify-center gap-1 mt-5 text-slate-400">
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-xs font-semibold">منصة آمنة ومحمية</span>
-                  <ShieldCheck size={16} />
-                </div>
-                <Footer variant="card" />
+                )}
               </div>
-            </>
+
+              <div className="flex items-center justify-between pt-1">
+                <a
+                  href="#forgot-password"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert('تواصل مع الدعم الفني لإعادة تعيين كلمة المرور الخاصة بك.');
+                  }}
+                  className="text-xs font-bold text-[#0D8A82] hover:underline transition"
+                >
+                  نسيت كلمة المرور؟
+                </a>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
+                  <input
+                    type="checkbox"
+                    {...teacherForm.register('rememberMe')}
+                    className="w-4 h-4 rounded border-slate-300 text-[#0D8A82] focus:ring-[#0D8A82] cursor-pointer accent-[#0D8A82]"
+                  />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer text-sm"
+              >
+                {isLoading ? (
+                  <span>جاري تسجيل الدخول...</span>
+                ) : (
+                  <>
+                    <span>تسجيل الدخول</span>
+                    <LogIn size={18} className="rotate-180" />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form className="space-y-4" onSubmit={studentForm.handleSubmit(onStudentSubmit)}>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">رقم الهاتف</label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    dir="rtl"
+                    placeholder="أدخل رقم الهاتف (مثال: 01012345678)"
+                    {...studentForm.register('phone')}
+                    className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
+                      studentForm.formState.errors.phone ? 'border-red-400' : 'border-slate-200'
+                    } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
+                  />
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                </div>
+                {studentForm.formState.errors.phone && (
+                  <p className="text-xs font-semibold text-red-600 mt-1">
+                    {studentForm.formState.errors.phone.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    dir="rtl"
+                    placeholder="أدخل كلمة المرور"
+                    {...studentForm.register('password')}
+                    className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
+                      studentForm.formState.errors.password ? 'border-red-400' : 'border-slate-200'
+                    } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0D8A82] transition-colors p-1 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {studentForm.formState.errors.password && (
+                  <p className="text-xs font-semibold text-red-600 mt-1">
+                    {studentForm.formState.errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
+                  <input
+                    type="checkbox"
+                    {...studentForm.register('rememberMe')}
+                    className="w-4 h-4 rounded border-slate-300 text-[#0D8A82] focus:ring-[#0D8A82] cursor-pointer accent-[#0D8A82]"
+                  />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer text-sm"
+              >
+                {isLoading ? (
+                  <span>جاري تسجيل الدخول...</span>
+                ) : (
+                  <>
+                    <span>تسجيل الدخول</span>
+                    <LogIn size={18} className="rotate-180" />
+                  </>
+                )}
+              </button>
+            </form>
           )}
 
-        </div>
-      </div>
+          <div className="flex items-center gap-4 my-5">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-slate-400 text-xs font-medium">أو</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
 
-      {/* Desktop Banner Image Column */}
-      <div className="hidden lg:block lg:col-span-3 relative h-full w-full overflow-hidden select-none bg-[#091523]">
-        <img
-          src="/slogan8k3.png"
-          alt="منصة الصادق - تعلم الكيمياء بفهم وتطبيق وثقة"
-          className="w-full h-full object-cover object-center"
-        />
-      </div>
+          <a
+            href="https://wa.me/mahmoud_3zb"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full bg-white border border-slate-200/90 hover:bg-slate-50 text-[#0D8A82] font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer text-sm"
+          >
+            <span>تواصل معنا للمساعدة</span>
+            <Headphones size={18} />
+          </a>
 
-    </div>
+          {accountType === 'student' && (
+            <div className="text-center mt-4 pt-2">
+              <p className="text-xs text-slate-600 font-medium">
+                ليس لديك حساب طالب؟{' '}
+                {onNavigateToRegister ? (
+                  <button
+                    type="button"
+                    onClick={onNavigateToRegister}
+                    className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
+                  >
+                    انشاء حساب جديد
+                  </button>
+                ) : (
+                  <Link
+                    to="/register"
+                    className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
+                  >
+                    انشاء حساب جديد
+                  </Link>
+                )}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </AuthSplitLayout>
   );
 };
 

@@ -9,6 +9,7 @@ import {
   GraduationCap,
   ShieldCheck,
   Edit3,
+  Layers,
 } from 'lucide-react';
 import { useAuth } from '../../../context/useAuth';
 import { getGroupsApi } from '../../../services/groupService';
@@ -17,6 +18,7 @@ import { StudentQRCode } from './StudentQRCode';
 import { StudentGradebookCard } from './StudentGradebookCard';
 import { EditStudentProfileModal } from './EditStudentProfileModal';
 import { isStudentVerified } from '../../../utils/subscriptionUtils';
+import { getGradeLabel } from '../../../types/grade';
 
 export const StudentProfileCard: React.FC = () => {
   const { user } = useAuth();
@@ -36,6 +38,7 @@ export const StudentProfileCard: React.FC = () => {
 
   const name = myProfile?.name || user?.name || 'غير متوفر';
   const phone = myProfile?.phone || user?.phone || 'غير متوفر';
+  const studentGrade = myProfile?.grade || user?.grade;
   const userId = user?.id;
   const hasActiveSubscription = Boolean(isStudentVerified(userId));
 
@@ -80,7 +83,7 @@ export const StudentProfileCard: React.FC = () => {
                 <h3 className="text-xl font-black text-slate-800">{name}</h3>
                 <span className="px-3 py-1 rounded-xl bg-teal-50 text-[#0D8A82] text-xs font-bold border border-teal-100 flex items-center gap-1">
                   <User size={14} />
-                  <span>طالب في المنصة</span>
+                  <span>طالب • {getGradeLabel(studentGrade)}</span>
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-semibold">
@@ -114,7 +117,16 @@ export const StudentProfileCard: React.FC = () => {
             </div>
           </div>
 
-          
+          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
+              <Layers size={20} />
+            </div>
+            <div>
+              <span className="text-[11px] text-slate-400 font-bold block">المرحلة الدراسية</span>
+              <span className="text-sm font-extrabold text-slate-800">{getGradeLabel(studentGrade)}</span>
+            </div>
+          </div>
+
           <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
               <Phone size={20} />
@@ -125,7 +137,6 @@ export const StudentProfileCard: React.FC = () => {
             </div>
           </div>
 
-          
           <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
               <Users size={20} />

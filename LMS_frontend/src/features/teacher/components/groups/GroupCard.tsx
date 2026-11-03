@@ -1,6 +1,7 @@
 import React from 'react';
 import { FolderKanban, Edit, XCircle, Users } from 'lucide-react';
 import type { Group } from '../../types/groupManagement';
+import { getGradeShortLabel, getGradeBadgeStyle } from '../../../../types/grade';
 
 interface GroupCardProps {
   group: Group;
@@ -16,6 +17,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   onViewStudents,
 }) => {
   const isGroupActive = group.isActive !== false;
+  const gradeBadge = getGradeBadgeStyle(group.grade);
 
   return (
     <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full min-w-0">
@@ -24,8 +26,13 @@ export const GroupCard: React.FC<GroupCardProps> = ({
           <FolderKanban size={18} />
         </div>
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h5 className="text-sm font-bold text-slate-800">{group.name}</h5>
+            {group.grade && (
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${gradeBadge.pill}`}>
+                {getGradeShortLabel(group.grade)}
+              </span>
+            )}
             {isGroupActive ? (
               <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
                 نشطة

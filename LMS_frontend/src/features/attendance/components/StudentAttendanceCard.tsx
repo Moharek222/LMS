@@ -76,10 +76,9 @@ export const StudentAttendanceCard: React.FC = () => {
     return `${mName} ${selectedYear}`;
   }, [selectedMonth, selectedYear]);
 
-  const sheets = sheetsData?.data || [];
-
   // Filter sheets for selected month
   const monthlySheets = useMemo(() => {
+    const sheets = sheetsData?.data || [];
     return sheets
       .filter((sheet) => {
         if (!sheet.date) return false;
@@ -88,7 +87,7 @@ export const StudentAttendanceCard: React.FC = () => {
         return key === selectedMonthKey;
       })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [sheets, selectedMonthKey]);
+  }, [sheetsData, selectedMonthKey]);
 
   // Construct 8 monthly session slots
   const monthlySlots = useMemo(() => {

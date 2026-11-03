@@ -1,23 +1,16 @@
 import apiClient from '../../../services/apiClient';
 import axios from 'axios';
-import type { Course } from '../../courses/types/course';
+import type { Course, CreateCoursePayload, UpdateCoursePayload } from '../../courses/types/course';
 import type { Lesson } from '../../lessons/types/lesson';
 import type { QuizListItem } from '../../quizzes/types/quiz';
 
-export interface CreateCoursePayload {
-  title: string;
-  isPublished?: boolean;
-}
-
-export interface UpdateCoursePayload {
-  title?: string;
-  isPublished?: boolean;
-}
+export type { CreateCoursePayload, UpdateCoursePayload };
 
 export interface CreateLessonPayload {
   title: string;
   description?: string;
   contentUrl: string;
+  pdfKey?: string;
   order: number;
   requiresPassing?: boolean;
 }
@@ -40,6 +33,14 @@ export interface GenerateUploadUrlResponse {
   data: {
     uploadUrl: string;
     fileKey: string;
+  };
+}
+
+export interface GeneratePdfUploadUrlResponse {
+  message: string;
+  data: {
+    uploadUrl: string;
+    pdfKey: string;
   };
 }
 
@@ -83,6 +84,40 @@ export const uploadVideoToR2 = async (
   });
 };
 
+export const generatePdfUploadUrl = async (): Promise<{ uploadUrl: string; pdfKey: string }> => {
+  const response = await apiClient.post<GeneratePdfUploadUrlResponse>('/api/lessons/generate-pdf-upload-url', {
+    contentType: 'application/pdf',
+  });
+  return response.data.data;
+};
+
+export const uploadPdfToR2 = async (
+  uploadUrl: string,
+  file: File,
+  onProgress?: (percentage: number) => void
+): Promise<void> => {
+  await axios.put(uploadUrl, file, {
+    headers: {
+      'Content-Type': 'application/pdf',
+    },
+    onUploadProgress: (progressEvent) => {
+      if (progressEvent.total && onProgress) {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        onProgress(percent);
+      }
+    },
+  });
+};
+
+export const getLessonPdfPreview = async (
+  lessonId: string
+): Promise<{ title: string; pdfPreviewUrl: string }> => {
+  const response = await apiClient.get<{ message: string; data: { title: string; pdfPreviewUrl: string } }>(
+    `/api/lessons/${lessonId}/pdf`
+  );
+  return response.data.data;
+};
+
 export const createLesson = async (courseId: string, payload: CreateLessonPayload): Promise<Lesson> => {
   const response = await apiClient.post<{ message: string; data: Lesson }>(
     `/api/lessons/${courseId}`,
@@ -105,6 +140,9 @@ export const teacherApi = {
   getTeacherCourses,
   generateUploadUrl,
   uploadVideoToR2,
+  generatePdfUploadUrl,
+  uploadPdfToR2,
+  getLessonPdfPreview,
   createLesson,
   createQuiz,
 };

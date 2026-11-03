@@ -16,6 +16,8 @@ import { useStudentWatchHistory } from '../../lessons/hooks/useProgress';
 import { useMyAttendanceStats } from '../../attendance/hooks/useStudentAttendance';
 import { isStudentVerified } from '../../../utils/subscriptionUtils';
 
+import type { Grade } from '../../../types/grade';
+
 export interface CourseItem {
   _id: string;
   title: string;
@@ -25,6 +27,8 @@ export interface StudentHomeUser {
   id?: string;
   _id?: string;
   name?: string;
+  groupId?: string;
+  grade?: Grade;
   hasActiveSubscription?: boolean;
 }
 
@@ -47,11 +51,12 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
   onSelectCourse,
 }) => {
   const studentId = user?.id || user?._id || '';
+  const groupId = user?.groupId || '';
 
   // Fetch real student stats
   const { data: quizHistory } = useStudentQuizHistory({ page: 1, limit: 100 });
   const { data: watchHistory } = useStudentWatchHistory(studentId);
-  const { data: attendanceStats } = useMyAttendanceStats(effectiveCourses[0]?._id);
+  const { data: attendanceStats } = useMyAttendanceStats(groupId);
 
   // 1. Total Passed Quizzes
   const passedQuizzesCount = React.useMemo(() => {

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Loader2, CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import { Plus, Loader2, CheckCircle2, AlertTriangle, X, Layers } from 'lucide-react';
 import { useCreateCourse } from '../../hooks/useCreateCourse';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import { Grade, GRADE_OPTIONS } from '../../../../types/grade';
 
 interface CreateCourseModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
   const createCourseMutation = useCreateCourse();
 
   const [title, setTitle] = useState('');
+  const [grade, setGrade] = useState<Grade>(Grade.ThirdSecondary);
   const [isPublished, setIsPublished] = useState(true);
   const [validationError, setValidationError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -21,6 +23,8 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
   const handleCloseModal = () => {
     if (createCourseMutation.isPending) return;
     onClose();
+    setTitle('');
+    setGrade(Grade.ThirdSecondary);
     setValidationError('');
     setSuccessMessage('');
   };
@@ -32,17 +36,24 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
       return;
     }
 
+    if (!grade) {
+      setValidationError('يرجى تحديد المرحلة الدراسية للمقرر');
+      return;
+    }
+
     setValidationError('');
     setSuccessMessage('');
 
     createCourseMutation.mutate(
       {
         title: title.trim(),
+        grade,
         isPublished,
       },
       {
         onSuccess: () => {
           setTitle('');
+          setGrade(Grade.ThirdSecondary);
           onClose();
           toast.success('تم إنشاء المقرر الدراسي بنجاح ✨');
         },
@@ -106,6 +117,31 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* المرحلة الدراسية */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              المرحلة الدراسية للمقرر *
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {GRADE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setGrade(opt.value)}
+                  disabled={createCourseMutation.isPending}
+                  className={`py-2 px-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    grade === opt.value
+                      ? 'bg-teal-50 border-[#0D8A82] text-[#0D8A82] shadow-xs'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Layers size={14} />
+                  <span>{opt.shortLabel}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               عنوان المقرر / الكورس *
@@ -114,7 +150,7 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="مثال: الكيمياء العضوية - الصف الثالث"
+              placeholder="مثال: الباب الأول - العناصر الانتقالية"
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82]"
             />
           </div>

@@ -8,8 +8,9 @@ export interface CreateStaffPayload {
 
 export interface CreateStaffResponse {
   message: string;
-  teacher?: any;
-  admin?: any;
+  teacher?: AdminUserItem;
+  admin?: AdminUserItem;
+  adminWithoutPassword?: AdminUserItem;
 }
 
 export interface AdminUserItem {

@@ -1,7 +1,10 @@
+import { Grade } from './grade';
+
 export interface Group {
   _id: string;
   name: string;
   level?: string;
+  grade?: Grade;
   isActive?: boolean;
 }
 
