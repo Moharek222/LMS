@@ -56,6 +56,7 @@ export const submitQuiz: RequestHandler<{ quizID: string }, IResponse, IRequest>
                 message: "Quiz not found or not active"
             });
         }
+        const answers=quiz.questions.map(q => q.answer);
 
         const { selectedOption } = req.body;
         let score = 0;
@@ -84,6 +85,7 @@ export const submitQuiz: RequestHandler<{ quizID: string }, IResponse, IRequest>
             message: "Quiz submitted successfully",
             data: {
                 score, 
+                answers,
                 totalQuestions, 
                 isPassed,
                 submission
