@@ -3,7 +3,11 @@ import React, { createContext, useContext, useState, useEffect, useRef, type Rea
 import axios from 'axios';
 import type { UserProfile, TeacherLoginCredentials, StudentLoginCredentials } from '../types/auth';
 import { loginTeacherApi, loginStudentApi, logoutApi, getMeApi } from '../services/authService';
-import { isStudentVerified, clearStudentVerified } from '../utils/subscriptionUtils';
+import {
+  isStudentVerified,
+  startNewLoginSession,
+  clearAllStudentVerifications,
+} from '../utils/subscriptionUtils';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -56,10 +60,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         let isVerified = false;
         if (parsedUser.role === 'student') {
-            isVerified = Boolean(
-              updatedProfile.hasActiveSubscription ||
-              isStudentVerified(userId)
-            );
+          isVerified = isStudentVerified(userId);
         }
 
         const merged: UserProfile = {
@@ -74,6 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error: unknown) {
       // لو التوكن خلص أو اليوزر اتمسح
       if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
+        clearAllStudentVerifications();
         setUser(null);
         localStorage.removeItem('lms_user');
         if (window.location.pathname !== '/login') {
@@ -109,13 +111,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const profile = await loginStudentApi(credentials);
       const studentId = profile.id;
-      const hasActive = Boolean(profile.hasActiveSubscription);
-      if (!hasActive && studentId) {
-        clearStudentVerified(studentId);
+      if (studentId) {
+        startNewLoginSession(studentId);
       }
-      // لا نقوم بالتفعيل التلقائي هنا، بل نلزم الطالب بكتابة كود التفعيل لتأكيد حسابه
-      const isVerified = studentId ? isStudentVerified(studentId) : false;
-      const fullProfile: UserProfile = { ...profile, hasActiveSubscription: isVerified };
+      // نلزم الطالب بكتابة كود التفعيل في كل مرة يسجل فيها الدخول
+      const fullProfile: UserProfile = { ...profile, hasActiveSubscription: false };
       setUser(fullProfile);
       localStorage.setItem('lms_user', JSON.stringify(fullProfile));
     } finally {
@@ -137,20 +137,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       await logoutApi().catch(() => {});
     } finally {
-      try {
-        Object.keys(localStorage).forEach((key) => {
-          if (key.startsWith('lms_code_verified_')) {
-            localStorage.removeItem(key);
-          }
-        });
-        Object.keys(sessionStorage).forEach((key) => {
-          if (key.startsWith('lms_code_verified_')) {
-            sessionStorage.removeItem(key);
-          }
-        });
-      } catch {
-        // Ignore storage errors
-      }
+      clearAllStudentVerifications();
       setUser(null);
       localStorage.removeItem('lms_user');
       setIsLoading(false);
