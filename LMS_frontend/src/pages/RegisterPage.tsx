@@ -121,7 +121,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
 
   const filteredGroups = useMemo(() => {
     if (!selectedGrade) return [];
-    return groups.filter((g) => g.grade === selectedGrade || !g.grade);
+    return groups.filter((g) => g.grade === selectedGrade);
   }, [groups, selectedGrade]);
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { useStudentExam } from './useStudentExam';
 import { useSubmitExam } from './useSubmitExam';
 import { useStudentExamHistory } from '../../student/hooks/useStudentExamHistory';
@@ -14,18 +15,22 @@ interface ExtendedExamHistoryItem {
   status?: 'PENDING' | 'GRADED';
 }
 
-export const useExamRunnerState = (courseId: string, examId: string) => {
+export const useExamRunnerState = (courseId: string, examId: string, studentId?: string) => {
   const { data: exam, isLoading, isError, error, refetch } = useStudentExam(courseId, examId);
   const submitExamMutation = useSubmitExam();
-  const { data: examHistoryData } = useStudentExamHistory({ page: 1, limit: 100 });
+  const { data: examHistoryData, refetch: refetchHistory } = useStudentExamHistory({ page: 1, limit: 100 });
 
-  const sessionStartKey = `lms_exam_session_start_${examId}`;
-  const draftAnswersKey = `lms_exam_draft_answers_${examId}`;
+  const sessionStartKey = studentId
+    ? `lms_exam_session_start_${studentId}_${examId}`
+    : `lms_exam_session_start_${examId}`;
+  const draftAnswersKey = studentId
+    ? `lms_exam_draft_answers_${studentId}_${examId}`
+    : `lms_exam_draft_answers_${examId}`;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>(() => {
     try {
-      const savedDraft = localStorage.getItem(`lms_exam_draft_answers_${examId}`);
+      const savedDraft = localStorage.getItem(draftAnswersKey);
       if (savedDraft) {
         const parsed = JSON.parse(savedDraft);
         if (parsed && typeof parsed === 'object') {
@@ -180,6 +185,15 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
         },
         onError: (err) => {
           isSubmittingRef.current = false;
+          const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+          const backendMsg = axios.isAxiosError(err)
+            ? String(err.response?.data?.message || '')
+            : '';
+
+          if (status === 409 || backendMsg.toLowerCase().includes('already submitted')) {
+            cleanupLocalStorage();
+            void refetchHistory();
+          }
           setSubmitErrorMessage(toArabicErrorMessage(err, 'لا يمكنك إجراء الامتحان أكثر من مرة (تم تسليم الامتحان سابقاً).'));
         },
       }

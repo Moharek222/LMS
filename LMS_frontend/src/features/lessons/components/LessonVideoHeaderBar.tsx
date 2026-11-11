@@ -5,6 +5,8 @@ import {
   CheckCircle2,
   Maximize2,
   Minimize2,
+  Maximize,
+  Minimize,
   Sparkles,
   Gauge,
 } from 'lucide-react';
@@ -16,6 +18,8 @@ interface LessonVideoHeaderBarProps {
   requiresPassing?: boolean;
   isCinemaMode: boolean;
   onToggleCinemaMode: () => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
   playbackSpeed: number;
   onSpeedChange: (speed: number) => void;
   hasPrevious: boolean;
@@ -33,6 +37,8 @@ export const LessonVideoHeaderBar: React.FC<LessonVideoHeaderBarProps> = ({
   requiresPassing,
   isCinemaMode,
   onToggleCinemaMode,
+  isFullscreen = false,
+  onToggleFullscreen,
   playbackSpeed,
   onSpeedChange,
   hasPrevious,
@@ -143,6 +149,7 @@ export const LessonVideoHeaderBar: React.FC<LessonVideoHeaderBarProps> = ({
         </div>
 
         <button
+          type="button"
           onClick={onToggleCinemaMode}
           className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
             isCinemaMode
@@ -157,6 +164,23 @@ export const LessonVideoHeaderBar: React.FC<LessonVideoHeaderBarProps> = ({
             {isCinemaMode ? 'إغلاق وضع التركيز' : 'وضع التركيز السينمائي'}
           </span>
         </button>
+
+        {onToggleFullscreen && (
+          <button
+            type="button"
+            onClick={onToggleFullscreen}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
+              isCinemaMode
+                ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+            }`}
+            title={isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة مع العلامة المائية'}
+            aria-label={isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة'}
+          >
+            {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+            <span className="hidden md:inline">{isFullscreen ? 'إنهاء التكبير' : 'ملء الشاشة'}</span>
+          </button>
+        )}
 
         <button
           onClick={onPreviousLesson}

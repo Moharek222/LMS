@@ -13,6 +13,8 @@ import {
   RotateCw,
   PlayCircle,
   Play,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 import { useLessonVideo } from '../hooks/useLessonVideo';
 import { useMarkLessonAsWatched } from '../hooks/useProgress';
@@ -53,9 +55,11 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const markWatchedMutation = useMarkLessonAsWatched();
 
   const [isCinemaMode, setIsCinemaMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isWindowBlurred, setIsWindowBlurred] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
 
+  const playerContainerRef = useRef<HTMLDivElement>(null);
   const videoNodeRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Player | null>(null);
   const playbackSpeedRef = useRef<number>(1);
@@ -63,6 +67,23 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const hasMarkedProgressRef = useRef(false);
 
   const videoSrc = videoData?.videoUrl;
+
+  const handleToggleFullscreen = useCallback(() => {
+    const container = playerContainerRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen().catch(() => {
+          setIsCinemaMode(true);
+        });
+      } else {
+        setIsCinemaMode((prev) => !prev);
+      }
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, []);
 
   const pauseVideoForSecurity = useCallback(() => {
     if (playerRef.current && !playerRef.current.isDisposed() && !playerRef.current.paused()) {
@@ -137,7 +158,12 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
       playbackRates: [0.75, 1, 1.25, 1.5, 1.75, 2],
       controlBar: {
         pictureInPictureToggle: false,
+        fullscreenToggle: false,
         skipButtons: { forward: 10, backward: 10 },
+      },
+      userActions: {
+        doubleClick: false,
+        hotkeys: false,
       },
       sources: [
         {
@@ -218,12 +244,18 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
       }
     };
 
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, [isCinemaMode, pauseVideoForSecurity]);
 
@@ -249,6 +281,8 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
         requiresPassing={requiresPassing}
         isCinemaMode={isCinemaMode}
         onToggleCinemaMode={() => setIsCinemaMode((prev) => !prev)}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={handleToggleFullscreen}
         playbackSpeed={playbackSpeed}
         onSpeedChange={handleSpeedChange}
         hasPrevious={hasPrevious}
@@ -259,9 +293,21 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
 
       {/* Video.js Host Container */}
       <div
+        ref={playerContainerRef}
         onContextMenu={(e) => e.preventDefault()}
+        onDoubleClick={(e) => {
+          if (
+            e.target instanceof Element &&
+            e.target.closest('.vjs-control-bar, button')
+          ) {
+            return;
+          }
+          handleToggleFullscreen();
+        }}
         className={
-          isCinemaMode
+          isFullscreen
+            ? 'relative w-full h-full bg-black flex items-center justify-center select-none overflow-hidden'
+            : isCinemaMode
             ? 'relative w-full max-w-6xl mx-auto flex-1 min-h-[55vh] max-h-[78vh] bg-black rounded-3xl overflow-hidden border border-slate-800 flex items-center justify-center shadow-2xl select-none'
             : 'relative w-full aspect-video bg-slate-950 rounded-3xl overflow-hidden border border-slate-900 flex items-center justify-center shadow-md select-none'
         }
@@ -294,6 +340,17 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
           <>
             {/* Video.js Root Element */}
             <div ref={videoNodeRef} className="w-full h-full relative" />
+
+            {/* Protected Fullscreen Toggle Button (keeps watermarks visible inside fullscreen) */}
+            <button
+              type="button"
+              onClick={handleToggleFullscreen}
+              className="absolute top-3 left-3 z-30 p-2 rounded-xl bg-black/55 hover:bg-black/80 text-white/90 hover:text-white border border-white/20 backdrop-blur-xs transition cursor-pointer shadow-md"
+              title={isFullscreen ? 'إنهاء ملء الشاشة (Esc)' : 'ملء الشاشة'}
+              aria-label={isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة'}
+            >
+              {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+            </button>
 
             {/* Continuous Floating Watermark */}
             <div className="animate-floating-watermark z-30 pointer-events-none select-none">

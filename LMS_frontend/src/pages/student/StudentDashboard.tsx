@@ -57,14 +57,17 @@ export const StudentDashboard: React.FC = () => {
   const hasUnsentQuizAnswers = React.useCallback((): boolean => {
     if (!isSolvingQuiz || !selectedQuizId) return false;
     try {
-      const draft = localStorage.getItem(`lms_quiz_draft_answers_${selectedQuizId}`);
+      const key = user?.id
+        ? `lms_quiz_draft_answers_${user.id}_${selectedQuizId}`
+        : `lms_quiz_draft_answers_${selectedQuizId}`;
+      const draft = localStorage.getItem(key);
       if (!draft) return false;
       const parsed = JSON.parse(draft);
       return Boolean(parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0);
     } catch {
       return false;
     }
-  }, [isSolvingQuiz, selectedQuizId]);
+  }, [isSolvingQuiz, selectedQuizId, user]);
 
   const executeOrConfirmNav = (action: () => void) => {
     if (hasUnsentQuizAnswers()) {

@@ -4,8 +4,8 @@ import { useStudentQuizHistory } from '../hooks/useStudentQuizHistory';
 import { useStudentExamHistory } from '../hooks/useStudentExamHistory';
 
 export const StudentGradebookCard: React.FC = () => {
-  const { data: quizData, isLoading: isLoadingQuizzes } = useStudentQuizHistory({ page: 1, limit: 20 });
-  const { data: examData, isLoading: isLoadingExams } = useStudentExamHistory({ page: 1, limit: 20 });
+  const { data: quizData, isLoading: isLoadingQuizzes } = useStudentQuizHistory({ page: 1, limit: 100 });
+  const { data: examData, isLoading: isLoadingExams } = useStudentExamHistory({ page: 1, limit: 100 });
 
   const quizzes = quizData?.data || [];
   const exams = examData?.data || [];

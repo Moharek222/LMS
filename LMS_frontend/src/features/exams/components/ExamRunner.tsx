@@ -13,6 +13,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useExamRunnerState } from '../hooks/useExamRunnerState';
+import { useAuth } from '../../../context/useAuth';
 import { ExamTimerHeader } from './ExamTimerHeader';
 import { ExamQuestionCard } from './ExamQuestionCard';
 import { ExamSubmitModal } from './ExamSubmitModal';
@@ -26,6 +27,29 @@ interface ExamRunnerProps {
 export const ExamRunner: React.FC<ExamRunnerProps> = ({
   courseId,
   examId,
+  onClose,
+}) => {
+  const { user } = useAuth();
+  const instanceKey = `${user?.id || 'guest'}-${examId}`;
+  return (
+    <ExamRunnerContent
+      key={instanceKey}
+      courseId={courseId}
+      examId={examId}
+      studentId={user?.id}
+      onClose={onClose}
+    />
+  );
+};
+
+interface ExamRunnerContentProps extends ExamRunnerProps {
+  studentId?: string;
+}
+
+const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
+  courseId,
+  examId,
+  studentId,
   onClose,
 }) => {
   const {
@@ -51,7 +75,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     handleSelectOption,
     handleDoSubmit,
     formatTime,
-  } = useExamRunnerState(courseId, examId);
+  } = useExamRunnerState(courseId, examId, studentId);
 
   if (isLoading) {
     return (
