@@ -11,6 +11,7 @@ export interface SubmitQuizRequestPayload {
 
 export interface QuizSubmissionData {
   score: number;
+  answers?: string[];
   totalQuestions: number;
   isPassed: boolean;
   submission?: {

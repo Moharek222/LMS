@@ -68,3 +68,72 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Video.js Custom Platform Theme & Security Layering */
+.video-js {
+  width: 100% !important;
+  height: 100% !important;
+  font-family: inherit !important;
+  background-color: #020617 !important;
+  user-select: none;
+}
+
+.video-js .vjs-big-play-button {
+  background-color: rgba(13, 138, 130, 0.9) !important;
+  border: 2px solid rgba(255, 255, 255, 0.35) !important;
+  border-radius: 9999px !important;
+  width: 4.2rem !important;
+  height: 4.2rem !important;
+  line-height: 4rem !important;
+  margin-top: -2.1rem !important;
+  margin-left: -2.1rem !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  transition: transform 0.2s ease, background-color 0.2s ease !important;
+  z-index: 25 !important;
+}
+
+.video-js:hover .vjs-big-play-button {
+  background-color: #0d8a82 !important;
+  transform: scale(1.06);
+}
+
+.video-js .vjs-control-bar {
+  background: linear-gradient(to top, rgba(2, 6, 23, 0.92), rgba(2, 6, 23, 0.55), transparent) !important;
+  height: 3.4em !important;
+  padding: 0 0.5rem !important;
+  z-index: 30 !important;
+}
+
+.video-js .vjs-play-progress,
+.video-js .vjs-volume-level {
+  background-color: #0d8a82 !important;
+}
+
+.video-js .vjs-load-progress {
+  background: rgba(255, 255, 255, 0.28) !important;
+}
+
+.video-js .vjs-slider {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+
+/* Continuous Floating / DVD-Bouncing Watermark */
+@keyframes watermarkFloatX {
+  0% { left: 4%; }
+  50% { left: 68%; }
+  100% { left: 4%; }
+}
+
+@keyframes watermarkFloatY {
+  0% { top: 8%; }
+  50% { top: 80%; }
+  100% { top: 8%; }
+}
+
+.animate-floating-watermark {
+  position: absolute;
+  pointer-events: none;
+  animation: watermarkFloatX 19s ease-in-out infinite, watermarkFloatY 14s ease-in-out infinite;
+  will-change: left, top;
+}

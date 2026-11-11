@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import videojs from 'video.js';
+import type Player from 'video.js/dist/types/player';
+import 'video.js/dist/video-js.css';
 import {
   AlertTriangle,
   Video,
@@ -14,6 +17,7 @@ import {
   PlayCircle,
   Sparkles,
   Gauge,
+  Play,
 } from 'lucide-react';
 import { useLessonVideo } from '../hooks/useLessonVideo';
 import { useMarkLessonAsWatched } from '../hooks/useProgress';
@@ -34,6 +38,8 @@ interface LessonVideoPlayerProps {
   isCompletedSession?: boolean;
 }
 
+const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
+
 export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   lessonId,
   courseId,
@@ -52,124 +58,178 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const { data: videoData, isLoading, isError, refetch, isFetching } = useLessonVideo(lessonId);
   const markWatchedMutation = useMarkLessonAsWatched();
 
-  const [isCinemaMode, setIsCinemaMode] = useState<boolean>(false);
-  const [watermarkPosIndex, setWatermarkPosIndex] = useState<number>(0);
-  const [isWindowBlurred, setIsWindowBlurred] = useState<boolean>(false);
-
-  // Playback Speed Controls
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isCinemaMode, setIsCinemaMode] = useState(false);
+  const [isWindowBlurred, setIsWindowBlurred] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-  const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState<boolean>(false);
-  const speedOptions = [0.75, 1, 1.25, 1.5, 1.75, 2];
+  const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState(false);
+
+  const videoNodeRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<Player | null>(null);
+  const hasAutoRefetchedRef = useRef(false);
+  const hasMarkedProgressRef = useRef(false);
+
+  const videoSrc = videoData?.videoUrl;
+
+  // Safely pause video when student leaves window or screen record attempt detected
+  const pauseVideoForSecurity = useCallback(() => {
+    if (playerRef.current && !playerRef.current.isDisposed() && !playerRef.current.paused()) {
+      playerRef.current.pause();
+    }
+    setIsWindowBlurred(true);
+  }, []);
+
+  const resumeVideoFromSecurity = useCallback(() => {
+    setIsWindowBlurred(false);
+    if (playerRef.current && !playerRef.current.isDisposed()) {
+      playerRef.current.play()?.catch(() => {
+        // Safe catch for autoplay restrictions
+      });
+    }
+  }, []);
 
   const handleSpeedChange = (speed: number) => {
     setPlaybackSpeed(speed);
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed;
+    if (playerRef.current && !playerRef.current.isDisposed()) {
+      playerRef.current.playbackRate(speed);
     }
     setIsSpeedMenuOpen(false);
   };
 
-  const hasAutoRefetchedRef = useRef<boolean>(false);
-  const hasMarkedProgressRef = useRef<boolean>(false);
+  // Keep latest callbacks synchronized in refs for stable video.js event listeners
+  const callbackRefs = useRef({ courseId, lessonId, onVideoEnded, refetch });
+  useEffect(() => {
+    callbackRefs.current = { courseId, lessonId, onVideoEnded, refetch };
+  }, [courseId, lessonId, onVideoEnded, refetch]);
 
-  const videoSrc = videoData?.videoUrl;
-
+  // Reset tracking state on lesson change
   useEffect(() => {
     hasAutoRefetchedRef.current = false;
     hasMarkedProgressRef.current = false;
-    if (videoRef.current) {
-      videoRef.current.playbackRate = playbackSpeed;
-    }
-  }, [lessonId, videoSrc, playbackSpeed]);
+  }, [lessonId, videoSrc]);
 
-  const handleVideoError = () => {
-    if (!hasAutoRefetchedRef.current) {
-      hasAutoRefetchedRef.current = true;
-      refetch();
-    }
-  };
-
-  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    const video = e.currentTarget;
-    if (!video.duration || hasMarkedProgressRef.current || !courseId || !lessonId) return;
-
-    // Trigger watch progress API when student views >= 50% of the video
-    const progressRatio = video.currentTime / video.duration;
-    if (progressRatio >= 0.5) {
-      hasMarkedProgressRef.current = true;
-      markWatchedMutation.mutate({ courseID: courseId, lessonID: lessonId });
-    }
-  };
-
-  const handleEnded = () => {
-    if (!hasMarkedProgressRef.current && courseId && lessonId) {
-      hasMarkedProgressRef.current = true;
-      markWatchedMutation.mutate({ courseID: courseId, lessonID: lessonId });
-    }
-    onVideoEnded?.();
-  };
-
-  const studentName = user?.name || 'طالب المنصة';
-  const studentCode = user?.phone || user?.id?.slice(-6) || 'STD-USER';
-  const watermarkText = `🔒 ${studentName} | كود: ${studentCode}`;
-
+  // Video.js Initialization & Cleanup
   useEffect(() => {
-    const interval = setInterval(() => {
-      setWatermarkPosIndex((prev) => (prev + 1) % 5);
-    }, 9000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!videoSrc || !videoNodeRef.current) return;
 
+    const host = videoNodeRef.current;
+    host.innerHTML = '';
+
+    const videoElement = document.createElement('video-js');
+    videoElement.classList.add('vjs-big-play-centered', 'vjs-fill');
+    videoElement.setAttribute('controlsList', 'nodownload noremoteplayback');
+    videoElement.setAttribute('disablePictureInPicture', 'true');
+    videoElement.setAttribute('playsinline', 'true');
+    videoElement.oncontextmenu = (e) => e.preventDefault();
+    host.appendChild(videoElement);
+
+    const isHls = videoSrc.includes('.m3u8');
+    const player = videojs(videoElement, {
+      controls: true,
+      autoplay: false,
+      preload: 'metadata',
+      fill: true,
+      responsive: true,
+      playbackRates: [0.75, 1, 1.25, 1.5, 1.75, 2],
+      controlBar: {
+        pictureInPictureToggle: false,
+        skipButtons: { forward: 10, backward: 10 },
+      },
+      sources: [
+        {
+          src: videoSrc,
+          type: isHls ? 'application/x-mpegURL' : 'video/mp4',
+        },
+      ],
+    });
+
+    playerRef.current = player;
+
+    player.ready(() => {
+      if (player.isDisposed()) return;
+      player.playbackRate(playbackSpeed);
+    });
+
+    player.on('timeupdate', () => {
+      if (player.isDisposed()) return;
+      const duration = player.duration() || 0;
+      const currentTime = player.currentTime() || 0;
+      const { courseId: cId, lessonId: lId } = callbackRefs.current;
+
+      if (!duration || hasMarkedProgressRef.current || !cId || !lId) return;
+
+      if (currentTime / duration >= 0.5) {
+        hasMarkedProgressRef.current = true;
+        markWatchedMutation.mutate({ courseID: cId, lessonID: lId });
+      }
+    });
+
+    player.on('ended', () => {
+      if (player.isDisposed()) return;
+      const { courseId: cId, lessonId: lId, onVideoEnded: onEnd } = callbackRefs.current;
+      if (!hasMarkedProgressRef.current && cId && lId) {
+        hasMarkedProgressRef.current = true;
+        markWatchedMutation.mutate({ courseID: cId, lessonID: lId });
+      }
+      onEnd?.();
+    });
+
+    player.on('error', () => {
+      if (!hasAutoRefetchedRef.current) {
+        hasAutoRefetchedRef.current = true;
+        callbackRefs.current.refetch();
+      }
+    });
+
+    return () => {
+      if (playerRef.current && !playerRef.current.isDisposed()) {
+        playerRef.current.dispose();
+        playerRef.current = null;
+      }
+    };
+  }, [videoSrc]);
+
+  // Security keyboard & window focus listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isCinemaMode) {
         setIsCinemaMode(false);
       }
 
+      // Block screenshot / developer inspect keys
       if (
         e.key === 'F12' ||
         e.key === 'PrintScreen' ||
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j')) ||
-        (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S'))
+        (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
+        (e.ctrlKey && ['u', 'U', 's', 'S', 'p', 'P'].includes(e.key))
       ) {
         e.preventDefault();
         e.stopPropagation();
+        pauseVideoForSecurity();
       }
     };
 
-    const handleWindowBlur = () => {
-      setIsWindowBlurred(true);
-    };
-
-    const handleWindowFocus = () => {
-      setIsWindowBlurred(false);
+    const handleWindowBlur = () => pauseVideoForSecurity();
+    const handleVisibilityChange = () => {
+      if (document.hidden) pauseVideoForSecurity();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isCinemaMode]);
+  }, [isCinemaMode, pauseVideoForSecurity]);
 
-  if (!lessonId) {
-    return null;
-  }
+  if (!lessonId) return null;
 
   const displayTitle = videoData?.title || lessonTitle || 'مشاهدة الدرس';
-
-  const watermarkPositions = [
-    'top-4 right-4',
-    'bottom-12 left-4',
-    'top-4 left-4',
-    'bottom-12 right-4',
-    'top-1/2 right-6 -translate-y-1/2',
-  ];
+  const studentName = user?.name || 'طالب المنصة';
+  const studentCode = user?.phone || user?.id?.slice(-6) || 'STD-USER';
+  const watermarkText = `🔒 ${studentName} | كود: ${studentCode}`;
 
   return (
     <div
@@ -199,11 +259,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
           )}
           <div className="space-y-0.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4
-                className={`text-base sm:text-lg font-extrabold ${
-                  isCinemaMode ? 'text-white' : 'text-slate-800'
-                }`}
-              >
+              <h4 className={`text-base sm:text-lg font-extrabold ${isCinemaMode ? 'text-white' : 'text-slate-800'}`}>
                 {displayTitle}
               </h4>
               {isCompletedSession && (
@@ -219,11 +275,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
                 </span>
               )}
             </div>
-            <p
-              className={`text-xs font-semibold ${
-                isCinemaMode ? 'text-slate-400' : 'text-slate-400'
-              }`}
-            >
+            <p className="text-xs font-semibold text-slate-400">
               الشرح التفاعلي للمحاضرة {isCinemaMode && '• وضع التركيز السينمائي'}
             </p>
           </div>
@@ -258,16 +310,14 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
                 <div className="text-[10px] font-bold text-slate-400 px-2 py-1 border-b border-slate-100 dark:border-slate-800 mb-1">
                   سرعة التشغيل
                 </div>
-                {speedOptions.map((speed) => (
+                {SPEED_OPTIONS.map((speed) => (
                   <button
                     key={speed}
                     type="button"
                     onClick={() => handleSpeedChange(speed)}
                     className={`px-2.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center justify-between transition cursor-pointer ${
                       playbackSpeed === speed
-                        ? isCinemaMode
-                          ? 'bg-[#0D8A82] text-white'
-                          : 'bg-[#0D8A82] text-white'
+                        ? 'bg-[#0D8A82] text-white'
                         : isCinemaMode
                         ? 'hover:bg-slate-800 text-slate-300'
                         : 'hover:bg-teal-50 text-slate-700'
@@ -289,7 +339,6 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
                 : 'bg-teal-50 text-[#0D8A82] border-teal-200/80 hover:bg-teal-100'
             }`}
             title={isCinemaMode ? 'إغلاق وضع التركيز (Esc)' : 'تفعيل وضع التركيز السينمائي'}
-            aria-label={isCinemaMode ? 'إغلاق وضع التركيز' : 'تفعيل وضع التركيز'}
           >
             {isCinemaMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
             <span className="hidden sm:inline">
@@ -310,7 +359,6 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
                 : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-50'
             }`}
             title="الدرس السابق"
-            aria-label="الدرس السابق"
           >
             <ChevronRight size={16} />
             <span>الدرس السابق</span>
@@ -327,7 +375,6 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
                 : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-50'
             }`}
             title="الدرس التالي"
-            aria-label="الدرس التالي"
           >
             <span>الدرس التالي</span>
             <ChevronLeft size={16} />
@@ -335,7 +382,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
         </div>
       </div>
 
-      {/* Video Container */}
+      {/* Video.js Host Container */}
       <div
         onContextMenu={(e) => e.preventDefault()}
         className={
@@ -370,45 +417,52 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
           </div>
         ) : (
           <>
-            <video
-              ref={videoRef}
-              key={videoSrc}
-              controls
-              controlsList="nodownload noremoteplayback"
-              disablePictureInPicture
-              playsInline
-              onTimeUpdate={handleTimeUpdate}
-              onEnded={handleEnded}
-              onError={handleVideoError}
-              onContextMenu={(e) => e.preventDefault()}
-              className="w-full h-full object-contain pointer-events-auto"
-              src={videoSrc}
-            >
-              متصفحك لا يدعم تشغيل الفيديو المباشر.
-            </video>
+            {/* Video.js Root Element */}
+            <div ref={videoNodeRef} className="w-full h-full relative" />
 
-            {/* Dynamic Watermark */}
-            <div
-              className={`absolute transition-all duration-700 ease-in-out pointer-events-none select-none z-30 ${
-                watermarkPositions[watermarkPosIndex]
-              }`}
-            >
-              <div className="px-3.5 py-1.5 rounded-xl bg-black/45 backdrop-blur-xs border border-white/20 text-white/80 text-[11px] font-extrabold tracking-wide flex items-center gap-1.5 shadow-lg">
+            {/* Continuous Floating Watermark */}
+            <div className="animate-floating-watermark z-30 pointer-events-none select-none">
+              <div className="px-3.5 py-1.5 rounded-xl bg-black/60 backdrop-blur-xs border border-white/20 text-white/90 text-xs font-extrabold tracking-wide flex items-center gap-1.5 shadow-lg">
                 <Lock size={12} className="text-teal-400 shrink-0" />
                 <span>{watermarkText}</span>
               </div>
             </div>
 
+            {/* Subtle Center Watermark for Anti-Crop Defense */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-20 overflow-hidden">
+              <span className="text-white/10 text-sm sm:text-2xl font-black tracking-widest -rotate-12 whitespace-nowrap">
+                {studentName} • {studentCode}
+              </span>
+            </div>
+
             {/* Security Blur Overlay */}
             {isWindowBlurred && (
-              <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-40 flex flex-col items-center justify-center text-center p-6 space-y-3 animate-fade-in">
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shadow-inner">
-                  <ShieldAlert size={30} />
+              <div
+                onClick={resumeVideoFromSecurity}
+                className="absolute inset-0 bg-slate-950/92 backdrop-blur-md z-40 flex flex-col items-center justify-center text-center p-6 space-y-4 animate-fade-in cursor-pointer"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shadow-inner">
+                  <ShieldAlert size={34} />
                 </div>
-                <h5 className="text-sm font-extrabold text-white">تم إيقاف العرض لحماية المحتوى 🔒</h5>
-                <p className="text-xs text-slate-300 font-semibold max-w-sm leading-relaxed">
-                  اضغط داخل نافذة الشرح لمتابعة الدرس. تسجيل الشاشة ومغادرة الصفحة محمي بموجب شروط المنصة.
-                </p>
+                <div className="space-y-1.5 max-w-sm">
+                  <h5 className="text-sm sm:text-base font-extrabold text-white">
+                    تم إيقاف الفيديو مؤقتاً لحماية المحتوى 🔒
+                  </h5>
+                  <p className="text-xs text-slate-300 font-semibold leading-relaxed">
+                    تم إيقاف التشغيل تلقائياً بسبب مغادرة نافذة الشرح. تسجيل الشاشة محمي بموجب شروط المنصة.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resumeVideoFromSecurity();
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D8A82] hover:bg-teal-600 text-white text-xs font-extrabold transition cursor-pointer shadow-lg"
+                >
+                  <Play size={15} fill="currentColor" />
+                  <span>استئناف مشاهدة الدرس</span>
+                </button>
               </div>
             )}
           </>
