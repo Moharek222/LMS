@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Edit, Loader2, AlertTriangle, X, CheckCircle2 } from 'lucide-react';
 import type { Lesson } from '../../../lessons/types/lesson';
 import { useUpdateLesson } from '../../../lessons/hooks/useUpdateLesson';
+import { generatePdfUploadUrl, uploadPdfToR2 } from '../../api/teacherApi';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
 import { DirectVideoUploader } from '../../../lessons/components/DirectVideoUploader';
+import { LessonPdfAttachmentField } from './LessonPdfAttachmentField';
 
 interface EditLessonModalProps {
   isOpen: boolean;
@@ -19,26 +21,34 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
   lesson,
   courseId,
 }) => {
+  if (!isOpen || !lesson) return null;
+  return (
+    <EditLessonModalContent
+      key={lesson._id}
+      lesson={lesson}
+      courseId={courseId}
+      onClose={onClose}
+    />
+  );
+};
+
+const EditLessonModalContent: React.FC<{
+  lesson: Lesson;
+  courseId: string;
+  onClose: () => void;
+}> = ({ lesson, courseId, onClose }) => {
   const toast = useToast();
   const updateLessonMutation = useUpdateLesson(courseId);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [order, setOrder] = useState<number | string>(1);
-  const [requiresPassing, setRequiresPassing] = useState(false);
-  const [contentUrl, setContentUrl] = useState('');
+  const [title, setTitle] = useState(lesson.title || '');
+  const [description, setDescription] = useState(lesson.description || '');
+  const [order, setOrder] = useState<number | string>(lesson.order ?? 1);
+  const [requiresPassing, setRequiresPassing] = useState(Boolean(lesson.requiresPassing));
+  const [contentUrl, setContentUrl] = useState(lesson.contentUrl || '');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [hasExistingPdf] = useState(Boolean(lesson.hasPdf || lesson.pdfKey));
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [validationError, setValidationError] = useState('');
-
-  useEffect(() => {
-    if (lesson && isOpen) {
-      setTitle(lesson.title || '');
-      setDescription(lesson.description || '');
-      setOrder(lesson.order ?? 1);
-      setRequiresPassing(Boolean(lesson.requiresPassing));
-      setContentUrl(lesson.contentUrl || '');
-      setValidationError('');
-    }
-  }, [lesson, isOpen]);
 
   const handleCloseModal = () => {
     if (updateLessonMutation.isPending) return;
@@ -46,7 +56,7 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
     setValidationError('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!lesson || !courseId) return;
@@ -71,6 +81,24 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
 
     setValidationError('');
 
+    let newPdfKey: string | undefined = undefined;
+    if (pdfFile) {
+      try {
+        setIsUploadingPdf(true);
+        const pdfRes = await generatePdfUploadUrl();
+        await uploadPdfToR2(pdfRes.uploadUrl, pdfFile);
+        newPdfKey = pdfRes.pdfKey;
+      } catch (err) {
+        setIsUploadingPdf(false);
+        const msg = toArabicErrorMessage(err, 'فشل رفع مذكرة الـ PDF');
+        setValidationError(msg);
+        toast.error(msg);
+        return;
+      } finally {
+        setIsUploadingPdf(false);
+      }
+    }
+
     updateLessonMutation.mutate(
       {
         lessonId: lesson._id,
@@ -78,13 +106,15 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
           title: trimmedTitle,
           description: trimmedDescription || undefined,
           contentUrl: contentUrl || undefined,
+          pdfKey: newPdfKey,
           order: parsedOrder,
           requiresPassing,
         },
       },
       {
         onSuccess: () => {
-          toast.success('تم تعديل الدرس بنجاح 🎓');
+          toast.success('تم تعديل الدرس ومذكرته بنجاح 🎓');
+          setPdfFile(null);
           onClose();
         },
         onError: (err) => {
@@ -95,8 +125,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
       }
     );
   };
-
-  if (!isOpen || !lesson) return null;
 
   return (
     <div
@@ -111,7 +139,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
         className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full p-6 sm:p-8 space-y-6 relative my-8 text-right"
         onClick={(e) => e.stopPropagation()}
       >
-        
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
@@ -141,7 +168,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             </div>
           )}
 
-         
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               عنوان الدرس *
@@ -156,7 +182,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             />
           </div>
 
-         
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               ترتيب الدرس *
@@ -171,7 +196,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             />
           </div>
 
-          
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               وصف الدرس (اختياري)
@@ -186,13 +210,20 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             />
           </div>
 
-          
           <DirectVideoUploader
             currentVideoUrl={contentUrl}
             onVideoUploaded={(key: string) => setContentUrl(key)}
           />
 
-          
+          <LessonPdfAttachmentField
+            pdfFile={pdfFile}
+            onPdfFileChange={setPdfFile}
+            onValidationError={setValidationError}
+            hasExistingPdf={hasExistingPdf}
+            disabled={updateLessonMutation.isPending || isUploadingPdf}
+            inputId="edit-pdf-upload-input"
+          />
+
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
             <span className="text-xs font-bold text-slate-700">يتطلب اجتياز الاختبار للانتقال للدرس التالي</span>
             <button
@@ -211,7 +242,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             </button>
           </div>
 
-          
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"

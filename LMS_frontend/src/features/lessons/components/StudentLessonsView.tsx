@@ -1,12 +1,15 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, Video, BookOpen, Lock, Sparkles, Award, Play, X } from 'lucide-react';
+import { AlertTriangle, Video, BookOpen, Lock, Sparkles, X, FileText, Loader2 } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import type { Lesson } from '../types/lesson';
 import { LessonVideoPlayer } from './LessonVideoPlayer';
+import { StudentLessonCard } from './StudentLessonCard';
 import { QuizList } from '../../quizzes/components/QuizList';
 import { useStudentQuizHistory } from '../../student/hooks/useStudentQuizHistory';
 import { useToast } from '../../../context/ToastContext';
 import { getLessonQuizzes } from '../../quizzes/api/quizzesApi';
+import { getLessonPdfPreview } from '../../teacher/api/teacherApi';
+import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
 export interface CoursePillItem {
   _id: string;
@@ -73,6 +76,24 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
   const { data: quizHistoryData } = useStudentQuizHistory({ page: 1, limit: 100 });
 
   const [passedQuizIdsSession, setPassedQuizIdsSession] = React.useState<Set<string>>(() => new Set());
+  const [loadingPdfLessonId, setLoadingPdfLessonId] = React.useState<string | null>(null);
+
+  const handleDownloadPdf = async (lessonId: string) => {
+    setLoadingPdfLessonId(lessonId);
+    try {
+      const res = await getLessonPdfPreview(lessonId);
+      if (res?.pdfPreviewUrl) {
+        window.open(res.pdfPreviewUrl, '_blank', 'noopener,noreferrer');
+        toast.success('جاري فتح مذكرة الدرس (PDF) 📄');
+      } else {
+        toast.error('رابط مذكرة الـ PDF غير متوفر');
+      }
+    } catch (err) {
+      toast.error(toArabicErrorMessage(err, 'تعذر تحميل مذكرة الدرس، تأكد من اشتراكك في المنصة.'));
+    } finally {
+      setLoadingPdfLessonId(null);
+    }
+  };
 
   const handleQuizPassed = (quizId: string) => {
     setPassedQuizIdsSession((prev) => {
@@ -112,7 +133,6 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
     const map = new Map<string, boolean>();
     if (sortedLessons.length === 0) return map;
 
-    // First lesson is always unlocked
     map.set(sortedLessons[0]._id, true);
 
     for (let i = 0; i < sortedLessons.length - 1; i++) {
@@ -123,14 +143,9 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
       const quizzes = lessonQuizzesQueries[i]?.data || [];
       const hasQuizzes = Array.isArray(quizzes) && quizzes.length > 0;
 
-      let canUnlockNext = false;
-      if (hasQuizzes) {
-        // If the lesson has quizzes, unlocking next requires passing at least one quiz
-        canUnlockNext = quizzes.some((q) => passedQuizSet.has(String(q._id).trim()));
-      } else {
-        // If the lesson has NO quizzes, it automatically passes and unlocks the next lesson
-        canUnlockNext = true;
-      }
+      const canUnlockNext = hasQuizzes
+        ? quizzes.some((q) => passedQuizSet.has(String(q._id).trim()))
+        : true;
 
       if (canUnlockNext) {
         map.set(sortedLessons[i + 1]._id, true);
@@ -162,7 +177,6 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
         return quizzes.some((quiz) => passedQuizSet.has(String(quiz._id).trim()));
       }
 
-      // If no quiz, and subsequent lesson is unlocked, consider it completed/passed
       const isNextUnlocked = idx + 1 < sortedLessons.length
         ? (unlockedMap.get(sortedLessons[idx + 1]._id) ?? false)
         : (unlockedMap.get(lesson._id) ?? false);
@@ -282,14 +296,32 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => onSelectLesson('')}
-                className="px-4 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
-              >
-                <X size={16} />
-                <span>إغلاق الفديو والعودة للقائمة</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedLesson?.hasPdf && (
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadPdf(selectedLesson._id)}
+                    disabled={loadingPdfLessonId === selectedLesson._id}
+                    className="px-3.5 py-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 hover:text-white border border-teal-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                  >
+                    {loadingPdfLessonId === selectedLesson._id ? (
+                      <Loader2 size={15} className="animate-spin text-teal-300" />
+                    ) : (
+                      <FileText size={15} className="text-teal-400" />
+                    )}
+                    <span>مذكرة الدرس (PDF) 📄</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => onSelectLesson('')}
+                  className="px-4 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                >
+                  <X size={16} />
+                  <span>إغلاق الفديو</span>
+                </button>
+              </div>
             </div>
 
             <LessonVideoPlayer
@@ -404,105 +436,19 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
             };
 
             return (
-              <div
+              <StudentLessonCard
                 key={lesson._id}
-                onClick={handleLessonClick}
-                className={`rounded-2xl p-4 sm:p-5 border shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 ${
-                  !isUnlocked
-                    ? 'bg-slate-50/80 border-slate-200 opacity-75 cursor-not-allowed'
-                    : isSelected
-                    ? 'bg-teal-50/70 border-[#0D8A82] ring-1 ring-[#0D8A82] cursor-pointer shadow-xs'
-                    : 'bg-white border-slate-200/90 hover:border-teal-200 hover:bg-slate-50/60 cursor-pointer'
-                }`}
-              >
-                <div className="flex items-center gap-3.5">
-                  <div
-                    className={`w-11 h-11 rounded-2xl font-black text-xs flex items-center justify-center shrink-0 border shadow-2xs ${
-                      !isUnlocked
-                        ? 'bg-slate-200 text-slate-400 border-slate-300'
-                        : isSelected
-                        ? 'bg-[#0D8A82] text-white border-[#0D8A82]'
-                        : isCompleted
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : 'bg-slate-100 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    {!isUnlocked ? <Lock size={18} /> : lesson.order}
-                  </div>
-                  <div className="text-right space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-extrabold text-slate-800">{lesson.title}</h4>
-                      {isCompleted && (
-                        <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200 inline-flex items-center gap-1 shadow-2xs">
-                          <CheckCircle2 size={12} />
-                          <span>تمت المشاهدة</span>
-                        </span>
-                      )}
-                      {!isUnlocked && (
-                        <span className="px-2.5 py-0.5 rounded-lg bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200 inline-flex items-center gap-1 shadow-2xs">
-                          <Lock size={11} />
-                          <span>مغلق 🔒 يتطلب كويز الدرس السابق</span>
-                        </span>
-                      )}
-                      {hasLessonQuiz && isUnlocked && (
-                        hasPassedCurrentQuiz ? (
-                          <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200 inline-flex items-center gap-1 shadow-2xs">
-                            <Award size={12} className="text-emerald-600" />
-                            <span>تم اجتياز الكويز (100%)</span>
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200 inline-flex items-center gap-1 shadow-2xs">
-                            <Sparkles size={12} className="text-amber-600" />
-                            <span>يتطلب اجتياز كويز</span>
-                          </span>
-                        )
-                      )}
-                      {!hasLessonQuiz && isUnlocked && !isCompleted && (
-                        <span className="px-2.5 py-0.5 rounded-lg bg-teal-50 text-teal-700 text-[10px] font-bold border border-teal-200 inline-flex items-center gap-1 shadow-2xs">
-                          <span>متاح للمشاهدة المباشرة</span>
-                        </span>
-                      )}
-                    </div>
-                    {lesson.description && (
-                      <p className="text-xs text-slate-500 font-medium line-clamp-1">{lesson.description}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex items-center gap-2.5 self-end sm:self-auto">
-                  {hasLessonQuiz && isUnlocked && !hasPassedCurrentQuiz && (
-                    <button
-                      onClick={handleStartQuizClick}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 text-white text-xs font-extrabold hover:bg-amber-600 transition shadow-2xs cursor-pointer"
-                    >
-                      <Play size={13} />
-                      <span>حل الكويز 📝</span>
-                    </button>
-                  )}
-
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold border transition ${
-                      !isUnlocked
-                        ? 'bg-slate-100 text-slate-400 border-slate-200'
-                        : isSelected
-                        ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
-                        : 'bg-teal-50 text-[#0D8A82] border-teal-100 hover:bg-teal-100'
-                    }`}
-                  >
-                    {!isUnlocked ? (
-                      <>
-                        <Lock size={14} />
-                        <span>مغلق</span>
-                      </>
-                    ) : (
-                      <>
-                        <Video size={14} />
-                        <span>{isSelected ? 'جاري العرض' : 'تشغيل المحاضرة'}</span>
-                      </>
-                    )}
-                  </span>
-                </div>
-              </div>
+                lesson={lesson}
+                isUnlocked={isUnlocked}
+                isSelected={isSelected}
+                isCompleted={isCompleted}
+                hasLessonQuiz={hasLessonQuiz}
+                hasPassedCurrentQuiz={hasPassedCurrentQuiz}
+                isLoadingPdf={loadingPdfLessonId === lesson._id}
+                onLessonClick={handleLessonClick}
+                onDownloadPdf={() => handleDownloadPdf(lesson._id)}
+                onStartQuizClick={handleStartQuizClick}
+              />
             );
           })}
         </div>

@@ -1,3 +1,5 @@
+import { Grade } from './grade';
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -6,6 +8,7 @@ export interface UserProfile {
   parentPhone?: string;
   role: 'student' | 'teacher' | 'admin';
   groupId?: string;
+  grade?: Grade;
   isActive?: boolean;
   hasActiveSubscription?: boolean;
 }
@@ -31,6 +34,7 @@ export interface StudentRegisterCredentials {
   phone: string;
   parentPhone?: string;
   groupId: string;
+  grade: Grade;
   password?: string;
 }
 
@@ -57,6 +61,7 @@ export interface StudentLoginResponse {
     phone: string;
     parentPhone?: string;
     groupID: string;
+    grade?: Grade;
     hasActiveSubscription: boolean;
   };
 }
@@ -68,6 +73,7 @@ export interface StudentRegisterResponse {
     name: string;
     phone: string;
     groupID: string;
+    grade?: Grade;
   };
 }
 

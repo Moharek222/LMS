@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Edit, Loader2, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Edit, Loader2, X, Layers } from 'lucide-react';
 import { useUpdateGroup } from '../../hooks/useUpdateGroup';
 import type { Group } from '../../types/groupManagement';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import { Grade, GRADE_OPTIONS } from '../../../../types/grade';
 
 interface EditGroupModalProps {
   isOpen: boolean;
@@ -16,21 +17,20 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
   onClose,
   group,
 }) => {
+  if (!isOpen || !group) return null;
+  return <EditGroupModalContent key={group._id} group={group} onClose={onClose} />;
+};
+
+const EditGroupModalContent: React.FC<{ group: Group; onClose: () => void }> = ({
+  group,
+  onClose,
+}) => {
   const toast = useToast();
   const updateGroupMutation = useUpdateGroup();
-  const [name, setName] = useState<string>('');
+  const [name, setName] = useState<string>(group.name || '');
+  const [grade, setGrade] = useState<Grade>(group.grade || Grade.ThirdSecondary);
   const [validationError, setValidationError] = useState<string>('');
   const [apiError, setApiError] = useState<string>('');
-
-  useEffect(() => {
-    if (group) {
-      setName(group.name || '');
-      setValidationError('');
-      setApiError('');
-    }
-  }, [group]);
-
-  if (!isOpen || !group) return null;
 
   const handleClose = () => {
     if (updateGroupMutation.isPending) return;
@@ -63,11 +63,11 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
     updateGroupMutation.mutate(
       {
         groupId: group._id,
-        payload: { name: trimmedName },
+        payload: { name: trimmedName, grade },
       },
       {
         onSuccess: () => {
-          toast.success('تم تعديل اسم المجموعة بنجاح 📁');
+          toast.success('تم تعديل بيانات المجموعة بنجاح 📁');
           setValidationError('');
           setApiError('');
           onClose();
@@ -84,7 +84,6 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6">
-        
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -93,7 +92,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
             <div>
               <h3 className="text-base font-black text-slate-800">تعديل بيانات المجموعة</h3>
               <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                تحديث اسم المجموعة الدراسية
+                تحديث اسم المجموعة والمرحلة الدراسية
               </p>
             </div>
           </div>
@@ -108,8 +107,38 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
           </button>
         </div>
 
-    
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* المرحلة الدراسية للمجموعة */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">
+              المرحلة الدراسية <span className="text-rose-500">*</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {GRADE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setGrade(opt.value);
+                    setValidationError('');
+                    setApiError('');
+                  }}
+                  disabled={updateGroupMutation.isPending}
+                  className={`py-2.5 px-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    grade === opt.value
+                      ? 'bg-teal-50 border-[#0D8A82] text-[#0D8A82] shadow-xs'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Layers size={14} />
+                  <span>{opt.shortLabel}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-400 font-semibold">
+              💡 ملاحظة: يمكن تغيير المرحلة الدراسية فقط إذا كانت المجموعة خالية من الطلاب.
+            </p>
+          </div>
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700">
               اسم المجموعة <span className="text-rose-500">*</span>
@@ -140,7 +169,6 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
             </div>
           )}
 
-        
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"

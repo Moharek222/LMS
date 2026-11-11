@@ -1,4 +1,5 @@
 import apiClient from '../../../services/apiClient';
+import type { Grade } from '../../../types/grade';
 
 export interface UpdateStudentProfilePayload {
   name?: string;
@@ -23,6 +24,7 @@ export interface StudentProfileData {
   phone: string;
   parentPhone?: string;
   role: string;
+  grade?: Grade;
   groupID?: {
     _id: string;
     name: string;

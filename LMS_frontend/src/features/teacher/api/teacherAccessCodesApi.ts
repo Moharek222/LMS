@@ -50,19 +50,27 @@ export const generateGroupAccessCodes = async (
   return response.data.data;
 };
 
-export const getAllStudentsApi = async (): Promise<Array<{ _id: string; name: string; phone: string; groupID?: any }>> => {
+export interface PlatformStudentItem {
+  _id: string;
+  name: string;
+  phone: string;
+  groupID?: { _id: string; name: string } | string;
+}
+
+export const getAllStudentsApi = async (): Promise<PlatformStudentItem[]> => {
   try {
-    const response = await apiClient.get<any>('/api/students', {
+    const response = await apiClient.get<{ data?: PlatformStudentItem[]; students?: PlatformStudentItem[] } | PlatformStudentItem[]>('/api/students', {
       params: { page: 1, limit: 1000 },
     });
-    if (Array.isArray(response.data?.data)) {
-      return response.data.data;
+    const resData = response.data;
+    if (Array.isArray(resData)) {
+      return resData;
     }
-    if (Array.isArray(response.data)) {
-      return response.data;
+    if (resData && 'data' in resData && Array.isArray(resData.data)) {
+      return resData.data;
     }
-    if (Array.isArray(response.data?.students)) {
-      return response.data.students;
+    if (resData && 'students' in resData && Array.isArray(resData.students)) {
+      return resData.students;
     }
     return [];
   } catch (err) {

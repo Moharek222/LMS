@@ -87,7 +87,7 @@ export const AdminUserManagement: React.FC = () => {
     onSuccess: (res, variables) => {
       toast.success(res.message || 'تم إنشاء حساب مدير النظام بنجاح! 🛡️');
 
-      const createdAdmin: AdminUserItem = (res as any)?.adminWithoutPassword || {
+      const createdAdmin: AdminUserItem = res?.adminWithoutPassword || res?.admin || {
         _id: String(Date.now()),
         name: variables.name,
         email: variables.email,

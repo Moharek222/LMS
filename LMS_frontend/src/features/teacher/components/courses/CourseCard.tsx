@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen, Globe, Lock, Loader2, Edit, XCircle } from 'lucide-react';
 import type { Course } from '../../../courses/types/course';
+import { getGradeShortLabel, getGradeBadgeStyle } from '../../../../types/grade';
 
 interface CourseCardProps {
   course: Course;
@@ -18,6 +19,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   onDeactivate,
 }) => {
   const isCourseActive = course.isActive !== false;
+  const gradeBadge = getGradeBadgeStyle(course.grade);
 
   return (
     <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full min-w-0">
@@ -26,8 +28,13 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           <BookOpen size={18} />
         </div>
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h5 className="text-sm font-bold text-slate-800">{course.title}</h5>
+            {course.grade && (
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${gradeBadge.pill}`}>
+                {getGradeShortLabel(course.grade)}
+              </span>
+            )}
             {!isCourseActive && (
               <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200">
                 متوقف

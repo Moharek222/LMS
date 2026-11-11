@@ -62,6 +62,7 @@ export const loginStudentApi = async (credentials: StudentLoginCredentials): Pro
     parentPhone: backendStudent.parentPhone,
     role: 'student',
     groupId: backendStudent.groupID,
+    grade: backendStudent.grade,
     hasActiveSubscription: backendStudent.hasActiveSubscription,
   };
 };
@@ -73,6 +74,7 @@ export const registerStudentApi = async (credentials: StudentRegisterCredentials
     parentPhone: credentials.parentPhone,
     password: credentials.password,
     groupID: credentials.groupId,
+    grade: credentials.grade,
   };
 
   const response = await apiClient.post<StudentRegisterResponse>('/api/auth/register', payload);
@@ -84,7 +86,7 @@ export const refreshSessionApi = async (): Promise<string | null> => {
   if (!refreshToken) return null;
 
   try {
-    let response: any = null;
+    let response;
     try {
       response = await apiClient.post<{ token?: string; accessToken?: string }>('/api/auth/refresh', {
         refreshToken,
@@ -120,17 +122,34 @@ export const logoutApi = async (): Promise<LogoutResponse> => {
   }
 };
 
+interface BackendMeProfile {
+  _id?: string;
+  id?: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  parentPhone?: string;
+  role?: 'student' | 'teacher' | 'admin';
+  grade?: UserProfile['grade'];
+  groupID?: { _id: string; name?: string } | string;
+  isActive?: boolean;
+  isDeactivated?: boolean;
+  hasActiveSubscription?: boolean;
+}
+
 export const getMeApi = async (): Promise<UserProfile | null> => {
-  const response = await apiClient.get<{ message: string; data?: any; user?: any }>('/api/students/me');
+  const response = await apiClient.get<{ message: string; data?: BackendMeProfile; user?: BackendMeProfile }>('/api/students/me');
   const backendData = response.data?.data || response.data?.user;
   if (!backendData) return null;
 
   return {
-    id: backendData._id || backendData.id,
+    id: backendData._id || backendData.id || '',
     name: backendData.name,
     email: backendData.email,
     phone: backendData.phone,
+    parentPhone: backendData.parentPhone,
     role: backendData.role || (backendData.email ? 'teacher' : 'student'),
+    grade: backendData.grade,
     groupId: typeof backendData.groupID === 'object' ? backendData.groupID?._id : backendData.groupID,
     isActive: backendData.isActive !== false && backendData.isDeactivated !== true,
     hasActiveSubscription: backendData.hasActiveSubscription,

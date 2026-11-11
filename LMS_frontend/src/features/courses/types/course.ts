@@ -1,6 +1,9 @@
+import { Grade } from '../../../types/grade';
+
 export interface Course {
   _id: string;
   title: string;
+  grade?: Grade;
   isActive?: boolean;
   isPublished?: boolean;
   createdAt?: string;
@@ -14,6 +17,7 @@ export interface StudentCoursesResponse {
 
 export interface CreateCoursePayload {
   title: string;
+  grade: Grade;
   isPublished?: boolean;
 }
 

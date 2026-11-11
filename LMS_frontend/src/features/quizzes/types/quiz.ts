@@ -5,7 +5,7 @@ export interface QuizListItem {
   duration: number; // in minutes
   passingPercentage: number;
   isActive: boolean;
-  questions?: any[];
+  questions?: Array<StudentQuestion | TeacherQuizQuestion>;
   createdAt?: string;
   updatedAt?: string;
 }

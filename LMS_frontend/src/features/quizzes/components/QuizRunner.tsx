@@ -1,26 +1,27 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import axios from 'axios';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Clock,
   Award,
   AlertTriangle,
   Loader2,
-  CheckCircle2,
-  XCircle,
   ArrowRight,
   Send,
   HelpCircle,
-  RotateCcw,
-  FileText,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 import { useStudentQuiz } from '../hooks/useStudentQuiz';
 import { useSubmitQuiz } from '../hooks/useSubmitQuiz';
-import { useStudentQuizHistory } from '../../student/hooks/useStudentQuizHistory';
+import {
+  useStudentQuizHistory,
+  STUDENT_QUIZ_HISTORY_QUERY_KEY,
+} from '../../student/hooks/useStudentQuizHistory';
 import type { StudentQuiz } from '../types/quiz';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/useAuth';
 import type { QuizSubmissionData } from '../api/quizSubmissionApi';
+import { QuizResultCard, QuizActionModals } from './QuizResultCard';
 
 interface QuizRunnerProps {
   lessonId: string;
@@ -29,52 +30,123 @@ interface QuizRunnerProps {
   onPassed?: () => void;
 }
 
-export const QuizRunner: React.FC<QuizRunnerProps> = ({
+const loadDraftAnswers = (storageKey: string): Record<string, string> => {
+  try {
+    const savedDraft = localStorage.getItem(storageKey);
+    if (!savedDraft) return {};
+    const parsed = JSON.parse(savedDraft);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, string>;
+    }
+    localStorage.removeItem(storageKey);
+  } catch {
+    // Ignore storage errors
+  }
+  return {};
+};
+
+const readCachedCorrectAnswers = (reviewCacheKey: string | null): string[] | undefined => {
+  if (!reviewCacheKey) return undefined;
+  try {
+    const savedReview = localStorage.getItem(reviewCacheKey);
+    if (!savedReview) return undefined;
+    const parsed = JSON.parse(savedReview);
+    if (Array.isArray(parsed?.correctAnswers)) {
+      return parsed.correctAnswers as string[];
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return undefined;
+};
+
+export const QuizRunner: React.FC<QuizRunnerProps> = (props) => {
+  const { user } = useAuth();
+  const instanceKey = `${user?.id || 'guest'}-${props.quizId}`;
+  return <QuizRunnerContent key={instanceKey} {...props} studentId={user?.id} />;
+};
+
+interface QuizRunnerContentProps extends QuizRunnerProps {
+  studentId?: string;
+}
+
+const QuizRunnerContent: React.FC<QuizRunnerContentProps> = ({
   lessonId,
   quizId,
+  studentId,
   onClose,
   onPassed,
 }) => {
   const toast = useToast();
-  const { data: quizData, isLoading: isLoadingQuiz, isError: isQuizError } = useStudentQuiz(lessonId, quizId);
+  const queryClient = useQueryClient();
+  const { data: quizData, isLoading: isLoadingQuiz, isError: isQuizError } = useStudentQuiz(
+    lessonId,
+    quizId
+  );
   const submitQuizMutation = useSubmitQuiz();
-  const { data: quizHistoryData } = useStudentQuizHistory({ page: 1, limit: 100 });
+  const { data: quizHistoryData, refetch: refetchHistory } = useStudentQuizHistory({
+    page: 1,
+    limit: 100,
+  });
 
   const isSubmittingRef = useRef<boolean>(false);
-  const draftAnswersKey = `lms_quiz_draft_answers_${quizId}`;
-  const reviewCacheKey = `lms_quiz_review_answers_${quizId}`;
+  const hasNotifiedPassedRef = useRef<boolean>(false);
 
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [isRetrying, setIsRetrying] = useState<boolean>(false);
-  const [showReview, setShowReview] = useState<boolean>(false);
-  const [reviewFilter, setReviewFilter] = useState<'all' | 'correct' | 'wrong'>('all');
+  const draftAnswersKey = studentId
+    ? `lms_quiz_draft_answers_${studentId}_${quizId}`
+    : `lms_quiz_draft_answers_${quizId}`;
+  const reviewCacheKey = studentId ? `lms_quiz_review_${studentId}_${quizId}` : null;
+  const legacyReviewCacheKey = `lms_quiz_review_answers_${quizId}`;
 
-  // Restore draft answers safely on mount
-  React.useEffect(() => {
-    try {
-      const savedDraft = localStorage.getItem(draftAnswersKey);
-      if (savedDraft) {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          setAnswers(parsed);
-        } else {
-          localStorage.removeItem(draftAnswersKey);
-        }
-      } else {
-        setAnswers({});
-      }
-    } catch {
-      // Ignore storage errors
-    }
-  }, [quizId, draftAnswersKey]);
-
+  const [answers, setAnswers] = useState<Record<string, string>>(() =>
+    loadDraftAnswers(draftAnswersKey)
+  );
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [showExitModal, setShowExitModal] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string>('');
   const [submissionResult, setSubmissionResult] = useState<QuizSubmissionData | null>(null);
 
-  React.useEffect(() => {
-    const hasUnsavedAnswers = Object.keys(answers).length > 0 && !submissionResult;
+  const quiz: StudentQuiz | undefined = quizData;
+  const questions = quiz?.questions || [];
+
+  const existingSubmissionFromHistory = useMemo(() => {
+    if (!quizHistoryData?.data) return null;
+    return quizHistoryData.data.find((sub) => {
+      const subQuizId = typeof sub.quizID === 'string' ? sub.quizID : sub.quizID?._id;
+      return subQuizId && String(subQuizId).trim() === String(quizId).trim();
+    });
+  }, [quizHistoryData, quizId]);
+
+  const effectiveSubmissionResult = useMemo<QuizSubmissionData | null>(() => {
+    if (submissionResult) return submissionResult;
+    if (!existingSubmissionFromHistory) return null;
+
+    return {
+      score: existingSubmissionFromHistory.score,
+      answers: readCachedCorrectAnswers(reviewCacheKey),
+      totalQuestions: questions.length || 1,
+      isPassed: existingSubmissionFromHistory.isPassed,
+      submission: {
+        _id: existingSubmissionFromHistory._id,
+        studentID: existingSubmissionFromHistory.studentID?._id || studentId || '',
+        quizID: String(quizId),
+        selectedOption: existingSubmissionFromHistory.selectedOption || [],
+        score: existingSubmissionFromHistory.score,
+        isPassed: existingSubmissionFromHistory.isPassed,
+        createdAt: existingSubmissionFromHistory.createdAt,
+      },
+    };
+  }, [submissionResult, existingSubmissionFromHistory, reviewCacheKey, questions.length, studentId, quizId]);
+
+  useEffect(() => {
+    if (existingSubmissionFromHistory?.isPassed && !hasNotifiedPassedRef.current) {
+      hasNotifiedPassedRef.current = true;
+      onPassed?.();
+    }
+  }, [existingSubmissionFromHistory, onPassed]);
+
+  useEffect(() => {
+    const hasUnsavedAnswers = Object.keys(answers).length > 0 && !effectiveSubmissionResult;
     if (!hasUnsavedAnswers) return;
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -86,54 +158,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [answers, submissionResult]);
-
-  const quiz: StudentQuiz | undefined = quizData;
-  const questions = quiz?.questions || [];
-
-  const existingSubmissionFromHistory = React.useMemo(() => {
-    if (!quizHistoryData?.data) return null;
-    return quizHistoryData.data.find((sub) => {
-      const subQuizId = typeof sub.quizID === 'string' ? sub.quizID : sub.quizID?._id;
-      return subQuizId && String(subQuizId).trim() === String(quizId).trim();
-    });
-  }, [quizHistoryData, quizId]);
-
-  React.useEffect(() => {
-    if (!isRetrying && existingSubmissionFromHistory && !submissionResult) {
-      let cachedCorrectAnswers: string[] | undefined = undefined;
-      try {
-        const savedReview = localStorage.getItem(reviewCacheKey);
-        if (savedReview) {
-          const parsed = JSON.parse(savedReview);
-          if (Array.isArray(parsed?.correctAnswers)) {
-            cachedCorrectAnswers = parsed.correctAnswers;
-          }
-        }
-      } catch {
-        // Ignore storage errors
-      }
-
-      setSubmissionResult({
-        score: existingSubmissionFromHistory.score,
-        answers: cachedCorrectAnswers,
-        totalQuestions: questions.length || 1,
-        isPassed: existingSubmissionFromHistory.isPassed,
-        submission: {
-          _id: existingSubmissionFromHistory._id,
-          studentID: existingSubmissionFromHistory.studentID?._id || '',
-          quizID: String(quizId),
-          selectedOption: existingSubmissionFromHistory.selectedOption || [],
-          score: existingSubmissionFromHistory.score,
-          isPassed: existingSubmissionFromHistory.isPassed,
-          createdAt: existingSubmissionFromHistory.createdAt,
-        },
-      });
-      if (existingSubmissionFromHistory.isPassed) {
-        onPassed?.();
-      }
-    }
-  }, [existingSubmissionFromHistory, submissionResult, questions.length, onPassed, isRetrying, quizId, reviewCacheKey]);
+  }, [answers, effectiveSubmissionResult]);
 
   const handleSelectOption = (questionId: string, optionText: string) => {
     setAnswers((prev) => {
@@ -167,7 +192,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   };
 
   const handleExecuteSubmission = () => {
-    if (submitQuizMutation.isPending || isSubmittingRef.current || submissionResult) {
+    if (submitQuizMutation.isPending || isSubmittingRef.current || effectiveSubmissionResult) {
       return;
     }
 
@@ -192,7 +217,8 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
           isSubmittingRef.current = false;
           try {
             localStorage.removeItem(draftAnswersKey);
-            if (Array.isArray(data.answers) && data.answers.length > 0) {
+            localStorage.removeItem(legacyReviewCacheKey);
+            if (reviewCacheKey && Array.isArray(data.answers) && data.answers.length > 0) {
               localStorage.setItem(
                 reviewCacheKey,
                 JSON.stringify({
@@ -204,35 +230,36 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
           } catch {
             // Ignore storage errors
           }
-          setShowReview(false);
-          setReviewFilter('all');
+
           setSubmissionResult(data);
+          queryClient.invalidateQueries({ queryKey: STUDENT_QUIZ_HISTORY_QUERY_KEY });
+
+          const percentage = Math.round((data.score / (data.totalQuestions || 1)) * 100);
           if (data.isPassed) {
+            hasNotifiedPassedRef.current = true;
             onPassed?.();
-            toast.success(`أحسنت يا بطل! تم اجتياز الاختبار بنجاح بنسبة ${Math.round((data.score / data.totalQuestions) * 100)}% 🏆✨`);
+            toast.success(`أحسنت يا بطل! تم اجتياز الاختبار بنجاح بنسبة ${percentage}% 🏆✨`);
           } else {
-            toast.warning(`تم تسليم الاختبار. حصلت على ${data.score} من ${data.totalQuestions}. يمكنك المراجعة والمحاولة مجدداً 💪`);
+            toast.warning(
+              `تم تسليم الاختبار. حصلت على ${data.score} من ${data.totalQuestions}. يمكنك مراجعة أخطائك بالأسفل.`
+            );
           }
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
           isSubmittingRef.current = false;
-          const status = err?.response?.status;
-          const msg = err?.message || err?.response?.data?.message || '';
+          const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+          const backendMessage = axios.isAxiosError(err)
+            ? String(err.response?.data?.message || '')
+            : '';
 
-          if (status === 409 || msg.includes('already submitted') || msg.includes('409') || msg.includes('CONFLICT')) {
+          if (status === 409 || backendMessage.toLowerCase().includes('already submitted')) {
             try {
               localStorage.removeItem(draftAnswersKey);
             } catch {
               // Ignore storage errors
             }
-            const fallbackResult: QuizSubmissionData = {
-              score: Object.keys(answers).length,
-              totalQuestions: questions.length,
-              isPassed: true,
-            };
-            setSubmissionResult(fallbackResult);
-            onPassed?.();
-            toast.info('تم تسليم هذا الاختبار سابقاً بنجاح.');
+            void refetchHistory();
+            toast.info('لقد قمت بتسليم هذا الاختبار مسبقاً. جاري عرض نتيجتك المسجلة.');
           } else {
             toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء تسليم الاختبار، حاول مرة أخرى.'));
           }
@@ -242,7 +269,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
   };
 
   const handleBackClick = () => {
-    if (submissionResult) {
+    if (effectiveSubmissionResult) {
       onClose();
       return;
     }
@@ -268,8 +295,9 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         <AlertTriangle size={36} className="text-red-500 mx-auto" />
         <h4 className="text-base font-bold text-slate-800">تعذر تحميل أسئلة الاختبار</h4>
         <button
+          type="button"
           onClick={onClose}
-          className="px-5 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-900 transition"
+          className="px-5 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-900 transition cursor-pointer"
         >
           العودة
         </button>
@@ -277,407 +305,18 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
     );
   }
 
-  /* Result screen */
-  if (submissionResult) {
-    const score = submissionResult.score ?? (submissionResult as any).totalScore ?? 0;
-    const total = submissionResult.totalQuestions || (submissionResult as any).totalExamPoints || questions.length || 1;
-    const percentage = Math.round((score / total) * 100);
-    const isPassed = submissionResult.isPassed !== undefined ? submissionResult.isPassed : percentage >= 50;
-
-    const correctAnswersList: string[] = Array.isArray(submissionResult.answers)
-      ? submissionResult.answers
-      : [];
-
-    const studentSelectedMap = new Map<string, string>();
-    Object.entries(answers).forEach(([qId, ans]) => {
-      if (qId && ans) studentSelectedMap.set(String(qId).trim(), String(ans).trim());
-    });
-    try {
-      const savedReview = localStorage.getItem(reviewCacheKey);
-      if (savedReview) {
-        const parsed = JSON.parse(savedReview);
-        if (parsed?.selectedAnswers && typeof parsed.selectedAnswers === 'object') {
-          Object.entries(parsed.selectedAnswers).forEach(([qId, ans]) => {
-            if (qId && typeof ans === 'string') {
-              studentSelectedMap.set(String(qId).trim(), ans.trim());
-            }
-          });
-        }
-      }
-    } catch {
-      // Ignore storage errors
-    }
-    if (existingSubmissionFromHistory?.selectedOption) {
-      existingSubmissionFromHistory.selectedOption.forEach((item) => {
-        if (item?.QuestionId && item?.selectedAnswer) {
-          studentSelectedMap.set(String(item.QuestionId).trim(), String(item.selectedAnswer).trim());
-        }
-      });
-    }
-    if (submissionResult.submission?.selectedOption) {
-      submissionResult.submission.selectedOption.forEach((item) => {
-        if (item?.QuestionId && item?.selectedAnswer) {
-          studentSelectedMap.set(String(item.QuestionId).trim(), String(item.selectedAnswer).trim());
-        }
-      });
-    }
-
-    const reviewItems = questions.map((q, qIndex) => {
-      const studentAnswer = studentSelectedMap.get(String(q._id).trim()) || '';
-      const correctAnswer =
-        correctAnswersList[qIndex] !== undefined
-          ? String(correctAnswersList[qIndex]).trim()
-          : '';
-      const hasCorrectAnswerKey = Boolean(correctAnswer);
-      const isQuestionCorrect = hasCorrectAnswerKey && studentAnswer === correctAnswer;
-
-      return {
-        q,
-        qIndex,
-        studentAnswer,
-        correctAnswer,
-        hasCorrectAnswerKey,
-        isQuestionCorrect,
-      };
-    });
-
-    const hasAnyCorrectKey = reviewItems.some((item) => item.hasCorrectAnswerKey);
-    const correctCount = hasAnyCorrectKey
-      ? reviewItems.filter((item) => item.isQuestionCorrect).length
-      : score;
-    const wrongCount = hasAnyCorrectKey
-      ? reviewItems.filter((item) => !item.isQuestionCorrect).length
-      : Math.max(0, total - score);
-
-    const filteredReviewItems = reviewItems.filter((item) => {
-      if (!hasAnyCorrectKey || reviewFilter === 'all') return true;
-      if (reviewFilter === 'correct') return item.isQuestionCorrect;
-      return !item.isQuestionCorrect;
-    });
-
+  if (effectiveSubmissionResult) {
     return (
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6 text-center">
-        <div
-          className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto border shadow-sm ${
-            isPassed
-              ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-              : 'bg-amber-50 text-amber-600 border-amber-200'
-          }`}
-        >
-          {isPassed ? <CheckCircle2 size={46} /> : <XCircle size={46} />}
-        </div>
-
-        <div className="space-y-2 max-w-md mx-auto">
-          <h3 className="text-xl sm:text-2xl font-black text-slate-800">
-            {isPassed ? 'مبروك 🎉 تم اجتياز الاختبار بنجاح' : 'لم تحقق درجة النجاح المطلوبة هذه المرة'}
-          </h3>
-          <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-            {isPassed
-              ? 'أحسنت الاستيعاب، يمكنك الآن مراجعة إجاباتك بالتفصيل أو متابعة الدروس!'
-              : 'اضغط على زر "راجع الأسئلة والإجابات" بالأسفل لمعرفة الإجابات الصحيحة وأخطائك.'}
-          </p>
-        </div>
-
-        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/90 max-w-sm mx-auto flex items-center justify-around gap-4 shadow-2xs">
-          <div>
-            <span className="text-[11px] text-slate-400 font-bold block mb-0.5">درجتك النهائية</span>
-            <span className="text-2xl font-black text-slate-800">
-              {score} / {total}
-            </span>
-          </div>
-
-          <div className="h-8 w-px bg-slate-200" />
-
-          <div>
-            <span className="text-[11px] text-slate-400 font-bold block mb-0.5">النسبة المئوية</span>
-            <span
-              className={`text-2xl font-black ${
-                isPassed ? 'text-emerald-600' : 'text-amber-600'
-              }`}
-            >
-              {percentage}%
-            </span>
-          </div>
-        </div>
-
-        {quiz?.passingPercentage !== undefined && (
-          <p className="text-xs text-slate-400 font-semibold">
-            درجة النجاح المطلوبة لاجتياز الاختبار: {quiz.passingPercentage}%
-          </p>
-        )}
-
-        <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
-          {questions.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowReview((prev) => !prev)}
-              className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-extrabold transition cursor-pointer shadow-sm border ${
-                showReview
-                  ? 'bg-slate-800 text-white border-slate-800 hover:bg-slate-900'
-                  : 'bg-teal-50 text-[#0D8A82] border-teal-200 hover:bg-teal-100'
-              }`}
-            >
-              <FileText size={16} />
-              <span>
-                {showReview
-                  ? 'إخفاء مراجعة الأسئلة'
-                  : `راجع الأسئلة والإجابات (${questions.length})`}
-              </span>
-              {showReview ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-            </button>
-          )}
-
-          {!isPassed && (
-            <button
-              onClick={() => {
-                setIsRetrying(true);
-                setShowReview(false);
-                setSubmissionResult(null);
-                setAnswers({});
-                try {
-                  localStorage.removeItem(draftAnswersKey);
-                } catch {
-                  // Ignore storage errors
-                }
-              }}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition cursor-pointer shadow-sm"
-            >
-              <RotateCcw size={15} />
-              <span>إعادة محاولة حل الاختبار 🔄</span>
-            </button>
-          )}
-
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm"
-          >
-            العودة لقائمة الدروس
-          </button>
-        </div>
-
-        {/* Collapsible Questions & Answers Review Section */}
-        {showReview && questions.length > 0 && (
-          <div className="pt-6 border-t border-slate-200 text-right space-y-5 animate-in fade-in duration-200">
-            {/* Header + Filter Pills */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-              <div className="flex items-center gap-2">
-                <HelpCircle size={18} className="text-[#0D8A82] shrink-0" />
-                <h4 className="text-sm sm:text-base font-black text-slate-800">
-                  مراجعة الأسئلة والإجابات النموذجية
-                </h4>
-              </div>
-
-              {hasAnyCorrectKey && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => setReviewFilter('all')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border ${
-                      reviewFilter === 'all'
-                        ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-2xs'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    الكل ({questions.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReviewFilter('correct')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border flex items-center gap-1 ${
-                      reviewFilter === 'correct'
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
-                        : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
-                    }`}
-                  >
-                    <CheckCircle2 size={13} />
-                    <span>صحيحة ({correctCount})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReviewFilter('wrong')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border flex items-center gap-1 ${
-                      reviewFilter === 'wrong'
-                        ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
-                        : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
-                    }`}
-                  >
-                    <XCircle size={13} />
-                    <span>خاطئة ({wrongCount})</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Question Number Navigator Bar */}
-            {hasAnyCorrectKey && (
-              <div className="flex items-center gap-2 flex-wrap bg-white p-3 rounded-2xl border border-slate-200/80">
-                <span className="text-[11px] font-bold text-slate-500 ml-1">انتقال سريع للسؤال:</span>
-                {reviewItems.map((item) => (
-                  <button
-                    key={item.q._id || item.qIndex}
-                    type="button"
-                    onClick={() => {
-                      setReviewFilter('all');
-                      setTimeout(() => {
-                        const el = document.getElementById(`quiz-review-q-${item.qIndex}`);
-                        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 50);
-                    }}
-                    className={`w-8 h-8 rounded-xl text-xs font-black flex items-center justify-center transition cursor-pointer border ${
-                      item.isQuestionCorrect
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
-                        : 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100'
-                    }`}
-                    title={item.isQuestionCorrect ? `سؤال ${item.qIndex + 1}: إجابة صحيحة` : `سؤال ${item.qIndex + 1}: إجابة خاطئة`}
-                  >
-                    {item.qIndex + 1}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Filtered Questions List */}
-            {filteredReviewItems.length === 0 ? (
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs font-bold text-slate-500">
-                {reviewFilter === 'wrong'
-                  ? 'ما شاء الله! لا توجد لديك أي إجابات خاطئة في هذا الاختبار 🎉'
-                  : 'لا توجد أسئلة مطابقة لهذا الفلتر'}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredReviewItems.map(({ q, qIndex, studentAnswer, correctAnswer, hasCorrectAnswerKey, isQuestionCorrect }) => (
-                  <div
-                    id={`quiz-review-q-${qIndex}`}
-                    key={q._id || qIndex}
-                    className={`rounded-2xl p-4 sm:p-5 border transition-all ${
-                      hasCorrectAnswerKey
-                        ? isQuestionCorrect
-                          ? 'bg-emerald-50/25 border-emerald-200'
-                          : 'bg-rose-50/25 border-rose-200'
-                        : 'bg-slate-50/70 border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-start gap-2.5">
-                        <span
-                          className={`w-7 h-7 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 border ${
-                            hasCorrectAnswerKey
-                              ? isQuestionCorrect
-                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                : 'bg-rose-600 text-white border-rose-600'
-                              : 'bg-slate-200 text-slate-700 border-slate-300'
-                          }`}
-                        >
-                          {qIndex + 1}
-                        </span>
-                        <h5 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-relaxed pt-0.5">
-                          {q.question}
-                        </h5>
-                      </div>
-
-                      {hasCorrectAnswerKey && (
-                        <span
-                          className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold shrink-0 inline-flex items-center gap-1 border ${
-                            isQuestionCorrect
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                              : 'bg-rose-100 text-rose-800 border-rose-300'
-                          }`}
-                        >
-                          {isQuestionCorrect ? (
-                            <>
-                              <CheckCircle2 size={13} />
-                              <span>إجابة صحيحة (+1)</span>
-                            </>
-                          ) : (
-                            <>
-                              <XCircle size={13} />
-                              <span>إجابة خاطئة (0)</span>
-                            </>
-                          )}
-                        </span>
-                      )}
-                    </div>
-
-                    {q.questionImage?.trim() && (
-                      <div className="mb-3 rounded-xl border border-slate-200 bg-white p-2 flex items-center justify-center">
-                        <img
-                          src={q.questionImage.trim()}
-                          alt="صورة السؤال"
-                          className="max-h-52 object-contain rounded-lg"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-2 pr-1 sm:pr-9">
-                      {q.options.map((optionText, optIndex) => {
-                        const trimmedOption = String(optionText).trim();
-                        const isStudentChoice = studentAnswer === trimmedOption;
-                        const isRightOption = hasCorrectAnswerKey && correctAnswer === trimmedOption;
-
-                        let optionStyle = 'bg-white border-slate-200 text-slate-600 opacity-85';
-                        if (isRightOption) {
-                          optionStyle =
-                            'bg-emerald-50 border-emerald-400 text-emerald-900 ring-1 ring-emerald-400 font-bold';
-                        } else if (isStudentChoice && hasCorrectAnswerKey && !isRightOption) {
-                          optionStyle =
-                            'bg-rose-50 border-rose-300 text-rose-900 ring-1 ring-rose-300 font-bold';
-                        } else if (isStudentChoice && !hasCorrectAnswerKey) {
-                          optionStyle =
-                            'bg-teal-50 border-[#0D8A82] text-[#0D8A82] ring-1 ring-[#0D8A82] font-bold';
-                        }
-
-                        return (
-                          <div
-                            key={optIndex}
-                            className={`flex items-center justify-between gap-3 p-3 rounded-xl border text-xs transition-all ${optionStyle}`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              {isRightOption ? (
-                                <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                              ) : isStudentChoice && hasCorrectAnswerKey ? (
-                                <XCircle size={16} className="text-rose-600 shrink-0" />
-                              ) : (
-                                <span className="w-4 h-4 rounded-full border border-slate-300 shrink-0 inline-block" />
-                              )}
-                              <span className="leading-relaxed">{optionText}</span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {isRightOption && isStudentChoice && (
-                                <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-extrabold">
-                                  إجابتك الصحيحة ✓
-                                </span>
-                              )}
-                              {isRightOption && !isStudentChoice && (
-                                <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-extrabold">
-                                  الإجابة الصحيحة ✓
-                                </span>
-                              )}
-                              {isStudentChoice && hasCorrectAnswerKey && !isRightOption && (
-                                <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-extrabold">
-                                  إجابتك الخاطئة ✗
-                                </span>
-                              )}
-                              {isStudentChoice && !hasCorrectAnswerKey && (
-                                <span className="px-2 py-0.5 rounded-md bg-[#0D8A82] text-white text-[10px] font-extrabold">
-                                  إجابتك المختارة
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <QuizResultCard
+        submissionResult={effectiveSubmissionResult}
+        questions={questions}
+        answers={answers}
+        existingSubmissionFromHistory={existingSubmissionFromHistory}
+        reviewCacheKey={reviewCacheKey}
+        passingPercentage={quiz?.passingPercentage}
+        allowRetry={false}
+        onClose={onClose}
+      />
     );
   }
 
@@ -685,10 +324,10 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
 
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-6 relative">
-      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={handleBackClick}
             className="p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
             title="رجوع"
@@ -712,8 +351,8 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
               )}
               {quiz?.passingPercentage !== undefined && (
                 <span className="flex items-center gap-1">
-                  <Award size={14} className="text-amber-600" />
-                  <span>درجة النجاح: {quiz.passingPercentage}%</span>
+                  <Award size={14} className="text-emerald-600" />
+                  <span>النجاح: {quiz.passingPercentage}%</span>
                 </span>
               )}
             </div>
@@ -721,195 +360,135 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({
         </div>
 
         <button
+          type="button"
           onClick={handleValidateBeforeSubmit}
-          disabled={submitQuizMutation.isPending || isSubmittingRef.current}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition cursor-pointer shadow-sm disabled:opacity-50 shrink-0 self-end sm:self-auto"
+          disabled={submitQuizMutation.isPending || questions.length === 0}
+          className="px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Send size={15} />
-          <span>{submitQuizMutation.isPending ? 'جاري التسليم...' : 'تسليم الاختبار'}</span>
+          {submitQuizMutation.isPending ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              <span>جاري التصحيح...</span>
+            </>
+          ) : (
+            <>
+              <Send size={15} />
+              <span>تسليم الاختبار</span>
+            </>
+          )}
         </button>
       </div>
 
-      
       {validationError && (
-        <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 flex items-center justify-between gap-3 text-amber-800 text-xs font-bold animate-fade-in">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} className="text-amber-600 shrink-0" />
-            <span>{validationError}</span>
-          </div>
-          <span className="text-[11px] text-amber-700">يرجى الإجابة على كافة الأسئلة قبل التسليم</span>
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-2">
+          <AlertTriangle size={18} className="shrink-0" />
+          <span>{validationError}</span>
         </div>
       )}
 
-      
-      {submitQuizMutation.isError && (
-        <div className="bg-red-50 rounded-2xl p-4 border border-red-200 flex items-center justify-between gap-3 text-red-800 text-xs font-bold animate-fade-in">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} className="text-red-600 shrink-0" />
-            <span>
-              {toArabicErrorMessage(submitQuizMutation.error, 'حدث خطأ أثناء تسليم الاختبار، حاول مرة أخرى.')}
-            </span>
-          </div>
+      {questions.length === 0 ? (
+        <div className="p-8 text-center text-slate-400 text-xs font-semibold">
+          لا توجد أسئلة مضافة في هذا الاختبار حالياً.
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {questions.map((q, qIndex) => {
+            const selectedAns = answers[q._id];
+
+            return (
+              <div
+                key={q._id || qIndex}
+                className="p-5 sm:p-6 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-4"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="w-7 h-7 rounded-xl bg-teal-50 text-[#0D8A82] font-bold text-xs flex items-center justify-center shrink-0 border border-teal-100">
+                    {qIndex + 1}
+                  </span>
+                  <h4 className="text-sm sm:text-base font-extrabold text-slate-800 leading-relaxed pt-0.5">
+                    {q.question}
+                  </h4>
+                </div>
+
+                {q.questionImage?.trim() && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-2 flex items-center justify-center">
+                    <img
+                      src={q.questionImage.trim()}
+                      alt="صورة السؤال"
+                      className="max-h-56 object-contain rounded-lg"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2.5 pr-1 sm:pr-10">
+                  {q.options.map((optionText, optIndex) => {
+                    const isSelected = selectedAns === optionText;
+
+                    return (
+                      <label
+                        key={optIndex}
+                        onClick={() => handleSelectOption(q._id, optionText)}
+                        className={`flex items-center gap-3 p-3.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all duration-150 cursor-pointer select-none ${
+                          isSelected
+                            ? 'bg-teal-50/90 border-[#0D8A82] text-[#0D8A82] ring-1 ring-[#0D8A82] shadow-2xs'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-teal-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                            isSelected ? 'border-[#0D8A82] bg-[#0D8A82]' : 'border-slate-300 bg-white'
+                          }`}
+                        >
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <span className="leading-relaxed">{optionText}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {questions.length > 0 && (
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
+          <span className="text-xs text-slate-500 font-semibold">
+            تأكد من مراجعة جميع الإجابات قبل الضغط على التسليم.
+          </span>
           <button
+            type="button"
             onClick={handleValidateBeforeSubmit}
-            className="px-3 py-1 bg-red-600 text-white text-[11px] font-bold rounded-lg hover:bg-red-700 cursor-pointer"
+            disabled={submitQuizMutation.isPending}
+            className="px-6 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm flex items-center gap-2 disabled:opacity-50"
           >
-            إعادة المحاولة
+            {submitQuizMutation.isPending ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>جاري التسليم...</span>
+              </>
+            ) : (
+              <>
+                <Send size={15} />
+                <span>تسليم الاختبار والنتيجة</span>
+              </>
+            )}
           </button>
         </div>
       )}
 
-      {/* Questions list */}
-      <div className="space-y-6">
-        {questions.map((q, qIndex) => {
-          const selectedForThisQuestion = answers[q._id];
-          const isAnswered = Boolean(selectedForThisQuestion);
-
-          return (
-            <div
-              key={q._id || qIndex}
-              className={`rounded-2xl p-5 border transition-all duration-200 ${
-                isAnswered
-                  ? 'bg-white border-teal-200/90 shadow-2xs'
-                  : 'bg-slate-50/70 border-slate-200'
-              }`}
-            >
-              <div className="flex items-start gap-3 mb-4">
-                <span
-                  className={`w-7 h-7 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 border ${
-                    isAnswered
-                      ? 'bg-[#0D8A82] text-white border-[#0D8A82]'
-                      : 'bg-slate-200 text-slate-700 border-slate-300'
-                  }`}
-                >
-                  {qIndex + 1}
-                </span>
-                <h4 className="text-sm font-extrabold text-slate-800 leading-relaxed pt-0.5">
-                  {q.question}
-                </h4>
-              </div>
-
-              {q.questionImage?.trim() && (
-                <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center">
-                  <img
-                    src={q.questionImage.trim()}
-                    alt="صورة السؤال"
-                    className="max-h-56 object-contain rounded-lg"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2.5 pr-1 sm:pr-10">
-                {q.options.map((optionText, optIndex) => {
-                  const isOptionSelected = selectedForThisQuestion === optionText;
-
-                  return (
-                    <label
-                      key={optIndex}
-                      onClick={() => handleSelectOption(q._id, optionText)}
-                      className={`flex items-center gap-3 p-3.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                        isOptionSelected
-                          ? 'bg-teal-50/90 border-[#0D8A82] text-[#0D8A82] ring-1 ring-[#0D8A82] shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-700 hover:border-teal-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={`q_${q._id}`}
-                        checked={isOptionSelected}
-                        onChange={() => handleSelectOption(q._id, optionText)}
-                        className="w-4 h-4 text-[#0D8A82] focus:ring-[#0D8A82] border-slate-300"
-                      />
-                      <span className="leading-relaxed">{optionText}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      
-      <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-4 flex-wrap">
-        <span className="text-xs text-slate-500 font-semibold">
-          تم الإجابة على {answeredCount} من إجمالي {questions.length} سؤال
-        </span>
-
-        <button
-          onClick={handleValidateBeforeSubmit}
-          disabled={submitQuizMutation.isPending || isSubmittingRef.current}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm disabled:opacity-50"
-        >
-          <Send size={15} />
-          <span>{submitQuizMutation.isPending ? 'جاري التسليم...' : 'تسليم الاختبار'}</span>
-        </button>
-      </div>
-
-      
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
-            <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100">
-              <Send size={26} />
-            </div>
-            <h4 className="text-base font-extrabold text-slate-800">تأكيد تسليم الاختبار</h4>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              هل أنت متأكد من رغبتك في تسليم الاختبار واحتساب الإجابات؟
-            </p>
-
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={handleExecuteSubmission}
-                disabled={submitQuizMutation.isPending || isSubmittingRef.current}
-                className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs disabled:opacity-50"
-              >
-                {submitQuizMutation.isPending ? 'جاري التسليم...' : 'تسليم الاختبار'}
-              </button>
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={submitQuizMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
-              >
-                إلغاء
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-     
-      {showExitModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
-              <AlertTriangle size={26} />
-            </div>
-            <h4 className="text-base font-extrabold text-slate-800">مغادرة الاختبار</h4>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              لديك إجابات لم تقم بتسليمها بعد. هل تريد مغادرة شاشة الاختبار؟
-            </p>
-
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={() => setShowExitModal(false)}
-                className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
-              >
-                متابعة الحل
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
-              >
-                الخروج
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <QuizActionModals
+        showConfirmModal={showConfirmModal}
+        showExitModal={showExitModal}
+        isSubmitting={submitQuizMutation.isPending}
+        onConfirmSubmit={handleExecuteSubmission}
+        onCancelConfirm={() => setShowConfirmModal(false)}
+        onCancelExit={() => setShowExitModal(false)}
+        onConfirmExit={onClose}
+      />
     </div>
   );
 };

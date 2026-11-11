@@ -4,6 +4,7 @@ import { useTeacherGroups } from '../../hooks/useTeacherGroups';
 import { useMoveStudent } from '../../hooks/useMoveStudent';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import { getGradeShortLabel } from '../../../../types/grade';
 import type { GroupStudent, Group } from '../../types/groupManagement';
 
 export interface MoveStudentModalProps {
@@ -32,15 +33,18 @@ export const MoveStudentModal: React.FC<MoveStudentModalProps> = ({
   const effectiveStudentId = student?._id || propStudentId || '';
   const effectiveStudentName = student?.name || propStudentName || 'الطالب';
   const effectiveCurrentGroupId = currentGroup?._id || propCurrentGroupId || '';
+  const requiredGrade = currentGroup?.grade || student?.grade;
 
   const { data: groupsData, isLoading: isLoadingGroups } = useTeacherGroups({ limit: 100 });
   const moveStudentMutation = useMoveStudent();
 
   if (!isOpen || !effectiveStudentId) return null;
 
-  const availableGroups = (groupsData?.data || []).filter(
-    (g) => g._id !== effectiveCurrentGroupId && g.isActive !== false
-  );
+  const availableGroups = (groupsData?.data || []).filter((g) => {
+    if (g._id === effectiveCurrentGroupId || g.isActive === false) return false;
+    if (requiredGrade && g.grade && g.grade !== requiredGrade) return false;
+    return true;
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +115,7 @@ export const MoveStudentModal: React.FC<MoveStudentModalProps> = ({
                 <option value="">اختر المجموعة المقصد...</option>
                 {availableGroups.map((g) => (
                   <option key={g._id} value={g._id}>
-                    {g.name}
+                    {g.name} {g.grade ? `(${getGradeShortLabel(g.grade)})` : ''}
                   </option>
                 ))}
               </select>

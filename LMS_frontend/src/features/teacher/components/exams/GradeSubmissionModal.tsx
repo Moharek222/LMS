@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   X,
   Award,
@@ -45,41 +45,29 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
 
   const submission = data?.data;
 
-  
   const [essayGrades, setEssayGrades] = useState<Record<string, { score: number; feedback: string }>>({});
-
-  useEffect(() => {
-    if (submission && submission.answers) {
-      const initialMap: Record<string, { score: number; feedback: string }> = {};
-      submission.answers.forEach((ans) => {
-        if (ans.type === 'ESSAY') {
-          initialMap[ans.questionID] = {
-            score: ans.score || 0,
-            feedback: ans.teacherFeedback || '',
-          };
-        }
-      });
-      setEssayGrades(initialMap);
-    }
-  }, [submission]);
 
   if (!isOpen || !submissionId) return null;
 
-  const handleScoreChange = (qId: string, val: number) => {
+  const getEffectiveGrade = (qId: string, defaultScore = 0, defaultFeedback = '') => {
+    return essayGrades[qId] ?? { score: defaultScore, feedback: defaultFeedback };
+  };
+
+  const handleScoreChange = (qId: string, val: number, defaultFeedback = '') => {
     setEssayGrades((prev) => ({
       ...prev,
       [qId]: {
-        ...prev[qId],
+        feedback: prev[qId]?.feedback ?? defaultFeedback,
         score: val,
       },
     }));
   };
 
-  const handleFeedbackChange = (qId: string, val: string) => {
+  const handleFeedbackChange = (qId: string, val: string, defaultScore = 0) => {
     setEssayGrades((prev) => ({
       ...prev,
       [qId]: {
-        ...prev[qId],
+        score: prev[qId]?.score ?? defaultScore,
         feedback: val,
       },
     }));
@@ -88,11 +76,15 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
   const handleSubmitGrades = () => {
     if (!submission) return;
 
-    const gradesPayload: GradeInputItem[] = Object.entries(essayGrades).map(([qId, item]) => ({
-      questionID: qId,
-      score: item.score,
-      teacherFeedback: item.feedback,
-    }));
+    const essayList = submission.answers?.filter((a) => a.type === 'ESSAY') || [];
+    const gradesPayload: GradeInputItem[] = essayList.map((ans) => {
+      const item = getEffectiveGrade(ans.questionID, ans.score || 0, ans.teacherFeedback || '');
+      return {
+        questionID: ans.questionID,
+        score: item.score,
+        teacherFeedback: item.feedback,
+      };
+    });
 
     gradeEssayMutation.mutate(
       {
@@ -119,7 +111,6 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] flex flex-col">
-       
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
@@ -141,7 +132,6 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
           </button>
         </div>
 
-        
         <div className="overflow-y-auto flex-1 space-y-6 pr-1">
           {isLoading ? (
             <div className="py-16 flex flex-col items-center justify-center text-center space-y-3">
@@ -161,7 +151,6 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
             </div>
           ) : (
             <>
-              
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
@@ -203,7 +192,6 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                 </div>
               </div>
 
-              
               <div className="space-y-4">
                 <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2">
                   <MessageSquare size={18} className="text-[#0D8A82]" />
@@ -217,7 +205,11 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                 ) : (
                   <div className="space-y-4">
                     {essayAnswers.map((ans, idx) => {
-                      const currentGrade = essayGrades[ans.questionID] || { score: 0, feedback: '' };
+                      const currentGrade = getEffectiveGrade(
+                        ans.questionID,
+                        ans.score || 0,
+                        ans.teacherFeedback || ''
+                      );
 
                       return (
                         <div
@@ -246,7 +238,6 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                             </div>
                           </div>
 
-                          
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                             <div>
                               <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -257,7 +248,13 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                                 min={0}
                                 max={ans.maxScore || 100}
                                 value={currentGrade.score}
-                                onChange={(e) => handleScoreChange(ans.questionID, Number(e.target.value))}
+                                onChange={(e) =>
+                                  handleScoreChange(
+                                    ans.questionID,
+                                    Number(e.target.value),
+                                    ans.teacherFeedback || ''
+                                  )
+                                }
                                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-none focus:border-[#0D8A82]"
                               />
                             </div>
@@ -270,7 +267,9 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                                 type="text"
                                 placeholder="اكتب ملاحظة أو توجيه للطالب..."
                                 value={currentGrade.feedback}
-                                onChange={(e) => handleFeedbackChange(ans.questionID, e.target.value)}
+                                onChange={(e) =>
+                                  handleFeedbackChange(ans.questionID, e.target.value, ans.score || 0)
+                                }
                                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:outline-none focus:border-[#0D8A82]"
                               />
                             </div>
@@ -282,7 +281,6 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                 )}
               </div>
 
-              
               {mcqAnswers.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2">
@@ -320,7 +318,6 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
           )}
         </div>
 
-       
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between shrink-0">
           <button
             type="button"

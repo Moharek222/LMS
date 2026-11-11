@@ -3,6 +3,7 @@ import { Plus, Loader2, AlertTriangle, BookOpen, Video, RefreshCw } from 'lucide
 import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useCourseLessons } from '../../lessons/hooks/useCourseLessons';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
+import { getGradeShortLabel } from '../../../types/grade';
 import type { Lesson } from '../../lessons/types/lesson';
 import { LessonCard } from './lessons/LessonCard';
 import { CreateLessonModal } from './lessons/CreateLessonModal';
@@ -55,7 +56,7 @@ export const LessonManager: React.FC = () => {
               <option value="">-- اختر كورس لتنفيذ إضافة الدرس --</option>
               {courses.map((c) => (
                 <option key={c._id} value={c._id}>
-                  {c.title}
+                  {c.title} {c.grade ? `— (${getGradeShortLabel(c.grade)})` : ''}
                 </option>
               ))}
             </select>

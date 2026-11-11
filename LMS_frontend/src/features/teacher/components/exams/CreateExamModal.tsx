@@ -1,22 +1,10 @@
 import React, { useState } from 'react';
-import { Award, Plus, Loader2, AlertTriangle, X, HelpCircle } from 'lucide-react';
+import { Award, Loader2, AlertTriangle, X } from 'lucide-react';
 import { useCreateExam } from '../../hooks/useCreateExam';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
-import { compressImageFile } from '../../../../utils/imageCompressor';
-import { QuestionFormItem } from '../questions/QuestionFormItem';
-import { uploadExamQuestionImage } from '../../api/teacherExamsApi';
 import type { TeacherExam } from '../../../exams/types/exam';
-
-interface QuestionDraft {
-  id: string;
-  type: 'MCQ' | 'ESSAY';
-  points: number;
-  question: string;
-  questionImage: string;
-  options: string[];
-  answer: string;
-}
+import { ExamQuestionsListEditor, type ExamQuestionDraft } from './ExamQuestionsListEditor';
 
 interface CreateExamModalProps {
   isOpen: boolean;
@@ -37,7 +25,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState<number>(30);
   const [startAt, setStartAt] = useState<string>('');
-  const [questions, setQuestions] = useState<QuestionDraft[]>([
+  const [questions, setQuestions] = useState<ExamQuestionDraft[]>([
     {
       id: 'q_1',
       type: 'MCQ',
@@ -72,123 +60,6 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
     if (createExamMutation.isPending) return;
     resetForm();
     onClose();
-  };
-
-  const handleAddQuestion = () => {
-    setQuestions((prev) => [
-      ...prev,
-      {
-        id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        type: 'MCQ',
-        points: 1,
-        question: '',
-        questionImage: '',
-        options: ['', ''],
-        answer: '',
-      },
-    ]);
-  };
-
-  const handleRemoveQuestion = (qId: string) => {
-    if (questions.length <= 1) {
-      toast.warning('يجب أن يحتوي الامتحان على سؤال واحد على الأقل');
-      return;
-    }
-    setQuestions((prev) => prev.filter((q) => q.id !== qId));
-  };
-
-  const handleQuestionTypeChange = (qId: string, type: 'MCQ' | 'ESSAY') => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, type } : q))
-    );
-  };
-
-  const handleQuestionPointsChange = (qId: string, points: number) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, points: Math.max(1, points) } : q))
-    );
-  };
-
-  const handleQuestionImageChange = (qId: string, imageUrl: string) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, questionImage: imageUrl } : q))
-    );
-  };
-
-  const handleImageFileSelect = async (qId: string, file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
-      return;
-    }
-
-    try {
-      toast.info('جاري رفع الصورة للسيرفر... ⏳');
-      const res = await uploadExamQuestionImage(selectedCourseId, file);
-      if (res?.imageUrl) {
-        handleQuestionImageChange(qId, res.imageUrl);
-        toast.success('تم رفع الصورة بنجاح 🖼️');
-        return;
-      }
-    } catch {
-      // Fallback to compressed base64 if upload endpoint fails
-    }
-
-    try {
-      toast.info('جاري ضغط وتحسين الصورة لتناسب المنصة... ⏳');
-      const compressedDataUrl = await compressImageFile(file, 800, 800, 0.65);
-      handleQuestionImageChange(qId, compressedDataUrl);
-      toast.success('تم تحميل وضغـط الصورة بنجاح 🖼️');
-    } catch {
-      toast.error('حدث خطأ أثناء معالجة الصورة، يرجى المحاولة مرة أخرى');
-    }
-  };
-
-  const handleQuestionTextChange = (qId: string, text: string) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, question: text } : q))
-    );
-  };
-
-  const handleAddOption = (qId: string) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, options: [...q.options, ''] } : q))
-    );
-  };
-
-  const handleRemoveOption = (qId: string, optIndex: number) => {
-    setQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id === qId) {
-          if (q.options.length <= 2) return q;
-          const removedOpt = q.options[optIndex];
-          const newOptions = q.options.filter((_, idx) => idx !== optIndex);
-          const newAnswer = q.answer === removedOpt ? '' : q.answer;
-          return { ...q, options: newOptions, answer: newAnswer };
-        }
-        return q;
-      })
-    );
-  };
-
-  const handleOptionTextChange = (qId: string, optIndex: number, text: string) => {
-    setQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id === qId) {
-          const oldOptText = q.options[optIndex];
-          const newOptions = [...q.options];
-          newOptions[optIndex] = text;
-          const newAnswer = q.answer === oldOptText ? text : q.answer;
-          return { ...q, options: newOptions, answer: newAnswer };
-        }
-        return q;
-      })
-    );
-  };
-
-  const handleSetAnswer = (qId: string, selectedAnswer: string) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, answer: selectedAnswer } : q))
-    );
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -280,7 +151,9 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
                 const draftMap = saved ? JSON.parse(saved) : {};
                 draftMap[createdExam._id] = createdExam;
                 localStorage.setItem('teacher_draft_exams', JSON.stringify(draftMap));
-              } catch {}
+              } catch {
+                // Ignore storage errors
+              }
             }
           }
           onClose();
@@ -366,45 +239,12 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
             </div>
           </div>
 
-          <div className="space-y-4 pt-2">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                <HelpCircle size={16} className="text-[#0D8A82]" />
-                <span>أسئلة الامتحان الشامل ({questions.length})</span>
-              </h4>
-              <button
-                type="button"
-                onClick={handleAddQuestion}
-                disabled={createExamMutation.isPending}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-50 text-[#0D8A82] border border-teal-100 text-xs font-bold hover:bg-teal-100 transition cursor-pointer"
-              >
-                <Plus size={14} />
-                <span>إضافة سؤال آخر</span>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {questions.map((q, qIndex) => (
-                <QuestionFormItem
-                  key={q.id}
-                  question={q}
-                  qIndex={qIndex}
-                  totalQuestions={questions.length}
-                  isDisabled={createExamMutation.isPending}
-                  onTypeChange={handleQuestionTypeChange}
-                  onPointsChange={handleQuestionPointsChange}
-                  onTextChange={handleQuestionTextChange}
-                  onImageChange={handleQuestionImageChange}
-                  onImageFileSelect={handleImageFileSelect}
-                  onRemoveQuestion={handleRemoveQuestion}
-                  onOptionTextChange={handleOptionTextChange}
-                  onAddOption={handleAddOption}
-                  onRemoveOption={handleRemoveOption}
-                  onSetAnswer={handleSetAnswer}
-                />
-              ))}
-            </div>
-          </div>
+          <ExamQuestionsListEditor
+            courseId={selectedCourseId}
+            questions={questions}
+            onChangeQuestions={setQuestions}
+            disabled={createExamMutation.isPending}
+          />
 
           {validationError && (
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
@@ -444,4 +284,3 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
 };
 
 export default CreateExamModal;
-

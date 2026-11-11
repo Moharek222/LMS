@@ -5,17 +5,41 @@ import { useStudentExamHistory } from '../../student/hooks/useStudentExamHistory
 import type { ExamSubmissionResult } from '../types/examSubmission';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
+interface ExtendedExamHistoryItem {
+  _id: string;
+  score?: number;
+  totalScore?: number;
+  totalExamPoints?: number;
+  totalQuestions?: number;
+  status?: 'GRADED' | 'PENDING_GRADE';
+}
+
 export const useExamRunnerState = (courseId: string, examId: string) => {
   const { data: exam, isLoading, isError, error, refetch } = useStudentExam(courseId, examId);
   const submitExamMutation = useSubmitExam();
   const { data: examHistoryData } = useStudentExamHistory({ page: 1, limit: 100 });
 
+  const sessionStartKey = `lms_exam_session_start_${examId}`;
+  const draftAnswersKey = `lms_exam_draft_answers_${examId}`;
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
-  const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [untilStartLeft, setUntilStartLeft] = useState<number | null>(null);
+  const [userAnswers, setUserAnswers] = useState<Record<string, string>>(() => {
+    try {
+      const savedDraft = localStorage.getItem(`lms_exam_draft_answers_${examId}`);
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && typeof parsed === 'object') {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return {};
+  });
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
-  const [submissionResult, setSubmissionResult] = useState<ExamSubmissionResult | null>(null);
+  const [submissionResultState, setSubmissionResult] = useState<ExamSubmissionResult | null>(null);
   const [submitErrorMessage, setSubmitErrorMessage] = useState<string | null>(null);
   const [timeExpiredNoAnswers, setTimeExpiredNoAnswers] = useState<boolean>(false);
   const [isAutoSubmitted, setIsAutoSubmitted] = useState<boolean>(false);
@@ -25,9 +49,6 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
   const isAutoSubmittedRef = useRef<boolean>(false);
   const userAnswersRef = useRef<Record<string, string>>(userAnswers);
 
-  const sessionStartKey = `lms_exam_session_start_${examId}`;
-  const draftAnswersKey = `lms_exam_draft_answers_${examId}`;
-
   const existingSubmission = React.useMemo(() => {
     if (!examHistoryData?.data) return null;
     return examHistoryData.data.find((sub) => {
@@ -36,77 +57,45 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
     });
   }, [examHistoryData, examId]);
 
-  useEffect(() => {
-    if (existingSubmission && !submissionResult) {
-      const scoreVal = (existingSubmission as any).totalScore ?? existingSubmission.score ?? 0;
-      const totalPointsVal = (existingSubmission as any).totalExamPoints ?? (existingSubmission as any).totalQuestions ?? scoreVal;
-      setSubmissionResult({
+  const submissionResult = React.useMemo<ExamSubmissionResult | null>(() => {
+    if (submissionResultState) return submissionResultState;
+    if (existingSubmission) {
+      const ext = existingSubmission as unknown as ExtendedExamHistoryItem;
+      const scoreVal = ext.totalScore ?? existingSubmission.score ?? 0;
+      const totalPointsVal = ext.totalExamPoints ?? ext.totalQuestions ?? scoreVal;
+      return {
         submissionID: existingSubmission._id,
-        status: (existingSubmission as any).status || 'GRADED',
+        status: ext.status || 'GRADED',
         totalScore: scoreVal,
         score: scoreVal,
         totalExamPoints: totalPointsVal,
         totalQuestions: totalPointsVal,
-      });
+      };
     }
-  }, [existingSubmission, submissionResult]);
+    return null;
+  }, [submissionResultState, existingSubmission]);
 
   useEffect(() => {
     userAnswersRef.current = userAnswers;
   }, [userAnswers]);
 
-  useEffect(() => {
-    try {
-      const savedDraft = localStorage.getItem(draftAnswersKey);
-      if (savedDraft) {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed && typeof parsed === 'object') {
-          setUserAnswers(parsed);
-        }
-      }
-    } catch {
-      // Ignore storage errors
-    }
-  }, [draftAnswersKey]);
-
-  useEffect(() => {
-    if (!exam || !exam.startAt) {
-      setUntilStartLeft(null);
-      return;
-    }
-
+  const untilStartLeft = React.useMemo<number | null>(() => {
+    if (!exam || !exam.startAt) return null;
     const startMs = new Date(exam.startAt).getTime();
-    const nowMs = Date.now();
     const diffSeconds = Math.floor((startMs - nowMs) / 1000);
+    return diffSeconds > 0 ? diffSeconds : null;
+  }, [exam, nowMs]);
 
-    if (diffSeconds > 0) {
-      setUntilStartLeft(diffSeconds);
-      const interval = setInterval(() => {
-        const remaining = Math.floor((startMs - Date.now()) / 1000);
-        if (remaining <= 0) {
-          setUntilStartLeft(null);
-          clearInterval(interval);
-        } else {
-          setUntilStartLeft(remaining);
-        }
-      }, 1000);
-      return () => clearInterval(interval);
-    } else {
-      setUntilStartLeft(null);
-    }
-  }, [exam]);
-
-  useEffect(() => {
+  const timeLeft = React.useMemo<number | null>(() => {
     if (!exam || typeof exam.duration !== 'number' || exam.duration <= 0 || submissionResult || timeExpiredNoAnswers) {
-      return;
+      return null;
     }
-
     if (untilStartLeft !== null && untilStartLeft > 0) {
-      return;
+      return null;
     }
 
     const totalSeconds = exam.duration * 60;
-    let sessionStartMs = Date.now();
+    let sessionStartMs = nowMs;
 
     try {
       const storedStart = localStorage.getItem(sessionStartKey);
@@ -119,10 +108,17 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
       // Ignore storage errors
     }
 
-    const elapsedSeconds = Math.floor((Date.now() - sessionStartMs) / 1000);
-    const remaining = Math.max(0, totalSeconds - elapsedSeconds);
-    setTimeLeft(remaining);
-  }, [exam, untilStartLeft, submissionResult, timeExpiredNoAnswers, sessionStartKey]);
+    const elapsedSeconds = Math.floor((nowMs - sessionStartMs) / 1000);
+    return Math.max(0, totalSeconds - elapsedSeconds);
+  }, [exam, untilStartLeft, submissionResult, timeExpiredNoAnswers, sessionStartKey, nowMs]);
+
+  useEffect(() => {
+    if (submissionResult || timeExpiredNoAnswers) return;
+    const timer = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [submissionResult, timeExpiredNoAnswers]);
 
   const cleanupLocalStorage = () => {
     try {
@@ -195,7 +191,6 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
     handleDoSubmitRef.current = handleDoSubmit;
   });
 
-  
   useEffect(() => {
     if (timeLeft === null || submissionResult || timeExpiredNoAnswers || submitExamMutation.isPending || (untilStartLeft !== null && untilStartLeft > 0)) {
       return;
@@ -204,25 +199,12 @@ export const useExamRunnerState = (courseId: string, examId: string) => {
     if (timeLeft <= 0) {
       if (!isAutoSubmittedRef.current && !isSubmittingRef.current) {
         isAutoSubmittedRef.current = true;
-        handleDoSubmitRef.current(true);
+        const timer = setTimeout(() => {
+          handleDoSubmitRef.current(true);
+        }, 0);
+        return () => clearTimeout(timer);
       }
-      return;
     }
-
-    const timerId = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null || prev <= 1) {
-          if (!isAutoSubmittedRef.current && !isSubmittingRef.current) {
-            isAutoSubmittedRef.current = true;
-            handleDoSubmitRef.current(true);
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timerId);
   }, [timeLeft, submissionResult, timeExpiredNoAnswers, submitExamMutation.isPending, untilStartLeft]);
 
   const handleSelectOption = (questionId: string, selectedAnswer: string) => {

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BookOpen, Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useUpdateCourse } from '../hooks/useUpdateCourse';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
+import { Grade, GRADE_OPTIONS } from '../../../types/grade';
 import { CourseCard } from './courses/CourseCard';
 import { CreateCourseModal } from './courses/CreateCourseModal';
 import { EditCourseModal } from './courses/EditCourseModal';
@@ -14,6 +15,7 @@ export const CourseManager: React.FC = () => {
   const { data: courses, isLoading, isError, refetch } = useTeacherCourses();
   const updateCourseMutation = useUpdateCourse();
 
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [editingCourseId, setEditingCourseId] = useState<string>('');
@@ -22,6 +24,12 @@ export const CourseManager: React.FC = () => {
   const [deactivatingCourseId, setDeactivatingCourseId] = useState<string>('');
   const [deactivatingCourseTitle, setDeactivatingCourseTitle] = useState<string>('');
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+
+  const filteredCourses = useMemo(() => {
+    if (!courses) return [];
+    if (selectedGradeFilter === 'ALL') return courses;
+    return courses.filter((c) => c.grade === selectedGradeFilter);
+  }, [courses, selectedGradeFilter]);
 
   const handleOpenEditModal = (courseId: string) => {
     setEditingCourseId(courseId);
@@ -90,6 +98,40 @@ export const CourseManager: React.FC = () => {
           </button>
         </div>
 
+        {/* Grade Filter Tabs */}
+        {courses && courses.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setSelectedGradeFilter('ALL')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
+                selectedGradeFilter === 'ALL'
+                  ? 'bg-[#0D8A82] text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              جميع المراحل ({courses.length})
+            </button>
+            {GRADE_OPTIONS.map((opt) => {
+              const count = courses.filter((c) => c.grade === opt.value).length;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
+                    selectedGradeFilter === opt.value
+                      ? 'bg-[#0D8A82] text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {opt.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {isLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[180px] text-center space-y-2">
             <Loader2 size={32} className="animate-spin text-[#0D8A82]" />
@@ -112,9 +154,15 @@ export const CourseManager: React.FC = () => {
             <p className="text-xs font-bold text-slate-600">لا توجد مقررات مضافة حتى الآن</p>
             <p className="text-[11px] text-slate-400">قم بإضافة مقرر جديد بالضغط على زر إضافة كورس جديد أعلاه</p>
           </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="p-8 border border-dashed border-slate-200 rounded-2xl text-center space-y-2">
+            <BookOpen size={36} className="text-slate-300 mx-auto" />
+            <p className="text-xs font-bold text-slate-600">لا توجد مقررات في هذه المرحلة حالياً</p>
+            <p className="text-[11px] text-slate-400">يمكنك إضافة كورس جديد وتحديد هذه المرحلة الدراسية له.</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {courses.map((course) => (
+            {filteredCourses.map((course) => (
               <CourseCard
                 key={course._id}
                 course={course}

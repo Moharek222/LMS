@@ -47,7 +47,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
       .replace(/[\u064B-\u065F]/g, '');
   };
 
-  const accessCodes = data?.data || [];
+  const accessCodes = useMemo(() => data?.data || [], [data]);
   const totalItems = data?.total || accessCodes.length;
 
   // True full counts across all access codes with real-time expiration awareness
@@ -89,11 +89,6 @@ export const TeacherAccessCodeManager: React.FC = () => {
 
     return result;
   }, [accessCodes, statusFilter, searchQuery]);
-
-  // Reset to first page when search query or filter changes
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredAccessCodes.length / pageSize));
 
@@ -205,14 +200,20 @@ export const TeacherAccessCodeManager: React.FC = () => {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="ابحث في جميع الأكواد (الكود، اسم الطالب، رقم الهاتف)..."
               className="w-full pr-10 pl-9 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-slate-50/70 transition"
             />
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
+                onClick={() => {
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                }}
                 className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition cursor-pointer"
                 title="مسح البحث"
               >
@@ -225,7 +226,10 @@ export const TeacherAccessCodeManager: React.FC = () => {
           <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
             <button
               type="button"
-              onClick={() => setStatusFilter('all')}
+              onClick={() => {
+                setStatusFilter('all');
+                setCurrentPage(1);
+              }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 statusFilter === 'all'
                   ? 'bg-[#0D8A82] text-white shadow-2xs'
@@ -236,7 +240,10 @@ export const TeacherAccessCodeManager: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setStatusFilter('active')}
+              onClick={() => {
+                setStatusFilter('active');
+                setCurrentPage(1);
+              }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
                 statusFilter === 'active'
                   ? 'bg-emerald-600 text-white shadow-2xs'
@@ -248,7 +255,10 @@ export const TeacherAccessCodeManager: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setStatusFilter('expired')}
+              onClick={() => {
+                setStatusFilter('expired');
+                setCurrentPage(1);
+              }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
                 statusFilter === 'expired'
                   ? 'bg-rose-600 text-white shadow-2xs'
@@ -287,6 +297,7 @@ export const TeacherAccessCodeManager: React.FC = () => {
             onClick={() => {
               setSearchQuery('');
               setStatusFilter('all');
+              setCurrentPage(1);
             }}
             className="text-xs text-[#0D8A82] font-bold hover:underline cursor-pointer"
           >

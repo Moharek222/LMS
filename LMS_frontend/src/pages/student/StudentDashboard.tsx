@@ -1,6 +1,26 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
+import StudentHomeView from '../../features/student/components/StudentHomeView';
+import { useAuth } from '../../context/useAuth';
+import { useStudentCourses } from '../../features/courses/hooks/useStudentCourses';
+import { useCourseLessons } from '../../features/lessons/hooks/useCourseLessons';
+import type { Lesson } from '../../features/lessons/types/lesson';
+import StudentProfileCard from '../../features/student/components/StudentProfileCard';
+import StudentAttendanceCard from '../../features/attendance/components/StudentAttendanceCard';
+import { StudentAssessmentsView } from '../../features/student/components/StudentAssessmentsView';
+import {
+  Video,
+  FileText,
+  CalendarCheck,
+  Home,
+  User,
+  AlertTriangle,
+} from 'lucide-react';
+import StudentLessonsView from '../../features/lessons/components/StudentLessonsView';
+import RedeemAccessCodeModal from '../../features/student/components/RedeemAccessCodeModal';
+import { useStudentWatchHistory } from '../../features/lessons/hooks/useProgress';
+import { isStudentVerified } from '../../utils/subscriptionUtils';
 
 const validStudentTabs = [
   'home',
@@ -10,33 +30,6 @@ const validStudentTabs = [
   'attendance',
   'profile',
 ];
-import StudentHomeView from '../../features/student/components/StudentHomeView';
-import { useAuth } from '../../context/useAuth';
-import { useStudentCourses } from '../../features/courses/hooks/useStudentCourses';
-import { useCourseLessons } from '../../features/lessons/hooks/useCourseLessons';
-import type { Lesson } from '../../features/lessons/types/lesson';
-import StudentProfileCard from '../../features/student/components/StudentProfileCard';
-import StudentAttendanceCard from '../../features/attendance/components/StudentAttendanceCard';
-import ExamList from '../../features/exams/components/ExamList';
-import ExamPreview from '../../features/exams/components/ExamPreview';
-import ExamRunner from '../../features/exams/components/ExamRunner';
-import StudentQuizHistory from '../../features/student/components/StudentQuizHistory';
-import StudentExamHistory from '../../features/student/components/StudentExamHistory';
-import {
-  Video,
-  FileText,
-  CalendarCheck,
-  Home,
-  User,
-  History,
-  Award,
-  AlertTriangle,
-} from 'lucide-react';
-
-import StudentLessonsView from '../../features/lessons/components/StudentLessonsView';
-import RedeemAccessCodeModal from '../../features/student/components/RedeemAccessCodeModal';
-import { useStudentWatchHistory } from '../../features/lessons/hooks/useProgress';
-import { isStudentVerified } from '../../utils/subscriptionUtils';
 
 const studentNavItems = [
   { id: 'home', label: 'الرئيسية', icon: <Home size={20} /> },
@@ -156,7 +149,7 @@ export const StudentDashboard: React.FC = () => {
 
   const storageKey = user?.id ? `lms_completed_lessons_${user.id}` : 'lms_completed_lessons_guest';
 
-  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(() => {
+  const [localCompletedLessonIds, setLocalCompletedLessonIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : [];
@@ -178,14 +171,9 @@ export const StudentDashboard: React.FC = () => {
     return matched.watchedLessons.map((l) => (typeof l === 'string' ? l : l._id)).filter(Boolean);
   }, [watchHistoryData, selectedCourseId]);
 
-  React.useEffect(() => {
-    if (backendWatchedLessonIds.length > 0) {
-      setCompletedLessonIds((prev) => {
-        const merged = new Set([...prev, ...backendWatchedLessonIds]);
-        return Array.from(merged);
-      });
-    }
-  }, [backendWatchedLessonIds]);
+  const completedLessonIds = React.useMemo(() => {
+    return Array.from(new Set([...localCompletedLessonIds, ...backendWatchedLessonIds]));
+  }, [localCompletedLessonIds, backendWatchedLessonIds]);
 
   React.useEffect(() => {
     try {
@@ -194,8 +182,6 @@ export const StudentDashboard: React.FC = () => {
       // Ignore storage errors
     }
   }, [completedLessonIds, storageKey]);
-
-  const [assessmentSubTab, setAssessmentSubTab] = useState<'exams' | 'quizzes-history' | 'exams-history'>('exams');
 
   const {
     data: coursesData,
@@ -227,12 +213,12 @@ export const StudentDashboard: React.FC = () => {
   }, [effectiveCourses, selectedCourseId, activeTab, setSearchParams, selectedLessonId, selectedQuizId, selectedExamId]);
 
   const effectiveLessons = React.useMemo<Lesson[]>(() => {
-  return lessonsData || [];
-}, [lessonsData]);
+    return lessonsData || [];
+  }, [lessonsData]);
 
-const sortedLessons = React.useMemo(() => {
-  return [...effectiveLessons].sort((a, b) => a.order - b.order);
-}, [effectiveLessons]);
+  const sortedLessons = React.useMemo(() => {
+    return [...effectiveLessons].sort((a, b) => a.order - b.order);
+  }, [effectiveLessons]);
 
   const totalLessonsCount = sortedLessons.length;
   const completedLessonsCount = sortedLessons.filter((l) => completedLessonIds.includes(l._id)).length;
@@ -260,7 +246,7 @@ const sortedLessons = React.useMemo(() => {
 
   const handleVideoEnded = () => {
     if (selectedLessonId) {
-      setCompletedLessonIds((prev) =>
+      setLocalCompletedLessonIds((prev) =>
         prev.includes(selectedLessonId) ? prev : [...prev, selectedLessonId]
       );
     }
@@ -290,152 +276,97 @@ const sortedLessons = React.useMemo(() => {
         navItems={studentNavItems}
         subtitle="بوابة الطالب التعليمية"
       >
-      {activeTab === 'home' && (
-        <StudentHomeView
-          user={user}
-          isLoadingCourses={isLoadingCourses}
-          isCoursesError={isCoursesError}
-          effectiveCourses={effectiveCourses}
-          onSelectTab={handleSelectTab}
-          onSelectCourse={handleSelectCourse}
-          totalLessonsCount={totalLessonsCount}
-        />
-      )}
+        {activeTab === 'home' && (
+          <StudentHomeView
+            user={user}
+            isLoadingCourses={isLoadingCourses}
+            isCoursesError={isCoursesError}
+            effectiveCourses={effectiveCourses}
+            onSelectTab={handleSelectTab}
+            onSelectCourse={handleSelectCourse}
+            totalLessonsCount={totalLessonsCount}
+          />
+        )}
 
-      {(activeTab === 'courses' || activeTab === 'lessons') && (
-        <StudentLessonsView
-          courses={effectiveCourses.map((c) => ({ _id: c._id, title: c.title }))}
-          selectedCourseId={selectedCourseId}
-          onSelectCourse={handleSelectCourse}
-          totalLessonsCount={totalLessonsCount}
-          completedLessonsCount={completedLessonsCount}
-          courseProgressPercentage={courseProgressPercentage}
-          selectedLessonId={selectedLessonId}
-          selectedLesson={selectedLesson}
-          onPreviousLesson={handlePreviousLesson}
-          onNextLesson={handleNextLesson}
-          hasPreviousLesson={hasPreviousLesson}
-          hasNextLesson={hasNextLesson}
-          onVideoEnded={handleVideoEnded}
-          completedLessonIds={completedLessonIds}
-          selectedQuizId={selectedQuizId}
-          onSelectQuiz={handleSelectQuiz}
-          isSolvingQuiz={isSolvingQuiz}
-          setIsSolvingQuiz={setIsSolvingQuiz}
-          onCloseQuiz={handleCloseQuiz}
-          isLessonsLoading={isLessonsLoadingState}
-          isLessonsError={isLessonsError}
-          effectiveLessons={effectiveLessons}
-          sortedLessons={sortedLessons}
-          refetchLessons={refetchLessons}
-          onSelectLesson={handleSelectLesson}
-        />
-      )}
+        {(activeTab === 'courses' || activeTab === 'lessons') && (
+          <StudentLessonsView
+            courses={effectiveCourses.map((c) => ({ _id: c._id, title: c.title }))}
+            selectedCourseId={selectedCourseId}
+            onSelectCourse={handleSelectCourse}
+            totalLessonsCount={totalLessonsCount}
+            completedLessonsCount={completedLessonsCount}
+            courseProgressPercentage={courseProgressPercentage}
+            selectedLessonId={selectedLessonId}
+            selectedLesson={selectedLesson}
+            onPreviousLesson={handlePreviousLesson}
+            onNextLesson={handleNextLesson}
+            hasPreviousLesson={hasPreviousLesson}
+            hasNextLesson={hasNextLesson}
+            onVideoEnded={handleVideoEnded}
+            completedLessonIds={completedLessonIds}
+            selectedQuizId={selectedQuizId}
+            onSelectQuiz={handleSelectQuiz}
+            isSolvingQuiz={isSolvingQuiz}
+            setIsSolvingQuiz={setIsSolvingQuiz}
+            onCloseQuiz={handleCloseQuiz}
+            isLessonsLoading={isLessonsLoadingState}
+            isLessonsError={isLessonsError}
+            effectiveLessons={effectiveLessons}
+            sortedLessons={sortedLessons}
+            refetchLessons={refetchLessons}
+            onSelectLesson={handleSelectLesson}
+          />
+        )}
 
-      {activeTab === 'profile' && <StudentProfileCard />}
-      {activeTab === 'attendance' && <StudentAttendanceCard />}
-      {activeTab === 'quizzes' && (
-        selectedExamId ? (
-          isSolvingExam ? (
-            <ExamRunner
-              courseId={selectedCourseId}
-              examId={selectedExamId}
-              onClose={handleCloseExam}
-            />
-          ) : (
-            <ExamPreview
-              courseId={selectedCourseId}
-              examId={selectedExamId}
-              onBack={handleBackToExams}
-              onStartSolving={() => setIsSolvingExam(true)}
-            />
-          )
-        ) : (
-          <div className="space-y-6">
-           
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs">
-              <button
-                onClick={() => setAssessmentSubTab('exams')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                  assessmentSubTab === 'exams'
-                    ? 'bg-[#0D8A82] text-white shadow-xs'
-                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <FileText size={16} />
-                <span>الامتحانات الشاملة</span>
-              </button>
-              <button
-                onClick={() => setAssessmentSubTab('quizzes-history')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                  assessmentSubTab === 'quizzes-history'
-                    ? 'bg-[#0D8A82] text-white shadow-xs'
-                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <History size={16} />
-                <span>سجل تقييمات الكويزات</span>
-              </button>
-              <button
-                onClick={() => setAssessmentSubTab('exams-history')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                  assessmentSubTab === 'exams-history'
-                    ? 'bg-[#0D8A82] text-white shadow-xs'
-                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <Award size={16} />
-                <span>سجل الامتحانات الشاملة</span>
-              </button>
-            </div>
+        {activeTab === 'profile' && <StudentProfileCard />}
+        {activeTab === 'attendance' && <StudentAttendanceCard />}
+        {activeTab === 'quizzes' && (
+          <StudentAssessmentsView
+            selectedCourseId={selectedCourseId}
+            selectedExamId={selectedExamId}
+            isSolvingExam={isSolvingExam}
+            setIsSolvingExam={setIsSolvingExam}
+            effectiveCourses={effectiveCourses}
+            onSelectCourse={handleSelectCourse}
+            onSelectExam={handleSelectExam}
+            onBackToExams={handleBackToExams}
+            onCloseExam={handleCloseExam}
+          />
+        )}
 
-            
-            {assessmentSubTab === 'exams' && (
-              <ExamList
-                courseId={selectedCourseId}
-                courses={effectiveCourses}
-                onSelectCourse={handleSelectCourse}
-                onSelectExam={(exam) => handleSelectExam(exam._id)}
-              />
-            )}
-            {assessmentSubTab === 'quizzes-history' && <StudentQuizHistory />}
-            {assessmentSubTab === 'exams-history' && <StudentExamHistory />}
-          </div>
-        )
-      )}
-      {pendingNavAction !== null && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
-              <AlertTriangle size={26} />
-            </div>
-            <h4 className="text-base font-extrabold text-slate-800">مغادرة الاختبار</h4>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              لديك إجابات لم يتم تسليمها بعد. هل أنت متأكد أنك تريد الخروج؟
-            </p>
+        {pendingNavAction !== null && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-xl border border-slate-100 animate-scale-in">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
+                <AlertTriangle size={26} />
+              </div>
+              <h4 className="text-base font-extrabold text-slate-800">مغادرة الاختبار</h4>
+              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                لديك إجابات لم يتم تسليمها بعد. هل أنت متأكد أنك تريد الخروج؟
+              </p>
 
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={() => setPendingNavAction(null)}
-                className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
-              >
-                متابعة الحل
-              </button>
-              <button
-                onClick={() => {
-                  const action = pendingNavAction;
-                  setPendingNavAction(null);
-                  action?.();
-                }}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
-              >
-                الخروج
-              </button>
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={() => setPendingNavAction(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
+                >
+                  متابعة الحل
+                </button>
+                <button
+                  onClick={() => {
+                    const action = pendingNavAction;
+                    setPendingNavAction(null);
+                    action?.();
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+                >
+                  الخروج
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </DashboardLayout>
+        )}
+      </DashboardLayout>
     </>
   );
 };

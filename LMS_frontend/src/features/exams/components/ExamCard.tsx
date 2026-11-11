@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FileCheck, Clock, Calendar, ArrowLeft, Award, Lock, CheckCircle2 } from 'lucide-react';
 import type { ExamListItem } from '../types/exam';
 
@@ -9,6 +9,8 @@ interface ExamCardProps {
 }
 
 export const ExamCard: React.FC<ExamCardProps> = ({ exam, isSubmitted, onStart }) => {
+  const [nowTimestamp] = useState<number>(() => Date.now());
+
   const formattedDate = exam.createdAt
     ? new Date(exam.createdAt).toLocaleDateString('ar-EG', {
         year: 'numeric',
@@ -18,7 +20,7 @@ export const ExamCard: React.FC<ExamCardProps> = ({ exam, isSubmitted, onStart }
     : '';
 
   const isScheduledInFuture = Boolean(
-    exam.startAt && new Date(exam.startAt).getTime() > Date.now()
+    exam.startAt && new Date(exam.startAt).getTime() > nowTimestamp
   );
 
   const formattedStartTime = exam.startAt

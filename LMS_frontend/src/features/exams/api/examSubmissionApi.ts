@@ -1,3 +1,4 @@
+import axios from 'axios';
 import apiClient from '../../../services/apiClient';
 import type {
   SubmitExamPayload,
@@ -16,13 +17,14 @@ export const submitExam = async (
       payload
     );
     return response.data.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (
-      error.response?.status === 409 ||
-      error.message?.includes('409') ||
-      error.message?.includes('already submitted')
+      axios.isAxiosError(error) &&
+      (error.response?.status === 409 ||
+        error.message?.includes('409') ||
+        error.message?.includes('already submitted'))
     ) {
-      throw new Error('تم تسليم هذا الامتحان سابقاً، ولا يمكن تسليمه أكثر من مرة.');
+      throw new Error('تم تسليم هذا الامتحان سابقاً، ولا يمكن تسليمه أكثر من مرة.', { cause: error });
     }
     throw error;
   }

@@ -5,7 +5,6 @@ import {
   Phone,
   CalendarCheck,
   Video,
-  Award,
   Loader2,
   BookOpen,
   CheckCircle2,
@@ -14,7 +13,6 @@ import { useQuery } from '@tanstack/react-query';
 import type { GroupStudent } from '../../types/groupManagement';
 import { getStudentAttendancePercentage } from '../../../attendance/api/attendanceApi';
 import { getStudentWatchHistory } from '../../../lessons/api/progressApi';
-import apiClient from '../../../../services/apiClient';
 
 interface StudentDetailsModalProps {
   isOpen: boolean;
@@ -31,37 +29,15 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
 }) => {
   const studentId = student?._id || '';
 
-  
   const { data: attendanceData, isLoading: isLoadingAttendance } = useQuery({
     queryKey: ['student-group-attendance-percentage', groupId, studentId],
     queryFn: () => getStudentAttendancePercentage(groupId, studentId),
     enabled: Boolean(isOpen && groupId && studentId),
   });
 
-  
   const { data: watchHistory, isLoading: isLoadingWatchHistory } = useQuery({
     queryKey: ['student-watch-history-teacher', studentId],
     queryFn: () => getStudentWatchHistory(studentId),
-    enabled: Boolean(isOpen && studentId),
-  });
-
-  // Fetch student quiz submissions for teacher view
-  const { data: quizSubmissions, isLoading: isLoadingQuizSubmissions } = useQuery({
-    queryKey: ['student-quiz-submissions-teacher', studentId],
-    queryFn: async () => {
-      if (!studentId) return [];
-      try {
-        const response = await apiClient.get<{ data: any[] }>(`/api/quizzes/student-history/${studentId}`);
-        return response.data?.data || [];
-      } catch {
-        try {
-          const response = await apiClient.get<{ data: any[] }>(`/api/students/quiz-history`);
-          return response.data?.data || [];
-        } catch {
-          return [];
-        }
-      }
-    },
     enabled: Boolean(isOpen && studentId),
   });
 
@@ -177,59 +153,6 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
                           </span>
                         ))}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-extrabold text-slate-800 pb-1 border-b border-slate-100">
-              <Award size={18} className="text-amber-500" />
-              <span>سجل نتائج وتكليفات الكويزات</span>
-            </div>
-
-            {isLoadingQuizSubmissions ? (
-              <div className="py-6 text-center text-xs text-slate-400 font-semibold flex items-center justify-center gap-2">
-                <Loader2 size={16} className="animate-spin text-amber-500" />
-                <span>جاري تحميل نتائج الكويزات...</span>
-              </div>
-            ) : !quizSubmissions || quizSubmissions.length === 0 ? (
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-center text-xs text-slate-400 font-semibold">
-                لا توجد تسليمات كويزات مسجلة لهذا الطالب حتى الآن.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {quizSubmissions.map((sub: any, idx: number) => {
-                  const quizTitle = typeof sub.quizID === 'object' ? sub.quizID?.title : 'الكويز';
-                  const isPassed = sub.isPassed;
-                  return (
-                    <div
-                      key={sub._id || idx}
-                      className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-center justify-between gap-3"
-                    >
-                      <div className="space-y-1">
-                        <h5 className="text-xs font-extrabold text-slate-800">{quizTitle}</h5>
-                        <div className="flex items-center gap-3 text-[11px] text-slate-500 font-semibold">
-                          <span>الدرجة: {sub.score}</span>
-                          <span>•</span>
-                          <span className={isPassed ? 'text-emerald-600 font-extrabold' : 'text-amber-600 font-extrabold'}>
-                            {isPassed ? 'ناجح 🏆' : 'لم يجتز'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <span
-                        className={`px-3 py-1 rounded-xl text-xs font-black border ${
-                          isPassed
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-amber-50 text-amber-800 border-amber-200'
-                        }`}
-                      >
-                        {isPassed ? 'اجتاز الاختبار' : 'محاولة جديدة'}
-                      </span>
                     </div>
                   );
                 })}

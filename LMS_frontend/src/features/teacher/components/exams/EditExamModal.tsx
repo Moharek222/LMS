@@ -1,22 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Edit, Plus, Loader2, AlertTriangle, RefreshCw, X, HelpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Edit, Loader2, AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { useTeacherExam } from '../../hooks/useTeacherExam';
 import { useUpdateExam } from '../../hooks/useUpdateExam';
+import type { TeacherExam } from '../../../exams/types/exam';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
-import { compressImageFile } from '../../../../utils/imageCompressor';
-import { QuestionFormItem } from '../questions/QuestionFormItem';
-import { uploadExamQuestionImage } from '../../api/teacherExamsApi';
-
-interface QuestionDraft {
-  id: string;
-  type: 'MCQ' | 'ESSAY';
-  points: number;
-  question: string;
-  questionImage: string;
-  options: string[];
-  answer: string;
-}
+import { ExamQuestionsListEditor, type ExamQuestionDraft } from './ExamQuestionsListEditor';
 
 interface EditExamModalProps {
   isOpen: boolean;
@@ -31,14 +20,6 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
   selectedCourseId,
   editingExamId,
 }) => {
-  const toast = useToast();
-  const updateExamMutation = useUpdateExam();
-
-  const [editTitle, setEditTitle] = useState('');
-  const [editDuration, setEditDuration] = useState<number>(30);
-  const [editQuestions, setEditQuestions] = useState<QuestionDraft[]>([]);
-  const [editValidationError, setEditValidationError] = useState('');
-
   const {
     data: teacherExamData,
     isLoading: isLoadingTeacherExam,
@@ -47,147 +28,95 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
     refetch: refetchTeacherExam,
   } = useTeacherExam(selectedCourseId, editingExamId);
 
-  useEffect(() => {
-    if (teacherExamData && editingExamId && isOpen) {
-      setEditTitle(teacherExamData.title || '');
-      setEditDuration(teacherExamData.duration || 30);
-      if (teacherExamData.questions && teacherExamData.questions.length > 0) {
-        setEditQuestions(
-          teacherExamData.questions.map((q, idx) => ({
-            id: q._id || `eq_${idx}_${Date.now()}`,
-            type: q.type || 'MCQ',
-            points: q.points || 1,
-            question: q.question || '',
-            questionImage: q.questionImage || '',
-            options: q.options ? [...q.options] : ['', ''],
-            answer: q.answer || '',
-          }))
-        );
-      }
-    }
-  }, [teacherExamData, editingExamId, isOpen]);
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 my-8 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
+              <Edit size={22} />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-slate-800">تعديل الامتحان الشامل</h3>
+              <p className="text-xs text-slate-500 font-semibold">
+                تعديل بيانات وأسئلة الامتحان الحالي (اختيار من متعدد ومقالي وصور الأسئلة)
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {isLoadingTeacherExam ? (
+          <div className="p-12 flex flex-col items-center justify-center text-center space-y-3">
+            <Loader2 size={36} className="animate-spin text-[#0D8A82]" />
+            <p className="text-xs font-bold text-slate-600">جاري تحميل بيانات الامتحان...</p>
+          </div>
+        ) : isTeacherExamError || !teacherExamData ? (
+          <div className="p-6 bg-rose-50 rounded-2xl border border-rose-200 text-rose-800 text-center space-y-3">
+            <AlertTriangle size={28} className="mx-auto text-rose-600" />
+            <p className="text-xs font-bold">
+              {toArabicErrorMessage(teacherExamError, 'تعذر تحميل بيانات الامتحان للتعديل')}
+            </p>
+            <button
+              type="button"
+              onClick={() => refetchTeacherExam()}
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition cursor-pointer"
+            >
+              <RefreshCw size={14} />
+              <span>إعادة المحاولة</span>
+            </button>
+          </div>
+        ) : (
+          <EditExamForm
+            key={teacherExamData._id}
+            teacherExamData={teacherExamData}
+            selectedCourseId={selectedCourseId}
+            editingExamId={editingExamId}
+            onClose={onClose}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const EditExamForm: React.FC<{
+  teacherExamData: TeacherExam;
+  selectedCourseId: string;
+  editingExamId: string;
+  onClose: () => void;
+}> = ({ teacherExamData, selectedCourseId, editingExamId, onClose }) => {
+  const toast = useToast();
+  const updateExamMutation = useUpdateExam();
+
+  const [editTitle, setEditTitle] = useState(teacherExamData.title || '');
+  const [editDuration, setEditDuration] = useState<number>(teacherExamData.duration || 30);
+  const [editQuestions, setEditQuestions] = useState<ExamQuestionDraft[]>(() =>
+    teacherExamData.questions && teacherExamData.questions.length > 0
+      ? teacherExamData.questions.map((q, idx) => ({
+          id: q._id || `eq_${idx}`,
+          type: q.type || 'MCQ',
+          points: q.points || 1,
+          question: q.question || '',
+          questionImage: q.questionImage || '',
+          options: q.options ? [...q.options] : ['', ''],
+          answer: q.answer || '',
+        }))
+      : []
+  );
+  const [editValidationError, setEditValidationError] = useState('');
 
   const handleCloseModal = () => {
     if (updateExamMutation.isPending) return;
     onClose();
     setEditValidationError('');
-  };
-
-  const handleEditAddQuestion = () => {
-    setEditQuestions((prev) => [
-      ...prev,
-      {
-        id: `eq_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        type: 'MCQ',
-        points: 1,
-        question: '',
-        questionImage: '',
-        options: ['', ''],
-        answer: '',
-      },
-    ]);
-  };
-
-  const handleEditRemoveQuestion = (qId: string) => {
-    if (editQuestions.length <= 1) {
-      toast.warning('الامتحان يجب أن يحتوي على سؤال واحد على الأقل');
-      return;
-    }
-    setEditQuestions((prev) => prev.filter((q) => q.id !== qId));
-  };
-
-  const handleEditQuestionTypeChange = (qId: string, type: 'MCQ' | 'ESSAY') => {
-    setEditQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, type } : q))
-    );
-  };
-
-  const handleEditQuestionPointsChange = (qId: string, points: number) => {
-    setEditQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, points: Math.max(1, points) } : q))
-    );
-  };
-
-  const handleEditQuestionImageChange = (qId: string, image: string) => {
-    setEditQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, questionImage: image } : q))
-    );
-  };
-
-  const handleEditQuestionTextChange = (qId: string, text: string) => {
-    setEditQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, question: text } : q))
-    );
-  };
-
-  const handleEditAddOption = (qId: string) => {
-    setEditQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, options: [...q.options, ''] } : q))
-    );
-  };
-
-  const handleEditRemoveOption = (qId: string, optIndex: number) => {
-    setEditQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id === qId) {
-          if (q.options.length <= 2) return q;
-          const removedOpt = q.options[optIndex];
-          const newOptions = q.options.filter((_, idx) => idx !== optIndex);
-          const newAnswer = q.answer === removedOpt ? '' : q.answer;
-          return { ...q, options: newOptions, answer: newAnswer };
-        }
-        return q;
-      })
-    );
-  };
-
-  const handleEditOptionTextChange = (qId: string, optIndex: number, text: string) => {
-    setEditQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id === qId) {
-          const oldOptText = q.options[optIndex];
-          const newOptions = [...q.options];
-          newOptions[optIndex] = text;
-          const newAnswer = q.answer === oldOptText ? text : q.answer;
-          return { ...q, options: newOptions, answer: newAnswer };
-        }
-        return q;
-      })
-    );
-  };
-
-  const handleEditAnswerSelect = (qId: string, answerText: string) => {
-    setEditQuestions((prev) =>
-      prev.map((q) => (q.id === qId ? { ...q, answer: answerText } : q))
-    );
-  };
-
-  const handleImageFileSelect = async (qId: string, file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP)');
-      return;
-    }
-
-    try {
-      toast.info('جاري رفع الصورة للسيرفر... ⏳');
-      const res = await uploadExamQuestionImage(selectedCourseId, file);
-      if (res?.imageUrl) {
-        handleEditQuestionImageChange(qId, res.imageUrl);
-        toast.success('تم رفع الصورة بنجاح 🖼️');
-        return;
-      }
-    } catch {
-      // Fallback to compressed Base64
-    }
-
-    try {
-      toast.info('جاري ضغط وتحسين الصورة لتناسب المنصة... ⏳');
-      const compressedDataUrl = await compressImageFile(file, 800, 800, 0.65);
-      handleEditQuestionImageChange(qId, compressedDataUrl);
-      toast.success('تم تحميل وضغط الصورة بنجاح 🖼️');
-    } catch {
-      toast.error('حدث خطأ أثناء معالجة الصورة، يرجى المحاولة مرة أخرى');
-    }
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -278,7 +207,9 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
                 delete draftMap[updatedExam._id];
               }
               localStorage.setItem('teacher_draft_exams', JSON.stringify(draftMap));
-            } catch {}
+            } catch {
+              // Ignore storage errors
+            }
           }
           onClose();
           toast.success('تم تحديث الامتحان بنجاح 🎓✨');
@@ -292,161 +223,76 @@ export const EditExamModal: React.FC<EditExamModalProps> = ({
     );
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 my-8 max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
-              <Edit size={22} />
-            </div>
-            <div>
-              <h3 className="text-lg font-extrabold text-slate-800">تعديل الامتحان الشامل</h3>
-              <p className="text-xs text-slate-500 font-semibold">
-                تعديل بيانات وأسئلة الامتحان الحالي (اختيار من متعدد ومقالي وصور الأسئلة)
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleCloseModal}
+    <form onSubmit={handleEditSubmit} className="space-y-6 overflow-y-auto flex-1 pr-1">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
+            عنوان الامتحان الشامل *
+          </label>
+          <input
+            type="text"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            placeholder="عنوان الامتحان..."
             disabled={updateExamMutation.isPending}
-            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer disabled:opacity-50"
-          >
-            <X size={18} />
-          </button>
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition"
+          />
         </div>
 
-        {isLoadingTeacherExam ? (
-          <div className="p-12 flex flex-col items-center justify-center text-center space-y-3">
-            <Loader2 size={36} className="animate-spin text-[#0D8A82]" />
-            <p className="text-xs font-bold text-slate-600">جاري تحميل بيانات الامتحان...</p>
-          </div>
-        ) : isTeacherExamError ? (
-          <div className="p-6 bg-rose-50 rounded-2xl border border-rose-200 text-rose-800 text-center space-y-3">
-            <AlertTriangle size={28} className="mx-auto text-rose-600" />
-            <p className="text-xs font-bold">
-              {toArabicErrorMessage(teacherExamError, 'تعذر تحميل بيانات الامتحان للتعديل')}
-            </p>
-            <button
-              type="button"
-              onClick={() => refetchTeacherExam()}
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition cursor-pointer"
-            >
-              <RefreshCw size={14} />
-              <span>إعادة المحاولة</span>
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleEditSubmit} className="space-y-6 overflow-y-auto flex-1 pr-1">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
-                  عنوان الامتحان الشامل *
-                </label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="عنوان الامتحان..."
-                  disabled={updateExamMutation.isPending}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
-                  المدة الزمنية (بالدقائق) *
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  value={editDuration}
-                  onChange={(e) => setEditDuration(Number(e.target.value))}
-                  disabled={updateExamMutation.isPending}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                  <HelpCircle size={16} className="text-[#0D8A82]" />
-                  <span>أسئلة الامتحان الشامل ({editQuestions.length})</span>
-                </h4>
-                <button
-                  type="button"
-                  onClick={handleEditAddQuestion}
-                  disabled={updateExamMutation.isPending}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-50 text-[#0D8A82] border border-teal-100 text-xs font-bold hover:bg-teal-100 transition cursor-pointer"
-                >
-                  <Plus size={14} />
-                  <span>إضافة سؤال آخر</span>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {editQuestions.map((q, qIndex) => (
-                  <QuestionFormItem
-                    key={q.id}
-                    question={q}
-                    qIndex={qIndex}
-                    totalQuestions={editQuestions.length}
-                    isDisabled={updateExamMutation.isPending}
-                    onTypeChange={handleEditQuestionTypeChange}
-                    onPointsChange={handleEditQuestionPointsChange}
-                    onTextChange={handleEditQuestionTextChange}
-                    onImageChange={handleEditQuestionImageChange}
-                    onImageFileSelect={handleImageFileSelect}
-                    onRemoveQuestion={handleEditRemoveQuestion}
-                    onOptionTextChange={handleEditOptionTextChange}
-                    onAddOption={handleEditAddOption}
-                    onRemoveOption={handleEditRemoveOption}
-                    onSetAnswer={handleEditAnswerSelect}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {editValidationError && (
-              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
-                <AlertTriangle size={16} className="shrink-0 text-rose-600" />
-                <span>{editValidationError}</span>
-              </div>
-            )}
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                disabled={updateExamMutation.isPending}
-                className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer disabled:opacity-50"
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                disabled={updateExamMutation.isPending}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs disabled:opacity-50"
-              >
-                {updateExamMutation.isPending ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    <span>جاري حفظ التعديلات...</span>
-                  </>
-                ) : (
-                  <span>حفظ التعديلات</span>
-                )}
-              </button>
-            </div>
-          </form>
-        )}
+        <div>
+          <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
+            المدة الزمنية (بالدقائق) *
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={editDuration}
+            onChange={(e) => setEditDuration(Number(e.target.value))}
+            disabled={updateExamMutation.isPending}
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition"
+          />
+        </div>
       </div>
-    </div>
+
+      <ExamQuestionsListEditor
+        courseId={selectedCourseId}
+        questions={editQuestions}
+        onChangeQuestions={setEditQuestions}
+        disabled={updateExamMutation.isPending}
+      />
+
+      {editValidationError && (
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+          <AlertTriangle size={16} className="shrink-0 text-rose-600" />
+          <span>{editValidationError}</span>
+        </div>
+      )}
+
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
+        <button
+          type="button"
+          onClick={handleCloseModal}
+          disabled={updateExamMutation.isPending}
+          className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer disabled:opacity-50"
+        >
+          إلغاء
+        </button>
+        <button
+          type="submit"
+          disabled={updateExamMutation.isPending}
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs disabled:opacity-50"
+        >
+          {updateExamMutation.isPending ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              <span>جاري حفظ التعديلات...</span>
+            </>
+          ) : (
+            <span>حفظ التعديلات</span>
+          )}
+        </button>
+      </div>
+    </form>
   );
 };
-
-export default EditExamModal;
-

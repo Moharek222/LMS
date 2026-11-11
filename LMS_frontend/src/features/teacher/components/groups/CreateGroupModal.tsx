@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { FolderKanban, Loader2, X } from 'lucide-react';
+import { FolderKanban, Loader2, X, Layers } from 'lucide-react';
 import { useCreateGroup } from '../../hooks/useCreateGroup';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
+import { Grade, GRADE_OPTIONS } from '../../../../types/grade';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const toast = useToast();
   const createGroupMutation = useCreateGroup();
   const [name, setName] = useState<string>('');
+  const [grade, setGrade] = useState<Grade>(Grade.ThirdSecondary);
   const [validationError, setValidationError] = useState<string>('');
   const [apiError, setApiError] = useState<string>('');
 
@@ -24,6 +26,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const handleClose = () => {
     if (createGroupMutation.isPending) return;
     setName('');
+    setGrade(Grade.ThirdSecondary);
     setValidationError('');
     setApiError('');
     onClose();
@@ -50,12 +53,18 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       return;
     }
 
+    if (!grade) {
+      setValidationError('يرجى اختيار المرحلة الدراسية للمجموعة');
+      return;
+    }
+
     createGroupMutation.mutate(
-      { name: trimmedName },
+      { name: trimmedName, grade },
       {
         onSuccess: () => {
           toast.success('تم إنشاء المجموعة بنجاح 📁');
           setName('');
+          setGrade(Grade.ThirdSecondary);
           setValidationError('');
           setApiError('');
           onClose();
@@ -98,6 +107,31 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
        
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* المرحلة الدراسية */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">
+              المرحلة الدراسية <span className="text-rose-500">*</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {GRADE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setGrade(opt.value)}
+                  disabled={createGroupMutation.isPending}
+                  className={`py-2.5 px-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    grade === opt.value
+                      ? 'bg-teal-50 border-[#0D8A82] text-[#0D8A82] shadow-xs'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Layers size={14} />
+                  <span>{opt.shortLabel}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700">
               اسم المجموعة <span className="text-rose-500">*</span>
@@ -112,7 +146,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 setApiError('');
               }}
               disabled={createGroupMutation.isPending}
-              placeholder="مثال: مجموعة السبت والأربعاء - الصف الأول الثانوي"
+              placeholder="مثال: مجموعة السبت والأربعاء 4 مساءً"
               className={`w-full px-4 py-3 rounded-xl border text-right text-sm font-medium transition outline-none ${
                 validationError ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82]'
               } disabled:bg-slate-50 disabled:cursor-not-allowed`}
