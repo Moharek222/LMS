@@ -19,7 +19,7 @@ import {
 import { registerStudentApi } from '../services/authService';
 import { getGroupsApi } from '../services/groupService';
 import { AuthSplitLayout } from '../components/layout/AuthSplitLayout';
-import type { ApiErrorResponse } from '../types/auth';
+import { toArabicErrorMessage } from '../utils/errorMessage';
 import type { Group } from '../types/group';
 import { Grade, GRADE_OPTIONS } from '../types/grade';
 
@@ -66,27 +66,41 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
   const [isLoading, setIsLoading] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isGroupsLoading, setIsGroupsLoading] = useState(true);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
+
+  const loadGroups = React.useCallback(async () => {
+    setIsGroupsLoading(true);
+    setGroupsError(null);
+    try {
+      const data = await getGroupsApi();
+      setGroups(data);
+    } catch (err) {
+      setGroups([]);
+      setGroupsError(toArabicErrorMessage(err, 'تعذر تحميل المجموعات الدراسية حالياً.'));
+    } finally {
+      setIsGroupsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
-    const fetchGroups = async () => {
-      try {
-        const data = await getGroupsApi();
+    getGroupsApi()
+      .then((data) => {
         if (isMounted) {
           setGroups(data);
         }
-      } catch {
+      })
+      .catch((err) => {
         if (isMounted) {
           setGroups([]);
+          setGroupsError(toArabicErrorMessage(err, 'تعذر تحميل المجموعات الدراسية حالياً.'));
         }
-      } finally {
+      })
+      .finally(() => {
         if (isMounted) {
           setIsGroupsLoading(false);
         }
-      }
-    };
-
-    fetchGroups();
+      });
     return () => {
       isMounted = false;
     };
@@ -132,22 +146,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
 
       setIsSuccess(true);
     } catch (error: unknown) {
-      if (typeof error === 'object' && error !== null && 'response' in error) {
-        const errObj = error as { response?: { status?: number; data?: ApiErrorResponse } };
-        const status = errObj.response?.status;
-        const msg = errObj.response?.data?.message;
-
-        if (status === 409) {
-          setServerError('رقم الهاتف مسجل بالفعل. يمكنك تسجيل الدخول مباشرة.');
-        } else if (status === 400 && errObj.response?.data?.errors) {
-          const firstErr = errObj.response.data.errors[0]?.message;
-          setServerError(firstErr || 'يرجى التأكد من البيانات المدخلة.');
-        } else {
-          setServerError(msg || 'حدث خطأ في السيرفر أثناء إنشاء الحساب.');
-        }
-      } else {
-        setServerError('حدث خطأ غير متوقع أثناء معالجة الطلب.');
-      }
+      setServerError(toArabicErrorMessage(error, 'حدث خطأ في السيرفر أثناء إنشاء الحساب.'));
     } finally {
       setIsLoading(false);
     }
@@ -301,13 +300,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                 <select
                   dir="rtl"
                   {...register('groupId')}
-                  disabled={!selectedGrade || isGroupsLoading}
+                  disabled={!selectedGrade || isGroupsLoading || Boolean(groupsError)}
                   className={`w-full pr-4 pl-10 py-2.5 sm:py-3 rounded-xl border text-right appearance-none ${
                     errors.groupId ? 'border-red-400' : 'border-slate-200'
                   } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed`}
                 >
                   <option value="">
-                    {!selectedGrade
+                    {groupsError
+                      ? 'تعذر تحميل المجموعات الدراسية'
+                      : !selectedGrade
                       ? 'اختر المرحلة الدراسية أولاً لعرض مجموعاتها'
                       : isGroupsLoading
                       ? 'جاري تحميل المجموعات المتاحة...'
@@ -326,6 +327,18 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                   <ChevronDown size={14} />
                 </div>
               </div>
+              {groupsError && (
+                <div className="flex items-center justify-between gap-2 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-1">
+                  <span>{groupsError}</span>
+                  <button
+                    type="button"
+                    onClick={() => void loadGroups()}
+                    className="text-[#0D8A82] hover:underline font-bold shrink-0 cursor-pointer"
+                  >
+                    إعادة المحاولة
+                  </button>
+                </div>
+              )}
               {errors.groupId && (
                 <p className="text-xs font-semibold text-red-600 mt-0.5">{errors.groupId.message}</p>
               )}

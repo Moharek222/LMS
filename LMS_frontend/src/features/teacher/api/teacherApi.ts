@@ -55,7 +55,9 @@ export const updateCourse = async (courseId: string, payload: UpdateCoursePayloa
 };
 
 export const getTeacherCourses = async (): Promise<Course[]> => {
-  const response = await apiClient.get<{ message: string; data: Course[] }>('/api/courses');
+  const response = await apiClient.get<{ message: string; data: Course[] }>('/api/courses', {
+    params: { page: 1, limit: 100 },
+  });
   return response.data.data || [];
 };
 

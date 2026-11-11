@@ -146,7 +146,7 @@ const EditLessonModalContent: React.FC<{
             </div>
             <div>
               <h4 className="text-base font-extrabold text-slate-800">تعديل بيانات الدرس</h4>
-              <p className="text-[11px] text-slate-500 font-semibold">تعديل العنوان والترتيب ومتطلبات الإجتياز</p>
+              <p className="text-[11px] text-slate-500 font-semibold">تعديل العنوان والترتيب ومتطلبات الاجتياز</p>
             </div>
           </div>
           <button
@@ -214,6 +214,9 @@ const EditLessonModalContent: React.FC<{
             currentVideoUrl={contentUrl}
             onVideoUploaded={(key: string) => setContentUrl(key)}
           />
+          <p className="text-[11px] font-semibold text-slate-500 -mt-2 leading-relaxed">
+            ملاحظة: يتم حفظ العنوان والترتيب والوصف ومتطلبات الاجتياز ومذكرة الـ PDF عند التعديل. لاستبدال الفيديو نفسه تأكد من دعم السيرفر أو أنشئ درساً جديداً.
+          </p>
 
           <LessonPdfAttachmentField
             pdfFile={pdfFile}

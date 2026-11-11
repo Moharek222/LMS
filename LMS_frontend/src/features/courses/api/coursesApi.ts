@@ -2,7 +2,9 @@ import apiClient from '../../../services/apiClient';
 import type { Course, StudentCoursesResponse } from '../types/course';
 
 export const getStudentCourses = async (): Promise<Course[]> => {
-  const response = await apiClient.get<StudentCoursesResponse>('/api/courses/student');
+  const response = await apiClient.get<StudentCoursesResponse>('/api/courses/student', {
+    params: { page: 1, limit: 100 },
+  });
   return response.data.data;
 };
 

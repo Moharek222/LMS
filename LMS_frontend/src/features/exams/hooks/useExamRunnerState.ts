@@ -11,7 +11,7 @@ interface ExtendedExamHistoryItem {
   totalScore?: number;
   totalExamPoints?: number;
   totalQuestions?: number;
-  status?: 'GRADED' | 'PENDING_GRADE';
+  status?: 'PENDING' | 'GRADED';
 }
 
 export const useExamRunnerState = (courseId: string, examId: string) => {

@@ -3,7 +3,10 @@ import type { Lesson, GetCourseLessonsResponse } from '../types/lesson';
 
 export const getCourseLessons = async (courseId: string): Promise<Lesson[]> => {
   const response = await apiClient.get<GetCourseLessonsResponse>(
-    `/api/lessons/${courseId}`
+    `/api/lessons/${courseId}`,
+    {
+      params: { page: 1, limit: 100 },
+    }
   );
 
   return response.data.data;

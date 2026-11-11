@@ -319,7 +319,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                   className="px-4 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
                 >
                   <X size={16} />
-                  <span>إغلاق الفديو</span>
+                  <span>إغلاق الفيديو</span>
                 </button>
               </div>
             </div>
