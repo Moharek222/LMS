@@ -13,8 +13,6 @@ import {
   RotateCw,
   PlayCircle,
   Play,
-  Maximize,
-  Minimize,
 } from 'lucide-react';
 import { useLessonVideo } from '../hooks/useLessonVideo';
 import { useMarkLessonAsWatched } from '../hooks/useProgress';
@@ -158,7 +156,6 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
       playbackRates: [0.75, 1, 1.25, 1.5, 1.75, 2],
       controlBar: {
         pictureInPictureToggle: false,
-        fullscreenToggle: false,
         skipButtons: { forward: 10, backward: 10 },
       },
       userActions: {
@@ -172,6 +169,33 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
         },
       ],
     });
+
+    // Redirect video.js fullscreen methods (bottom-right button, double-click, etc.)
+    // to the parent container so floating & center watermarks remain visible in fullscreen.
+    player.isFullscreen = () =>
+      Boolean(
+        playerContainerRef.current &&
+          document.fullscreenElement === playerContainerRef.current
+      );
+
+    player.requestFullscreen = () => {
+      const container = playerContainerRef.current;
+      if (container?.requestFullscreen) {
+        return container.requestFullscreen().catch(() => {
+          setIsCinemaMode(true);
+        });
+      }
+      setIsCinemaMode(true);
+      return Promise.resolve();
+    };
+
+    player.exitFullscreen = () => {
+      if (document.fullscreenElement) {
+        return document.exitFullscreen?.().catch(() => {}) ?? Promise.resolve();
+      }
+      setIsCinemaMode(false);
+      return Promise.resolve();
+    };
 
     playerRef.current = player;
 
@@ -245,7 +269,14 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
     };
 
     const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
+      const isNowFullscreen = Boolean(
+        playerContainerRef.current &&
+          document.fullscreenElement === playerContainerRef.current
+      );
+      setIsFullscreen(isNowFullscreen);
+      if (playerRef.current && !playerRef.current.isDisposed()) {
+        playerRef.current.trigger('fullscreenchange');
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -340,17 +371,6 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
           <>
             {/* Video.js Root Element */}
             <div ref={videoNodeRef} className="w-full h-full relative" />
-
-            {/* Protected Fullscreen Toggle Button (keeps watermarks visible inside fullscreen) */}
-            <button
-              type="button"
-              onClick={handleToggleFullscreen}
-              className="absolute top-3 left-3 z-30 p-2 rounded-xl bg-black/55 hover:bg-black/80 text-white/90 hover:text-white border border-white/20 backdrop-blur-xs transition cursor-pointer shadow-md"
-              title={isFullscreen ? 'إنهاء ملء الشاشة (Esc)' : 'ملء الشاشة'}
-              aria-label={isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة'}
-            >
-              {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
-            </button>
 
             {/* Continuous Floating Watermark */}
             <div className="animate-floating-watermark z-30 pointer-events-none select-none">
