@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { Course } from "../course-model";
 import { Student } from "../../student/student-model";
 import { Role } from "../../user/user-model";
+import { Grade } from "../../interfaces/grade";
 
 
 export const getCourseById: RequestHandler<{ courseID: string }> = async (req, res, next) => {
@@ -24,7 +25,7 @@ export const getCourseById: RequestHandler<{ courseID: string }> = async (req, r
         }
         if (req.user?.role === Role.Student) {
             const student = await Student.findById(id)
-                .select("grade")
+                .select("grade academicTrack")
                 .lean()
                 .exec();
 
@@ -46,6 +47,13 @@ export const getCourseById: RequestHandler<{ courseID: string }> = async (req, r
                 });
             }
 
+            if(course.grade === Grade.SecondSecondary){
+                if(course.academicTrack !== student.academicTrack){
+                    return res.status(StatusCodes.FORBIDDEN).json({
+                        message: "You are not authorized to access this course"
+                    });
+                }
+            }
             if (!course.isActive || !course.isPublished) {
                 return res.status(StatusCodes.NOT_FOUND).json({
                     message: "Course not found"

@@ -33,6 +33,11 @@ interface IResponse {
 export const createGroup: RequestHandler<{}, IResponse, IRequest> = async (req, res) => {
     try {
         const { name, grade } = req.body;
+        if(grade === Grade.SecondSecondary){
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Second secondary groups are not allowed"
+            });
+        }
         const group = await Group.create({ name, grade });
         res.status(StatusCodes.CREATED).json({
             message: "Group created successfully",

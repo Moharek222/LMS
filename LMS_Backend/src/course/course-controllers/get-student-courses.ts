@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
 import { Course } from "../course-model";
 import { Student } from "../../student/student-model";
+import { Grade } from "../../interfaces/grade";
 
 
 export const getStudentCourses: RequestHandler = async (req, res, next) => {
@@ -21,23 +22,23 @@ export const getStudentCourses: RequestHandler = async (req, res, next) => {
                 message: "Student grade has not been assigned yet"
             });
         }
+        const filterQuery: any  = { 
+            isActive: true,
+            isPublished: true,
+            grade: student.grade
+        };
+        if(student.grade===Grade.SecondSecondary){
+            filterQuery.academicTrack = student.academicTrack
+        }
 
         const [courses, total] = await Promise.all([
-            Course.find({
-                isPublished: true,
-                isActive: true,
-                grade: student.grade
-            })
+            Course.find(filterQuery)
                 .sort({ createdAt: -1 })
                 .skip((page - 1) * limit)
                 .limit(limit)
                 .lean()
                 .exec(),
-            Course.countDocuments({
-                isPublished: true,
-                isActive: true,
-                grade: student.grade
-            })
+            Course.countDocuments(filterQuery)
         ])
         res.status(StatusCodes.OK).json({
             message: "Courses fetched successfully",

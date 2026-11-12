@@ -39,7 +39,7 @@ export const getLessonById: RequestHandler<{ lessonID: string }, IResponse, {}> 
             Key: lesson.contentUrl
         });
 
-        const videoUrl = await getSignedUrl(r2Client, command, { expiresIn: 7200 });
+        const videoUrl = await getSignedUrl(r2Client, command, { expiresIn: 3600 });
         res.status(StatusCodes.OK).json({
             message: "Video URL generated successfully",
             data: {

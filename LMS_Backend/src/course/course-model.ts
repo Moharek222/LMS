@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Grade } from "../interfaces/grade";
+import { AcademicTrack } from "../interfaces/academic-track";
 
 
 interface ICourse extends mongoose.Document {
@@ -7,6 +8,7 @@ interface ICourse extends mongoose.Document {
     isActive?: boolean;
     isPublished?: boolean;
     grade:Grade;
+    academicTrack?: AcademicTrack;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -30,6 +32,11 @@ const courseSchema = new mongoose.Schema<ICourse>({
         type: String,
         enum: Object.values(Grade),
         required: true
+    },
+    academicTrack: {
+        type: String,
+        enum: Object.values(AcademicTrack),
+        required: false
     }
 }, {
     timestamps: true,

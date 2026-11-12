@@ -4,6 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import { body } from "express-validator";
 import { Group } from "../group-model";
 import { Student } from "../../student/student-model";
+import { Grade } from "../../interfaces/grade";
 
 export const moveStudentValidation = [
     body("newGroupID")
@@ -35,6 +36,11 @@ export const moveStudent: RequestHandler<{ studentID: string }, IResponse, IRequ
         if (!student || !student.isActive) {
             return res.status(StatusCodes.NOT_FOUND).json({
                 message: "Student not found"
+            });
+        }
+        if(student.grade===Grade.SecondSecondary){
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Cannot move second secondary student"
             });
         }
         const group = await Group.findById(newGroupID).lean().exec();
