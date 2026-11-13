@@ -5,6 +5,7 @@ import { Lesson } from "../lesson-model";
 import { Course } from "../../course/course-model";
 import { Student } from "../../student/student-model";
 import { Role } from "../../user/user-model";
+import { Grade } from "../../interfaces/grade";
 
 
 export const getCourseLessons: RequestHandler<{ courseID: string }> = async (req, res, next) => {
@@ -31,7 +32,7 @@ export const getCourseLessons: RequestHandler<{ courseID: string }> = async (req
         }
         if (req.user?.role === Role.Student) {
             const student = await Student.findById(id)
-                .select("grade")
+                .select("grade academicTrack")
                 .lean()
                 .exec();
 
@@ -52,7 +53,13 @@ export const getCourseLessons: RequestHandler<{ courseID: string }> = async (req
                     message: "You are not authorized to access this course"
                 });
             }
-        }
+            if(student.grade === Grade.SecondSecondary && student.academicTrack !== course.academicTrack)
+            {
+                return res.status(StatusCodes.FORBIDDEN).json({
+                    message: "You are not authorized to access this course"
+                });
+            }
+        }   
         const page = Math.max(1, Number(req.query.page) || 1);
         const limit = Math.max(1, Number(req.query.limit) || 10);
 

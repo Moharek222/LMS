@@ -115,3 +115,4 @@ process.on("SIGTERM", async () => {
         process.exit(0);
     });
 });
+// test:disalbe r2 auto deploy
