@@ -34,7 +34,7 @@ export const getCourseExams: RequestHandler<{ courseID: string }, IResponse> = a
         }
         if (req.user?.role === Role.Student) {
             const student = await Student.findById(id)
-                .select("grade")
+                .select("grade academicTrack")
                 .lean()
                 .exec();
 
@@ -51,6 +51,12 @@ export const getCourseExams: RequestHandler<{ courseID: string }, IResponse> = a
             }
 
             if (student.grade !== courseExists.grade) {
+                return res.status(StatusCodes.FORBIDDEN).json({
+                    message: "You are not authorized to access this course"
+                });
+            }
+
+            if (student.academicTrack !== courseExists.academicTrack) {
                 return res.status(StatusCodes.FORBIDDEN).json({
                     message: "You are not authorized to access this course"
                 });
