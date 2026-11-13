@@ -10,10 +10,12 @@ import { useToast } from '../../../context/ToastContext';
 import { getLessonQuizzes } from '../../quizzes/api/quizzesApi';
 import { getLessonPdfPreview } from '../../teacher/api/teacherApi';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
+import { type Grade, getGradeShortLabel } from '../../../types/grade';
 
 export interface CoursePillItem {
   _id: string;
   title: string;
+  grade?: Grade;
 }
 
 export interface StudentLessonsViewProps {
@@ -225,6 +227,17 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
             >
               <BookOpen size={15} className={selectedCourseId === course._id ? 'text-teal-200' : 'text-slate-400'} />
               <span>{course.title}</span>
+              {course.grade && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                    selectedCourseId === course._id
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {getGradeShortLabel(course.grade)}
+                </span>
+              )}
             </button>
           ))}
         </div>

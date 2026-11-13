@@ -3,7 +3,7 @@ import { Plus, Loader2, AlertTriangle, BookOpen, Video, RefreshCw } from 'lucide
 import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useCourseLessons } from '../../lessons/hooks/useCourseLessons';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
-import { getGradeShortLabel } from '../../../types/grade';
+import { Grade, GRADE_OPTIONS, getGradeShortLabel } from '../../../types/grade';
 import type { Lesson } from '../../lessons/types/lesson';
 import { LessonCard } from './lessons/LessonCard';
 import { CreateLessonModal } from './lessons/CreateLessonModal';
@@ -12,10 +12,17 @@ import { DeleteLessonModal } from './lessons/DeleteLessonModal';
 
 export const LessonManager: React.FC = () => {
   const { data: courses, isLoading: isLoadingCourses } = useTeacherCourses();
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [deletingLesson, setDeletingLesson] = useState<Lesson | null>(null);
+
+  const filteredCourses = React.useMemo(() => {
+    if (!courses) return [];
+    if (selectedGradeFilter === 'ALL') return courses;
+    return courses.filter((c) => c.grade === selectedGradeFilter);
+  }, [courses, selectedGradeFilter]);
 
   const {
     data: lessons,
@@ -33,6 +40,41 @@ export const LessonManager: React.FC = () => {
     <div className="space-y-6">
      
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs max-w-3xl mx-auto space-y-6">
+        {/* Grade Filter Tabs */}
+        {courses && courses.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+            <span className="text-xs font-bold text-slate-500 shrink-0 ml-1">تصفية بالمرحلة:</span>
+            <button
+              type="button"
+              onClick={() => setSelectedGradeFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
+                selectedGradeFilter === 'ALL'
+                  ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              الكل ({courses.length})
+            </button>
+            {GRADE_OPTIONS.map((opt) => {
+              const count = courses.filter((c) => c.grade === opt.value).length;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
+                    selectedGradeFilter === opt.value
+                      ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {opt.shortLabel} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1.5">
             اختر الكورس / المقرر *
@@ -47,6 +89,10 @@ export const LessonManager: React.FC = () => {
               <BookOpen size={16} />
               <span>لا توجد كورسات مضافة. يرجى إضافة كورس أولاً من قسم الكورسات.</span>
             </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-xs font-semibold">
+              لا توجد كورسات مضافة لهذه المرحلة الدراسية.
+            </div>
           ) : (
             <select
               value={selectedCourseId}
@@ -54,7 +100,7 @@ export const LessonManager: React.FC = () => {
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 bg-white"
             >
               <option value="">-- اختر كورس لتنفيذ إضافة الدرس --</option>
-              {courses.map((c) => (
+              {filteredCourses.map((c) => (
                 <option key={c._id} value={c._id}>
                   {c.title} {c.grade ? `— (${getGradeShortLabel(c.grade)})` : ''}
                 </option>

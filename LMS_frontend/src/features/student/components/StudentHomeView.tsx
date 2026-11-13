@@ -6,6 +6,8 @@ import {
   AlertTriangle,
   Award,
   PlayCircle,
+  AlertCircle,
+  Layers,
 } from 'lucide-react';
 import { ChemistryBanner } from '../../../components/dashboard/ChemistryBanner';
 import { KpiStatCard } from '../../../components/dashboard/KpiStatCard';
@@ -16,11 +18,12 @@ import { useStudentWatchHistory } from '../../lessons/hooks/useProgress';
 import { useMyAttendanceStats } from '../../attendance/hooks/useStudentAttendance';
 import { isStudentVerified } from '../../../utils/subscriptionUtils';
 
-import type { Grade } from '../../../types/grade';
+import { type Grade, getGradeLabel, getGradeBadgeStyle } from '../../../types/grade';
 
 export interface CourseItem {
   _id: string;
   title: string;
+  grade?: Grade;
 }
 
 export interface StudentHomeUser {
@@ -86,6 +89,16 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
       {/* Banner */}
       <ChemistryBanner quote="تعلم الكيمياء بفهم وتطبيق وثقة مع منصة الصادق" />
 
+      {/* Missing Grade Alert */}
+      {user && !user.grade && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start sm:items-center gap-3 text-amber-900 text-xs font-bold">
+          <AlertCircle size={20} className="shrink-0 text-amber-600 mt-0.5 sm:mt-0" />
+          <span>
+            لم يتم تحديد مرحلتك الدراسية بعد في حسابك. يرجى مراجعة المعلم لتحديد صفك الدراسي (أولى / ثانية / ثالثة ثانوي) لتظهر لك الدروس والمقررات المخصصة لصفك بدقة.
+          </span>
+        </div>
+      )}
+
       {/* Subscription Card */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
@@ -99,7 +112,15 @@ export const StudentHomeView: React.FC<StudentHomeViewProps> = ({
             {isSubscriptionActive ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
           </div>
           <div>
-            <h4 className="text-sm font-bold text-slate-800">حالة الاشتراك في المنصة</h4>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="text-sm font-bold text-slate-800">حالة الاشتراك في المنصة</h4>
+              {user?.grade && (
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold border ${getGradeBadgeStyle(user.grade).pill}`}>
+                  <Layers size={13} />
+                  <span>{getGradeLabel(user.grade)}</span>
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-500 font-semibold mt-0.5">
               {isSubscriptionActive
                 ? 'اشتراكك نشط ومفعل لمتابعة جميع المحاضرات والامتحانات'

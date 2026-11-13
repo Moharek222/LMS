@@ -21,6 +21,7 @@ import StudentLessonsView from '../../features/lessons/components/StudentLessons
 import RedeemAccessCodeModal from '../../features/student/components/RedeemAccessCodeModal';
 import { useStudentWatchHistory } from '../../features/lessons/hooks/useProgress';
 import { isStudentVerified } from '../../utils/subscriptionUtils';
+import type { Grade } from '../../types/grade';
 
 const validStudentTabs = [
   'home',
@@ -199,7 +200,7 @@ export const StudentDashboard: React.FC = () => {
     refetch: refetchLessons,
   } = useCourseLessons(selectedCourseId);
 
-  const effectiveCourses: Array<{ _id: string; title: string; isPublished?: boolean }> = React.useMemo(() => {
+  const effectiveCourses: Array<{ _id: string; title: string; isPublished?: boolean; grade?: Grade }> = React.useMemo(() => {
     if (!coursesData) return [];
     return coursesData.filter((c) => c.isPublished !== false);
   }, [coursesData]);
@@ -293,7 +294,7 @@ export const StudentDashboard: React.FC = () => {
 
         {(activeTab === 'courses' || activeTab === 'lessons') && (
           <StudentLessonsView
-            courses={effectiveCourses.map((c) => ({ _id: c._id, title: c.title }))}
+            courses={effectiveCourses.map((c) => ({ _id: c._id, title: c.title, grade: c.grade }))}
             selectedCourseId={selectedCourseId}
             onSelectCourse={handleSelectCourse}
             totalLessonsCount={totalLessonsCount}

@@ -5,7 +5,7 @@ import { useCourseExams } from '../../exams/hooks/useCourseExams';
 import { useUpdateExam } from '../hooks/useUpdateExam';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
-import { getGradeShortLabel } from '../../../types/grade';
+import { Grade, GRADE_OPTIONS, getGradeShortLabel } from '../../../types/grade';
 import type { ExamListItem } from '../../exams/types/exam';
 import { ExamCard } from './exams/ExamCard';
 import { CreateExamModal } from './exams/CreateExamModal';
@@ -24,9 +24,21 @@ export const TeacherExamManager: React.FC = () => {
     refetch: refetchCourses,
   } = useTeacherCourses();
 
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
   const [selectedCourseIdState, setSelectedCourseId] = useState<string>('');
+
+  const filteredCourses = React.useMemo(() => {
+    if (!courses) return [];
+    if (selectedGradeFilter === 'ALL') return courses;
+    return courses.filter((c) => c.grade === selectedGradeFilter);
+  }, [courses, selectedGradeFilter]);
+
   const selectedCourseId =
-    selectedCourseIdState || (courses && courses.length > 0 ? courses[0]._id : '');
+    selectedCourseIdState && filteredCourses.some((c) => c._id === selectedCourseIdState)
+      ? selectedCourseIdState
+      : filteredCourses && filteredCourses.length > 0
+      ? filteredCourses[0]._id
+      : '';
 
   const {
     data: exams,
@@ -197,6 +209,41 @@ export const TeacherExamManager: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+        {/* Grade Filter Tabs */}
+        {courses && courses.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+            <span className="text-xs font-bold text-slate-500 shrink-0 ml-1">تصفية بالمرحلة:</span>
+            <button
+              type="button"
+              onClick={() => setSelectedGradeFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
+                selectedGradeFilter === 'ALL'
+                  ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              الكل ({courses.length})
+            </button>
+            {GRADE_OPTIONS.map((opt) => {
+              const count = courses.filter((c) => c.grade === opt.value).length;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
+                    selectedGradeFilter === opt.value
+                      ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {opt.shortLabel} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-2">
           <label className="text-xs font-extrabold text-slate-700 flex items-center gap-2">
             <BookOpen size={16} className="text-[#0D8A82]" />
@@ -235,13 +282,17 @@ export const TeacherExamManager: React.FC = () => {
               يرجى إضافة كورس دراسي أولاً للتمكن من إضافة وإدارة الامتحانات الشاملة.
             </p>
           </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-slate-600 text-xs font-semibold text-center">
+            لا توجد كورسات مضافة لهذه المرحلة الدراسية.
+          </div>
         ) : (
           <select
             value={selectedCourseId}
             onChange={(e) => setSelectedCourseId(e.target.value)}
             className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition cursor-pointer"
           >
-            {courses.map((course) => (
+            {filteredCourses.map((course) => (
               <option key={course._id} value={course._id}>
                 {course.title} {course.grade ? `— (${getGradeShortLabel(course.grade)})` : ''}
               </option>

@@ -4,7 +4,7 @@ import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useCourseLessons } from '../../lessons/hooks/useCourseLessons';
 import { useLessonQuizzes } from '../../quizzes/hooks/useLessonQuizzes';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
-import { getGradeShortLabel } from '../../../types/grade';
+import { Grade, GRADE_OPTIONS, getGradeShortLabel } from '../../../types/grade';
 import type { QuizListItem } from '../../quizzes/types/quiz';
 import { QuizCard } from './quizzes/QuizCard';
 import { CreateQuizModal } from './quizzes/CreateQuizModal';
@@ -14,7 +14,14 @@ import { QuizSubmissionsModal } from './quizzes/QuizSubmissionsModal';
 
 export const QuizBuilder: React.FC = () => {
   const { data: courses, isLoading: isLoadingCourses } = useTeacherCourses();
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
   const [selectedCourseId, setSelectedCourseId] = useState('');
+
+  const filteredCourses = React.useMemo(() => {
+    if (!courses) return [];
+    if (selectedGradeFilter === 'ALL') return courses;
+    return courses.filter((c) => c.grade === selectedGradeFilter);
+  }, [courses, selectedGradeFilter]);
 
   const { data: lessons, isLoading: isLoadingLessons } = useCourseLessons(selectedCourseId);
   const [selectedLessonId, setSelectedLessonId] = useState('');
@@ -36,6 +43,41 @@ export const QuizBuilder: React.FC = () => {
     <div className="space-y-6">
       
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs max-w-4xl mx-auto space-y-6">
+        {/* Grade Filter Tabs */}
+        {courses && courses.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+            <span className="text-xs font-bold text-slate-500 shrink-0 ml-1">تصفية بالمرحلة:</span>
+            <button
+              type="button"
+              onClick={() => setSelectedGradeFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
+                selectedGradeFilter === 'ALL'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              الكل ({courses.length})
+            </button>
+            {GRADE_OPTIONS.map((opt) => {
+              const count = courses.filter((c) => c.grade === opt.value).length;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
+                    selectedGradeFilter === opt.value
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {opt.shortLabel} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200/90">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -45,6 +87,10 @@ export const QuizBuilder: React.FC = () => {
               <div className="p-2.5 bg-white rounded-xl text-xs font-semibold text-slate-400 flex items-center gap-2">
                 <Loader2 size={14} className="animate-spin text-amber-500" />
                 <span>جاري تحميل الكورسات...</span>
+              </div>
+            ) : filteredCourses.length === 0 ? (
+              <div className="p-2.5 bg-white rounded-xl text-xs font-semibold text-slate-400 border border-slate-200">
+                لا توجد كورسات لهذه المرحلة
               </div>
             ) : (
               <select
@@ -56,7 +102,7 @@ export const QuizBuilder: React.FC = () => {
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white focus:outline-none focus:border-amber-500"
               >
                 <option value="">-- اختر كورس --</option>
-                {courses?.map((c) => (
+                {filteredCourses.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.title} {c.grade ? `— (${getGradeShortLabel(c.grade)})` : ''}
                   </option>

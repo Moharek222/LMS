@@ -162,14 +162,19 @@ const EditCourseForm: React.FC<{
       )}
 
       {grade && (
-        <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Layers size={18} className="text-[#0D8A82]" />
-            <span className="text-xs font-bold text-slate-700">المرحلة الدراسية:</span>
+        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Layers size={18} className="text-[#0D8A82]" />
+              <span className="text-xs font-bold text-slate-700">المرحلة الدراسية:</span>
+            </div>
+            <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border ${getGradeBadgeStyle(grade).pill}`}>
+              {getGradeLabel(grade)}
+            </span>
           </div>
-          <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border ${getGradeBadgeStyle(grade).pill}`}>
-            {getGradeLabel(grade)}
-          </span>
+          <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
+            ملاحظة: المرحلة الدراسية للمقرر محددة عند الإنشاء لضمان عزل وصول الطلاب ولا يمكن تعديلها بعد إسناد الدروس والطلاب.
+          </p>
         </div>
       )}
 

@@ -38,10 +38,12 @@ export interface DeactivatedStudent {
   name: string;
   phone: string;
   parentPhone?: string;
+  grade?: Grade;
   isActive: boolean;
   groupID?: {
     _id: string;
     name: string;
+    grade?: Grade;
   } | string;
   createdAt?: string;
   updatedAt?: string;

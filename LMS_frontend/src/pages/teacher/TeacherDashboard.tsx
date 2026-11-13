@@ -17,6 +17,7 @@ import { useTeacherCourses } from '../../features/teacher/hooks/useTeacherCourse
 import { getGroupsApi } from '../../services/groupService';
 import apiClient from '../../services/apiClient';
 import DeactivatedStudentsManager from '../../features/teacher/components/DeactivatedStudentsManager';
+import { GRADE_OPTIONS, getGradeShortLabel, getGradeBadgeStyle } from '../../types/grade';
 import {
   Home,
   BookOpen,
@@ -29,6 +30,7 @@ import {
   UserCheck,
   UserX,
   Users,
+  Layers,
 } from 'lucide-react';
 import type { NavItem } from '../../components/dashboard/Sidebar';
 
@@ -125,12 +127,23 @@ export const TeacherDashboard: React.FC = () => {
     return teacherCourses.map((c) => ({
       id: c._id,
       title: c.title,
-      level: c.isPublished ? 'منشور للمجموعات' : 'مسودة غير منشورة',
+      level: c.grade
+        ? `${getGradeShortLabel(c.grade)} • ${c.isPublished ? 'منشور' : 'مسودة'}`
+        : c.isPublished
+        ? 'منشور للمجموعات'
+        : 'مسودة غير منشورة',
       studentCount: totalStudentsCount,
       progress: c.isPublished ? 100 : 40,
       imageUrl: '',
     }));
   }, [teacherCourses, totalStudentsCount]);
+
+  const gradeCourseCounts = React.useMemo(() => {
+    return GRADE_OPTIONS.map((opt) => ({
+      ...opt,
+      count: (teacherCourses || []).filter((c) => c.grade === opt.value).length,
+    }));
+  }, [teacherCourses]);
 
   return (
     <DashboardLayout
@@ -173,6 +186,35 @@ export const TeacherDashboard: React.FC = () => {
               icon={<Award size={24} />}
               color="green"
             />
+          </div>
+
+          {/* Grade Distribution Bar */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100 shrink-0">
+                <Layers size={16} />
+              </div>
+              <div>
+                <h4 className="text-xs font-extrabold text-slate-800">توزيع المقررات حسب المراحل الدراسية</h4>
+                <p className="text-[11px] text-slate-400 font-semibold">متابعة جاهزية المحتوى للصفوف الثلاثة</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {gradeCourseCounts.map((g) => {
+                const style = getGradeBadgeStyle(g.value);
+                return (
+                  <span
+                    key={g.value}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border flex items-center gap-1.5 ${style.pill}`}
+                  >
+                    <span>{g.shortLabel}:</span>
+                    <span className="font-black underline">{g.count}</span>
+                    <span className="text-[10px] font-semibold opacity-80">مقرر</span>
+                  </span>
+                );
+              })}
+            </div>
           </div>
 
           

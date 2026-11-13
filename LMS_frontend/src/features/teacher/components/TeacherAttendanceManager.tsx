@@ -17,6 +17,7 @@ import {
 } from '../../attendance/hooks/useStudentAttendance';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
+import { Grade, GRADE_OPTIONS, getGradeShortLabel } from '../../../types/grade';
 import { QrAttendanceScannerModal } from './attendance/QrAttendanceScannerModal';
 import { PrintStudentQrCardModal } from '../../student/components/PrintStudentQrCardModal';
 import { MonthlyAttendanceControlPanel } from './attendance/MonthlyAttendanceControlPanel';
@@ -40,6 +41,7 @@ const MONTH_NAMES_AR = [
 
 export const TeacherAttendanceManager: React.FC = () => {
   const toast = useToast();
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [sheetsPage, setSheetsPage] = useState<number>(1);
   const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null);
@@ -69,6 +71,11 @@ export const TeacherAttendanceManager: React.FC = () => {
   } = useTeacherGroups({ limit: 100 });
 
   const activeGroups = (groupsData?.data || []).filter((g) => g.isActive !== false);
+
+  const filteredActiveGroups = useMemo(() => {
+    if (selectedGradeFilter === 'ALL') return activeGroups;
+    return activeGroups.filter((g) => g.grade === selectedGradeFilter);
+  }, [activeGroups, selectedGradeFilter]);
 
   const {
     data: students,
@@ -239,6 +246,41 @@ export const TeacherAttendanceManager: React.FC = () => {
 
       {/* Group, Year & Month Selectors */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+        {/* Grade Filter Tabs */}
+        {activeGroups.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+            <span className="text-xs font-bold text-slate-500 shrink-0 ml-1">تصفية بالمرحلة:</span>
+            <button
+              type="button"
+              onClick={() => setSelectedGradeFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
+                selectedGradeFilter === 'ALL'
+                  ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              الكل ({activeGroups.length})
+            </button>
+            {GRADE_OPTIONS.map((opt) => {
+              const count = activeGroups.filter((g) => g.grade === opt.value).length;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
+                    selectedGradeFilter === opt.value
+                      ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {opt.shortLabel} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700">
@@ -262,9 +304,9 @@ export const TeacherAttendanceManager: React.FC = () => {
                   <span>إعادة المحاولة</span>
                 </button>
               </div>
-            ) : activeGroups.length === 0 ? (
-              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 text-xs font-bold text-amber-800">
-                لا توجد مجموعات نشطة متاحة حالياً.
+            ) : filteredActiveGroups.length === 0 ? (
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-600">
+                لا توجد مجموعات لهذه المرحلة الدراسية.
               </div>
             ) : (
               <select
@@ -274,9 +316,9 @@ export const TeacherAttendanceManager: React.FC = () => {
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-right text-sm font-medium focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] transition outline-none"
               >
                 <option value="">اختر المجموعة الدراسية</option>
-                {activeGroups.map((g) => (
+                {filteredActiveGroups.map((g) => (
                   <option key={g._id} value={g._id}>
-                    {g.name}
+                    {g.name} {g.grade ? `— (${getGradeShortLabel(g.grade)})` : ''}
                   </option>
                 ))}
               </select>
