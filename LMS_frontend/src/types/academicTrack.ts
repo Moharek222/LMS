@@ -1,0 +1,32 @@
+export const AcademicTrack = {
+  General: 'general',
+  Baccalaureate: 'baccalaureate',
+} as const;
+
+export type AcademicTrack = (typeof AcademicTrack)[keyof typeof AcademicTrack];
+
+export interface AcademicTrackOption {
+  value: AcademicTrack;
+  label: string;
+  description: string;
+}
+
+export const ACADEMIC_TRACK_OPTIONS: AcademicTrackOption[] = [
+  {
+    value: AcademicTrack.General,
+    label: 'مسار عام (الثانوية العامة)',
+    description: 'المسار العام لطلاب الثانوية المصرية',
+  },
+  {
+    value: AcademicTrack.Baccalaureate,
+    label: 'مسار بكالوريا دولية (Baccalaureate)',
+    description: 'مسار البكالوريا والشهادات الدولية المتقدمة',
+  },
+];
+
+export const getAcademicTrackLabel = (track?: AcademicTrack | string | null): string => {
+  if (!track) return 'غير محدد';
+  if (track === AcademicTrack.General || track === 'general') return 'عام';
+  if (track === AcademicTrack.Baccalaureate || track === 'baccalaureate') return 'بكالوريا دولية';
+  return String(track);
+};

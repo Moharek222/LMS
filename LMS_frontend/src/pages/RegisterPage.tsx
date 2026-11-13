@@ -15,6 +15,7 @@ import {
   AlertCircle,
   ChevronDown,
   Layers,
+  Compass,
 } from 'lucide-react';
 import { registerStudentApi } from '../services/authService';
 import { getGroupsApi } from '../services/groupService';
@@ -22,35 +23,58 @@ import { AuthSplitLayout } from '../components/layout/AuthSplitLayout';
 import { toArabicErrorMessage } from '../utils/errorMessage';
 import type { Group } from '../types/group';
 import { Grade, GRADE_OPTIONS } from '../types/grade';
+import { AcademicTrack, ACADEMIC_TRACK_OPTIONS } from '../types/academicTrack';
 
-const registerSchema = z.object({
-  name: z
-    .string()
-    .min(1, { message: 'اسم الطالب مطلوب' })
-    .min(3, { message: 'يرجى إدخال اسم الطالب الثلاثي على الأقل' }),
-  phone: z
-    .string()
-    .min(1, { message: 'رقم هاتف الطالب مطلوب' })
-    .regex(/^01[0125][0-9]{8}$/, { message: 'يرجى إدخال رقم هاتف مصري صحيح (11 رقم)' }),
-  parentPhone: z
-    .string()
-    .optional()
-    .refine((val) => !val || /^01[0125][0-9]{8}$/.test(val), {
-      message: 'يرجى إدخال رقم هاتف مصري صحيح لولي الأمر',
+const registerSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1, { message: 'اسم الطالب مطلوب' })
+      .min(3, { message: 'يرجى إدخال اسم الطالب الثلاثي على الأقل' }),
+    phone: z
+      .string()
+      .min(1, { message: 'رقم هاتف الطالب مطلوب' })
+      .regex(/^01[0125][0-9]{8}$/, { message: 'يرجى إدخال رقم هاتف مصري صحيح (11 رقم)' }),
+    parentPhone: z
+      .string()
+      .optional()
+      .refine((val) => !val || /^01[0125][0-9]{8}$/.test(val), {
+        message: 'يرجى إدخال رقم هاتف مصري صحيح لولي الأمر',
+      }),
+    grade: z.enum([Grade.FirstSecondary, Grade.SecondSecondary, Grade.ThirdSecondary], {
+      message: 'يرجى اختيار المرحلة الدراسية',
     }),
-  grade: z.enum([Grade.FirstSecondary, Grade.SecondSecondary, Grade.ThirdSecondary], {
-    message: 'يرجى اختيار المرحلة الدراسية',
-  }),
-  groupId: z.string().min(1, { message: 'يرجى اختيار المجموعة الدراسية' }),
-  password: z
-    .string()
-    .min(1, { message: 'كلمة المرور مطلوبة' })
-    .min(4, { message: 'كلمة المرور يجب أن تكون 4 عناصر على الأقل' }),
-  confirmPassword: z.string().min(1, { message: 'تأكيد كلمة المرور مطلوب' }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'كلمتا المرور غير متطابقتين',
-  path: ['confirmPassword'],
-});
+    groupId: z.string().optional(),
+    academicTrack: z.enum([AcademicTrack.General, AcademicTrack.Baccalaureate]).optional(),
+    password: z
+      .string()
+      .min(1, { message: 'كلمة المرور مطلوبة' })
+      .min(4, { message: 'كلمة المرور يجب أن تكون 4 عناصر على الأقل' }),
+    confirmPassword: z.string().min(1, { message: 'تأكيد كلمة المرور مطلوب' }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'كلمتا المرور غير متطابقتين',
+    path: ['confirmPassword'],
+  })
+  .superRefine((data, ctx) => {
+    if (data.grade === Grade.SecondSecondary) {
+      if (!data.academicTrack) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'يرجى اختيار المسار الأكاديمي (عام أو بكالوريا دولية)',
+          path: ['academicTrack'],
+        });
+      }
+    } else {
+      if (!data.groupId || data.groupId.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'يرجى اختيار المجموعة الدراسية',
+          path: ['groupId'],
+        });
+      }
+    }
+  });
 
 type RegisterInputs = z.infer<typeof registerSchema>;
 
@@ -118,15 +142,18 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
   });
 
   const selectedGrade = useWatch({ control, name: 'grade' });
+  const selectedAcademicTrack = useWatch({ control, name: 'academicTrack' });
 
   const filteredGroups = useMemo(() => {
-    if (!selectedGrade) return [];
+    if (!selectedGrade || selectedGrade === Grade.SecondSecondary) return [];
     return groups.filter((g) => g.grade === selectedGrade);
   }, [groups, selectedGrade]);
 
   useEffect(() => {
-    if (selectedGrade) {
+    if (selectedGrade === Grade.SecondSecondary) {
       setValue('groupId', '');
+    } else {
+      setValue('academicTrack', undefined);
     }
   }, [selectedGrade, setValue]);
 
@@ -139,8 +166,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
         name: data.name,
         phone: data.phone,
         parentPhone: data.parentPhone,
-        groupId: data.groupId,
         grade: data.grade,
+        groupId: data.grade === Grade.SecondSecondary ? undefined : data.groupId,
+        academicTrack: data.grade === Grade.SecondSecondary ? data.academicTrack : undefined,
         password: data.password,
       });
 
@@ -291,58 +319,109 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
               )}
             </div>
 
-            {/* المجموعة الدراسية */}
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-700">
-                المجموعة الدراسية <span className="text-teal-600">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  dir="rtl"
-                  {...register('groupId')}
-                  disabled={!selectedGrade || isGroupsLoading || Boolean(groupsError)}
-                  className={`w-full pr-4 pl-10 py-2.5 sm:py-3 rounded-xl border text-right appearance-none ${
-                    errors.groupId ? 'border-red-400' : 'border-slate-200'
-                  } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed`}
-                >
-                  <option value="">
-                    {groupsError
-                      ? 'تعذر تحميل المجموعات الدراسية'
-                      : !selectedGrade
-                      ? 'اختر المرحلة الدراسية أولاً لعرض مجموعاتها'
-                      : isGroupsLoading
-                      ? 'جاري تحميل المجموعات المتاحة...'
-                      : filteredGroups.length === 0
-                      ? 'لا توجد مجموعات متاحة لهذه المرحلة حالياً'
-                      : 'اختر مجموعتك الدراسية'}
-                  </option>
-                  {filteredGroups.map((group) => (
-                    <option key={group._id} value={group._id}>
-                      {group.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center gap-1">
-                  <GraduationCap size={18} />
-                  <ChevronDown size={14} />
+            {/* في حالة الصف الثاني الثانوي: اختيار المسار الأكاديمي (عام / بكالوريا دولية) */}
+            {selectedGrade === Grade.SecondSecondary ? (
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  المسار الأكاديمي (تانية ثانوي) <span className="text-teal-600">*</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {ACADEMIC_TRACK_OPTIONS.map((track) => {
+                    const isSelected = selectedAcademicTrack === track.value;
+                    return (
+                      <button
+                        type="button"
+                        key={track.value}
+                        onClick={() => {
+                          setValue('academicTrack', track.value, { shouldValidate: true });
+                        }}
+                        className={`p-3 rounded-xl border text-right transition cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-[#0D8A82] bg-teal-50/70 text-[#0D8A82] ring-1 ring-[#0D8A82]'
+                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="text-xs font-bold">{track.label}</span>
+                          <span
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                              isSelected
+                                ? 'border-[#0D8A82] bg-[#0D8A82]'
+                                : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                          {track.description}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+                {errors.academicTrack && (
+                  <p className="text-xs font-semibold text-red-600 mt-0.5">{errors.academicTrack.message}</p>
+                )}
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <Compass size={14} className="text-[#0D8A82] shrink-0" />
+                  <span>طلاب الصف الثاني الثانوي يتم قيدهم بالمنصة إلكترونياً مباشرة وفق المسار المحدد بدون مجموعات سنتر.</span>
                 </div>
               </div>
-              {groupsError && (
-                <div className="flex items-center justify-between gap-2 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-1">
-                  <span>{groupsError}</span>
-                  <button
-                    type="button"
-                    onClick={() => void loadGroups()}
-                    className="text-[#0D8A82] hover:underline font-bold shrink-0 cursor-pointer"
+            ) : (
+              /* في حالة أولى وتالتة ثانوي: اختيار المجموعة الدراسية */
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700">
+                  المجموعة الدراسية <span className="text-teal-600">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    dir="rtl"
+                    {...register('groupId')}
+                    disabled={!selectedGrade || isGroupsLoading || Boolean(groupsError)}
+                    className={`w-full pr-4 pl-10 py-2.5 sm:py-3 rounded-xl border text-right appearance-none ${
+                      errors.groupId ? 'border-red-400' : 'border-slate-200'
+                    } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed`}
                   >
-                    إعادة المحاولة
-                  </button>
+                    <option value="">
+                      {groupsError
+                        ? 'تعذر تحميل المجموعات الدراسية'
+                        : !selectedGrade
+                        ? 'اختر المرحلة الدراسية أولاً لعرض مجموعاتها'
+                        : isGroupsLoading
+                        ? 'جاري تحميل المجموعات المتاحة...'
+                        : filteredGroups.length === 0
+                        ? 'لا توجد مجموعات متاحة لهذه المرحلة حالياً'
+                        : 'اختر مجموعتك الدراسية'}
+                    </option>
+                    {filteredGroups.map((group) => (
+                      <option key={group._id} value={group._id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center gap-1">
+                    <GraduationCap size={18} />
+                    <ChevronDown size={14} />
+                  </div>
                 </div>
-              )}
-              {errors.groupId && (
-                <p className="text-xs font-semibold text-red-600 mt-0.5">{errors.groupId.message}</p>
-              )}
-            </div>
+                {groupsError && (
+                  <div className="flex items-center justify-between gap-2 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-1">
+                    <span>{groupsError}</span>
+                    <button
+                      type="button"
+                      onClick={() => void loadGroups()}
+                      className="text-[#0D8A82] hover:underline font-bold shrink-0 cursor-pointer"
+                    >
+                      إعادة المحاولة
+                    </button>
+                  </div>
+                )}
+                {errors.groupId && (
+                  <p className="text-xs font-semibold text-red-600 mt-0.5">{errors.groupId.message}</p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-1">
               <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>

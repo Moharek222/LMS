@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Edit3,
   Layers,
+  Compass,
 } from 'lucide-react';
 import { useAuth } from '../../../context/useAuth';
 import { getGroupsApi } from '../../../services/groupService';
@@ -18,7 +19,8 @@ import { StudentQRCode } from './StudentQRCode';
 import { StudentGradebookCard } from './StudentGradebookCard';
 import { EditStudentProfileModal } from './EditStudentProfileModal';
 import { isStudentVerified } from '../../../utils/subscriptionUtils';
-import { getGradeLabel } from '../../../types/grade';
+import { Grade, getGradeLabel } from '../../../types/grade';
+import { getAcademicTrackLabel } from '../../../types/academicTrack';
 
 export const StudentProfileCard: React.FC = () => {
   const { user } = useAuth();
@@ -137,15 +139,29 @@ export const StudentProfileCard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
-              <Users size={20} />
+          {studentGrade === Grade.SecondSecondary ? (
+            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
+                <Compass size={20} />
+              </div>
+              <div>
+                <span className="text-[11px] text-slate-400 font-bold block">المسار الأكاديمي</span>
+                <span className="text-sm font-extrabold text-slate-800">
+                  {getAcademicTrackLabel(myProfile?.academicTrack || user?.academicTrack)}
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-[11px] text-slate-400 font-bold block">المجموعة</span>
-              <span className="text-sm font-extrabold text-slate-800">{groupName}</span>
+          ) : (
+            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs">
+                <Users size={20} />
+              </div>
+              <div>
+                <span className="text-[11px] text-slate-400 font-bold block">المجموعة</span>
+                <span className="text-sm font-extrabold text-slate-800">{groupName}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           
           <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3.5">

@@ -1,4 +1,5 @@
 import { Grade } from './grade';
+import { AcademicTrack } from './academicTrack';
 
 export interface UserProfile {
   id: string;
@@ -9,6 +10,7 @@ export interface UserProfile {
   role: 'student' | 'teacher' | 'admin';
   groupId?: string;
   grade?: Grade;
+  academicTrack?: AcademicTrack;
   isActive?: boolean;
   hasActiveSubscription?: boolean;
 }
@@ -33,8 +35,9 @@ export interface StudentRegisterCredentials {
   name: string;
   phone: string;
   parentPhone?: string;
-  groupId: string;
+  groupId?: string;
   grade: Grade;
+  academicTrack?: AcademicTrack;
   password?: string;
 }
 
@@ -60,8 +63,9 @@ export interface StudentLoginResponse {
     name: string;
     phone: string;
     parentPhone?: string;
-    groupID: string;
+    groupID?: string;
     grade?: Grade;
+    academicTrack?: AcademicTrack;
     hasActiveSubscription: boolean;
   };
 }
@@ -72,8 +76,9 @@ export interface StudentRegisterResponse {
     _id: string;
     name: string;
     phone: string;
-    groupID: string;
+    groupID?: string;
     grade?: Grade;
+    academicTrack?: AcademicTrack;
   };
 }
 

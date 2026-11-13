@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { Grade } from '../types/grade';
 import type {
   TeacherLoginCredentials,
   StudentLoginCredentials,
@@ -63,19 +64,30 @@ export const loginStudentApi = async (credentials: StudentLoginCredentials): Pro
     role: 'student',
     groupId: backendStudent.groupID,
     grade: backendStudent.grade,
+    academicTrack: backendStudent.academicTrack,
     hasActiveSubscription: backendStudent.hasActiveSubscription,
   };
 };
 
 export const registerStudentApi = async (credentials: StudentRegisterCredentials): Promise<StudentRegisterResponse> => {
-  const payload = {
+  const payload: Record<string, unknown> = {
     name: credentials.name,
     phone: credentials.phone,
-    parentPhone: credentials.parentPhone,
     password: credentials.password,
-    groupID: credentials.groupId,
     grade: credentials.grade,
   };
+
+  if (credentials.parentPhone) {
+    payload.parentPhone = credentials.parentPhone;
+  }
+
+  if (credentials.grade === Grade.SecondSecondary) {
+    if (credentials.academicTrack) {
+      payload.academicTrack = credentials.academicTrack;
+    }
+  } else if (credentials.groupId) {
+    payload.groupID = credentials.groupId;
+  }
 
   const response = await apiClient.post<StudentRegisterResponse>('/api/auth/register', payload);
   return response.data;
@@ -131,6 +143,7 @@ interface BackendMeProfile {
   parentPhone?: string;
   role?: 'student' | 'teacher' | 'admin';
   grade?: UserProfile['grade'];
+  academicTrack?: UserProfile['academicTrack'];
   groupID?: { _id: string; name?: string } | string;
   isActive?: boolean;
   isDeactivated?: boolean;
@@ -150,6 +163,7 @@ export const getMeApi = async (): Promise<UserProfile | null> => {
     parentPhone: backendData.parentPhone,
     role: backendData.role || (backendData.email ? 'teacher' : 'student'),
     grade: backendData.grade,
+    academicTrack: backendData.academicTrack,
     groupId: typeof backendData.groupID === 'object' ? backendData.groupID?._id : backendData.groupID,
     isActive: backendData.isActive !== false && backendData.isDeactivated !== true,
     hasActiveSubscription: backendData.hasActiveSubscription,

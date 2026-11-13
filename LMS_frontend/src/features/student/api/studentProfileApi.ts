@@ -1,5 +1,6 @@
 import apiClient from '../../../services/apiClient';
 import type { Grade } from '../../../types/grade';
+import type { AcademicTrack } from '../../../types/academicTrack';
 
 export interface UpdateStudentProfilePayload {
   name?: string;
@@ -25,6 +26,7 @@ export interface StudentProfileData {
   parentPhone?: string;
   role: string;
   grade?: Grade;
+  academicTrack?: AcademicTrack;
   groupID?: {
     _id: string;
     name: string;
