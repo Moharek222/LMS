@@ -3,6 +3,7 @@ import StatusCodes from "http-status-codes";
 import { Course } from "../course-model";
 import { body } from "express-validator";
 import { Grade } from "../../interfaces/grade";
+import { AcademicTrack } from "../../interfaces/academic-track";
 
 
 export const addCourseValidation = [
@@ -19,13 +20,18 @@ export const addCourseValidation = [
         .notEmpty()
         .withMessage("Grade is required")
         .isIn(Object.values(Grade))
-        .withMessage("Invalid grade")
+        .withMessage("Invalid grade"),
+    body("academicTrack")
+        .optional()
+        .isIn(Object.values(AcademicTrack))
+        .withMessage("Invalid academic track")
 ];
 
 interface IRequest {
     title: string,
     grade: Grade,
-    isPublished?: boolean
+    isPublished?: boolean,
+    academicTrack?: AcademicTrack;
 }
 interface IResponse {
     message: string
@@ -34,8 +40,20 @@ interface IResponse {
 
 export const addCourse: RequestHandler<{}, IResponse, IRequest> = async (req, res, next) => {
     try {
-        const { title, isPublished, grade } = req.body;
-        const course = await Course.create({ title, isPublished, grade });
+        const { title, isPublished, grade ,academicTrack } = req.body;
+        if(grade === Grade.SecondSecondary){
+            if(!academicTrack){
+                return res.status(StatusCodes.BAD_REQUEST).json({
+                    message: "Please provide academic track"
+                });
+            }
+        }
+        const course = await Course.create({
+            title,
+            isPublished,
+            grade,
+            academicTrack
+        });
         res.status(StatusCodes.CREATED).json({
             message: "Course created successfully",
             data: course

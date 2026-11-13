@@ -1,16 +1,19 @@
 import mongoose from "mongoose";
 import { Role } from "../user/user-model";
 import { Grade } from "../interfaces/grade";
+import { AcademicTrack } from "../interfaces/academic-track";
+
 
 
 interface IStudent extends mongoose.Document {
     groupID?: mongoose.Types.ObjectId;
     name: string;
     phone: string;
-    password:string;
+    password: string;
     parentPhone?: string | null;
-    role:Role;
-    grade:Grade
+    role: Role;
+    grade: Grade
+    academicTrack?: AcademicTrack;
     isActive: boolean;
     activeToken?: string | null;
     createdAt?: Date;
@@ -42,7 +45,7 @@ const studentSchema = new mongoose.Schema<IStudent>({
         select: false,
         minlength: 4
     },
-    role : {
+    role: {
         type: String,
         enum: Object.values(Role),
         default: Role.Student
@@ -51,6 +54,11 @@ const studentSchema = new mongoose.Schema<IStudent>({
         type: String,
         enum: Object.values(Grade),
         required: true
+    },
+    academicTrack: {
+        type: String,
+        enum: Object.values(AcademicTrack),
+        required: false,
     },
     parentPhone: {
         type: String,

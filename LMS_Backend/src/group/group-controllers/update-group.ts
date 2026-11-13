@@ -68,6 +68,11 @@ export const updateGroup: RequestHandler<
                 message: "Please provide at least one field to update",
             });
         }
+        if(grade === Grade.SecondSecondary){
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Second secondary groups are not allowed"
+            });
+        }
 
         const currentGroup = await Group.findById(groupID)
             .select("grade")
