@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { getTeacherCourses } from '../api/teacherApi';
 import type { Course } from '../../courses/types/course';
+import { courseQueryKeys } from '../../courses/constants/courseQueryKeys';
 
 export const useTeacherCourses = () => {
   return useQuery<Course[], Error>({
-    queryKey: ['teacher-courses'],
+    queryKey: courseQueryKeys.teacher(),
     queryFn: getTeacherCourses,
     refetchOnWindowFocus: false,
     retry: false,

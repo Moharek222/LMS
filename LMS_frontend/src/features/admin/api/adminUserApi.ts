@@ -32,17 +32,25 @@ export interface GetAdminsResponse {
   data: AdminUserItem[];
 }
 
-export const getAdmins = async (page: number = 1, limit: number = 10): Promise<GetAdminsResponse> => {
+export const getAdmins = async (page: number = 1, limit: number = 50): Promise<GetAdminsResponse> => {
   try {
     const response = await apiClient.get<GetAdminsResponse>('/api/users/admins', {
       params: { page, limit },
     });
     return response.data;
-  } catch {
-    const response = await apiClient.get<GetAdminsResponse>('/api/users/admin', {
-      params: { page, limit },
-    });
-    return response.data;
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status === 404) {
+      return {
+        message: 'Endpoint not mapped yet',
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+        data: [],
+      };
+    }
+    throw err;
   }
 };
 

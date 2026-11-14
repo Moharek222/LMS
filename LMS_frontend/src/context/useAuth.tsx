@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import type { UserProfile, TeacherLoginCredentials, StudentLoginCredentials } from '../types/auth';
 import { loginTeacherApi, loginStudentApi, logoutApi, getMeApi } from '../services/authService';
@@ -22,6 +23,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<UserProfile | null>(() => {
     const savedUser = localStorage.getItem('lms_user');
     if (savedUser) {
@@ -138,6 +140,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await logoutApi().catch(() => {});
     } finally {
       clearAllStudentVerifications();
+      queryClient.clear();
       setUser(null);
       localStorage.removeItem('lms_user');
       setIsLoading(false);

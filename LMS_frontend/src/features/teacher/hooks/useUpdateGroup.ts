@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateGroup } from '../api/teacherGroupsApi';
 import type { Group, UpdateGroupPayload } from '../types/groupManagement';
-import { TEACHER_GROUPS_QUERY_KEY } from './useTeacherGroups';
+import { teacherQueryKeys } from '../constants/teacherQueryKeys';
 
 export interface UpdateGroupVariables {
   groupId: string;
@@ -15,7 +15,7 @@ export const useUpdateGroup = () => {
     mutationFn: ({ groupId, payload }) => updateGroup(groupId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: TEACHER_GROUPS_QUERY_KEY,
+        queryKey: teacherQueryKeys.groupsRoot(),
       });
     },
   });

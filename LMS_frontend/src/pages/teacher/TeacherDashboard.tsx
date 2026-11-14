@@ -1,22 +1,25 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
 import { ChemistryBanner } from '../../components/dashboard/ChemistryBanner';
 import { KpiStatCard } from '../../components/dashboard/KpiStatCard';
 import { RecentStudentsWidget, type JoinedStudent } from '../../components/dashboard/RecentStudentsWidget';
 import { CourseProgressWidget, type CourseItem } from '../../components/dashboard/CourseProgressWidget';
-import { CourseManager } from '../../features/teacher/components/CourseManager';
-import { LessonManager } from '../../features/teacher/components/LessonManager';
-import { QuizBuilder } from '../../features/teacher/components/QuizBuilder';
-import { TeacherExamManager } from '../../features/teacher/components/TeacherExamManager';
-import TeacherGroupManager from '../../features/teacher/components/TeacherGroupManager';
-import TeacherAccessCodeManager from '../../features/teacher/components/TeacherAccessCodeManager';
-import TeacherAttendanceManager from '../../features/teacher/components/TeacherAttendanceManager';
-import AdminUserManagement from '../../features/admin/components/AdminUserManagement';
-import { useTeacherCourses } from '../../features/teacher/hooks/useTeacherCourses';
-import { getGroupsApi } from '../../services/groupService';
+import {
+  CourseManager,
+  LessonManager,
+  QuizBuilder,
+  TeacherExamManager,
+  TeacherGroupManager,
+  TeacherAccessCodeManager,
+  TeacherAttendanceManager,
+  DeactivatedStudentsManager,
+  useTeacherCourses,
+  useTeacherGroups,
+} from '../../features/teacher';
+import { AdminUserManagement } from '../../features/admin';
 import apiClient from '../../services/apiClient';
-import DeactivatedStudentsManager from '../../features/teacher/components/DeactivatedStudentsManager';
 import { GRADE_OPTIONS, getGradeShortLabel, getGradeBadgeStyle } from '../../types/grade';
 import {
   Home,
@@ -44,6 +47,7 @@ const validTeacherTabs = [
   'activate-students',
   'attendance',
   'access-codes',
+  'admins',
   'students',
   'profile',
 ];
@@ -58,7 +62,7 @@ const teacherNavItems: NavItem[] = [
   { id: 'activate-students', label: 'تفعيل الطلاب', icon: <UserX size={20} /> },
   { id: 'attendance', label: 'الغياب (QR)', icon: <CalendarCheck size={20} /> },
   { id: 'access-codes', label: 'أكواد التفعيل', icon: <KeyRound size={20} /> },
-  { id: 'students', label: 'إدارة المدراء والمنصة', icon: <UserCheck size={20} /> },
+  { id: 'admins', label: 'إدارة المدراء والمنصة', icon: <UserCheck size={20} /> },
 ];
 
 export const TeacherDashboard: React.FC = () => {
@@ -73,54 +77,40 @@ export const TeacherDashboard: React.FC = () => {
   const { data: teacherCourses } = useTeacherCourses();
   const totalCourses = teacherCourses?.length || 0;
 
-  const [groupsCount, setGroupsCount] = React.useState<number>(0);
-  const [totalStudentsCount, setTotalStudentsCount] = React.useState<number>(0);
-  const [recentStudents, setRecentStudents] = React.useState<JoinedStudent[]>([]);
+  const { data: groupsData } = useTeacherGroups({ page: 1, limit: 100 });
+  const groupsCount = groupsData?.total ?? groupsData?.data?.length ?? 0;
 
-  React.useEffect(() => {
-    let isMounted = true;
+  const { data: studentsSummary } = useQuery<{
+    total?: number;
+    data?: Array<{
+      _id: string;
+      name: string;
+      phone?: string;
+      groupID?: { name?: string };
+    }>;
+  }>({
+    queryKey: ['platform-students-summary'],
+    queryFn: async () => {
+      const res = await apiClient.get('/api/students', {
+        params: { page: 1, limit: 5 },
+      });
+      return res.data;
+    },
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
-    const fetchDashboardData = async () => {
-      try {
-        const groups = await getGroupsApi();
-        if (isMounted) {
-          setGroupsCount(groups.length);
-        }
-      } catch {
-        if (isMounted) setGroupsCount(0);
-      }
+  const totalStudentsCount = studentsSummary?.total || 0;
 
-      try {
-        const res = await apiClient.get('/api/students', {
-          params: { page: 1, limit: 5 },
-        });
-
-        if (isMounted && res.data) {
-          setTotalStudentsCount(res.data.total || 0);
-          if (Array.isArray(res.data.data)) {
-            const mappedStudents: JoinedStudent[] = res.data.data.map((s: { _id: string; name: string; phone?: string; groupID?: { name?: string } }) => ({
-              id: s._id,
-              name: s.name,
-              groupName: s.groupID?.name || s.phone || 'طالب مسجل',
-              timeAgo: 'انضم حديثاً',
-            }));
-            setRecentStudents(mappedStudents);
-          }
-        }
-      } catch {
-        if (isMounted) {
-          setRecentStudents([]);
-          setTotalStudentsCount(0);
-        }
-      }
-    };
-
-    fetchDashboardData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const recentStudents: JoinedStudent[] = React.useMemo(() => {
+    if (!studentsSummary?.data || !Array.isArray(studentsSummary.data)) return [];
+    return studentsSummary.data.map((s) => ({
+      id: s._id,
+      name: s.name,
+      groupName: s.groupID?.name || s.phone || 'طالب مسجل',
+      timeAgo: 'انضم حديثاً',
+    }));
+  }, [studentsSummary]);
 
   const formattedCourses: CourseItem[] = React.useMemo(() => {
     if (!teacherCourses || teacherCourses.length === 0) return [];
@@ -243,7 +233,7 @@ export const TeacherDashboard: React.FC = () => {
       {activeTab === 'activate-students' && <DeactivatedStudentsManager />}
       {activeTab === 'access-codes' && <TeacherAccessCodeManager />}
       {activeTab === 'attendance' && <TeacherAttendanceManager />}
-      {activeTab === 'students' && <AdminUserManagement />}
+      {(activeTab === 'admins' || activeTab === 'students') && <AdminUserManagement />}
     </DashboardLayout>
   );
 };

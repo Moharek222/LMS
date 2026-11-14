@@ -15,18 +15,18 @@ export const ACADEMIC_TRACK_OPTIONS: AcademicTrackOption[] = [
   {
     value: AcademicTrack.General,
     label: 'مسار عام (الثانوية العامة)',
-    description: 'المسار العام لطلاب الثانوية المصرية',
+    description: 'المسار العام  ',
   },
   {
     value: AcademicTrack.Baccalaureate,
-    label: 'مسار بكالوريا دولية (Baccalaureate)',
-    description: 'مسار البكالوريا والشهادات الدولية المتقدمة',
+    label: 'مسار بكالوريا  (Baccalaureate)',
+    description: 'مسار البكالوريا',
   },
 ];
 
 export const getAcademicTrackLabel = (track?: AcademicTrack | string | null): string => {
   if (!track) return 'غير محدد';
   if (track === AcademicTrack.General || track === 'general') return 'عام';
-  if (track === AcademicTrack.Baccalaureate || track === 'baccalaureate') return 'بكالوريا دولية';
+  if (track === AcademicTrack.Baccalaureate || track === 'baccalaureate') return 'بكالوريا ';
   return String(track);
 };

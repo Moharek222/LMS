@@ -53,6 +53,15 @@ export const useExamRunnerState = (courseId: string, examId: string, studentId?:
   const isSubmittingRef = useRef<boolean>(false);
   const isAutoSubmittedRef = useRef<boolean>(false);
   const userAnswersRef = useRef<Record<string, string>>(userAnswers);
+  const saveIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (saveIndicatorTimeoutRef.current) {
+        clearTimeout(saveIndicatorTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const existingSubmission = React.useMemo(() => {
     if (!examHistoryData?.data) return null;
@@ -241,7 +250,13 @@ export const useExamRunnerState = (courseId: string, examId: string, studentId?:
     });
 
     setSaveIndicator(true);
-    setTimeout(() => setSaveIndicator(false), 1500);
+    if (saveIndicatorTimeoutRef.current) {
+      clearTimeout(saveIndicatorTimeoutRef.current);
+    }
+    saveIndicatorTimeoutRef.current = setTimeout(() => {
+      setSaveIndicator(false);
+      saveIndicatorTimeoutRef.current = null;
+    }, 1500);
   };
 
   const formatTime = (seconds: number) => {

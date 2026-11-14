@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateQuiz } from '../api/teacherQuizzesApi';
+import { quizQueryKeys } from '../constants/quizQueryKeys';
 import type { UpdateQuizPayload, TeacherQuiz } from '../types/quiz';
-import { LESSON_QUIZZES_QUERY_KEY } from './useLessonQuizzes';
-import { TEACHER_QUIZ_QUERY_KEY } from './useTeacherQuiz';
 
 export interface UpdateQuizVariables {
   lessonId: string;
@@ -17,10 +16,10 @@ export const useUpdateQuiz = () => {
     mutationFn: ({ lessonId, quizId, payload }) => updateQuiz(lessonId, quizId, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: [...LESSON_QUIZZES_QUERY_KEY, variables.lessonId],
+        queryKey: quizQueryKeys.lessonQuizzes(variables.lessonId),
       });
       queryClient.invalidateQueries({
-        queryKey: [...TEACHER_QUIZ_QUERY_KEY, variables.lessonId, variables.quizId],
+        queryKey: quizQueryKeys.teacherQuiz(variables.lessonId, variables.quizId),
       });
     },
   });

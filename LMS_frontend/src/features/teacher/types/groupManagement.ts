@@ -1,4 +1,5 @@
 import { Grade } from '../../../types/grade';
+import { AcademicTrack } from '../../../types/academicTrack';
 
 export interface PaginatedResponse<T> {
   message: string;
@@ -84,8 +85,12 @@ export interface MoveStudentResponse {
 }
 
 export interface AccessCodeStudent {
+  _id?: string;
   name: string;
   phone: string;
+  grade?: Grade | string;
+  academicTrack?: AcademicTrack | string;
+  groupName?: string;
 }
 
 export interface AccessCode {
@@ -97,6 +102,14 @@ export interface AccessCode {
   status: string;
   createdAt?: string;
   updatedAt?: string;
+  enrichedStudent?: {
+    _id?: string;
+    name: string;
+    phone?: string;
+    grade?: Grade | string;
+    academicTrack?: AcademicTrack | string;
+    groupName?: string;
+  };
 }
 
 export type PaginatedAccessCodesResponse = PaginatedResponse<AccessCode>;

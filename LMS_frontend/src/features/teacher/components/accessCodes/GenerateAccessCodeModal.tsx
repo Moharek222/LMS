@@ -13,6 +13,8 @@ import type {
   GroupStudent,
   Group,
 } from '../../types/groupManagement';
+import { Grade } from '../../../../types/grade';
+import { AcademicTrack } from '../../../../types/academicTrack';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
 import { PrintAccessCodesModal } from './PrintAccessCodesModal';
@@ -112,6 +114,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
     return Array.isArray(groupStudents) ? groupStudents : [];
   }, [groupStudents]);
 
+  // Load all students whenever modal is open so instant search and 2nd sec cohorts work seamlessly
   const {
     data: allStudents,
     isLoading: isLoadingAllStudents,
@@ -121,7 +124,8 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
   } = useQuery({
     queryKey: ['all-active-students-list'],
     queryFn: () => getAllStudentsApi(),
-    enabled: isOpen && mode === 'all',
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000,
   });
 
   const safeAllStudents = useMemo(() => {
@@ -129,17 +133,43 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
   }, [allStudents]);
 
   const studentMap = useMemo(() => {
-    const map = new Map<string, { name: string; phone?: string }>();
+    const map = new Map<
+      string,
+      {
+        name: string;
+        phone?: string;
+        grade?: Grade | string;
+        academicTrack?: AcademicTrack | string;
+        groupName?: string;
+      }
+    >();
+
     safeAllStudents.forEach((s) => {
       if (s && s._id) {
-        map.set(String(s._id), { name: s.name || 'طالب مسجل', phone: s.phone || '' });
+        let groupName = '';
+        if (s.groupID && typeof s.groupID === 'object' && 'name' in s.groupID) {
+          groupName = s.groupID.name;
+        }
+        map.set(String(s._id), {
+          name: s.name || 'طالب مسجل',
+          phone: s.phone || '',
+          grade: s.grade,
+          academicTrack: s.academicTrack,
+          groupName,
+        });
       }
     });
+
     safeGroupStudents.forEach((s) => {
-      if (s && s._id) {
-        map.set(String(s._id), { name: s.name || 'طالب مسجل', phone: s.phone || '' });
+      if (s && s._id && !map.has(String(s._id))) {
+        map.set(String(s._id), {
+          name: s.name || 'طالب مسجل',
+          phone: s.phone || '',
+          grade: s.grade,
+        });
       }
     });
+
     return map;
   }, [safeAllStudents, safeGroupStudents]);
 
@@ -154,6 +184,14 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
         startAt: g.expiresAt || '',
         expiresAt: g.expiresAt || '',
         status: 'active',
+        enrichedStudent: {
+          _id: String(g.studentID),
+          name: s.name,
+          phone: s.phone,
+          grade: s.grade,
+          academicTrack: s.academicTrack,
+          groupName: s.groupName,
+        },
       };
     });
   }, [groupResult, studentMap]);
@@ -187,12 +225,8 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
     setValidationError('');
     setApiError('');
 
-    if (!selectedGroupId) {
-      setValidationError('يرجى اختيار المجموعة أولاً');
-      return;
-    }
     if (!selectedStudentId) {
-      setValidationError('يرجى اختيار الطالب لتوليد كود تفعيل له');
+      setValidationError('يرجى تحديد أو اختيار الطالب لتوليد كود تفعيل له');
       return;
     }
 
@@ -207,8 +241,36 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
           let msg = toArabicErrorMessage(err, 'حدث خطأ أثناء إنشاء كود التفعيل');
           const errorObj = err as { response?: { status?: number; data?: { message?: string } } };
           if (errorObj?.response?.status === 400) {
-            msg = errorObj?.response?.data?.message || 'الطالب لديه كود تفعيل نشط بالفعل ولا يمكن إنشاء كود جديد له حالياً.';
+            msg =
+              errorObj?.response?.data?.message ||
+              'الطالب لديه كود تفعيل نشط بالفعل ولا يمكن إنشاء كود جديد له حالياً.';
           }
+          setApiError(msg);
+          toast.error(msg);
+        },
+      }
+    );
+  };
+
+  const handleBatchSubmit = (studentIDs: string[], cohortName: string) => {
+    setValidationError('');
+    setApiError('');
+
+    if (!studentIDs || studentIDs.length === 0) {
+      setValidationError(`لا يوجد طلاب في ${cohortName} لتوليد أكواد لهم`);
+      return;
+    }
+
+    generateGroupMutation.mutate(
+      { studentIDs },
+      {
+        onSuccess: (res) => {
+          const genCount = Array.isArray(res?.generated) ? res.generated.length : 0;
+          toast.success(`تم إنشاء ${genCount} كود لـ ${cohortName} بنجاح! 🎉`);
+          setGroupResult(res);
+        },
+        onError: (err: unknown) => {
+          const msg = toArabicErrorMessage(err, `حدث خطأ أثناء توليد الأكواد لـ ${cohortName}`);
           setApiError(msg);
           toast.error(msg);
         },
@@ -230,21 +292,8 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
       return;
     }
 
-    generateGroupMutation.mutate(
-      { studentIDs },
-      {
-        onSuccess: (res) => {
-          const genCount = Array.isArray(res?.generated) ? res.generated.length : 0;
-          toast.success(`تم إنشاء ${genCount} كود تفعيل بنجاح! 🎉`);
-          setGroupResult(res);
-        },
-        onError: (err: unknown) => {
-          const msg = toArabicErrorMessage(err, 'حدث خطأ أثناء توليد الأكواد للمجموعة');
-          setApiError(msg);
-          toast.error(msg);
-        },
-      }
-    );
+    const groupName = activeGroups.find((g) => g._id === selectedGroupId)?.name || 'المجموعة';
+    handleBatchSubmit(studentIDs, `مجموعة ${groupName}`);
   };
 
   const handleAllStudentsBulkSubmit = () => {
@@ -257,21 +306,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
       return;
     }
 
-    generateGroupMutation.mutate(
-      { studentIDs },
-      {
-        onSuccess: (res) => {
-          const genCount = Array.isArray(res?.generated) ? res.generated.length : 0;
-          toast.success(`تم إنشاء ${genCount} كود لطلاب المنصة بنجاح! 🎉`);
-          setGroupResult(res);
-        },
-        onError: (err: unknown) => {
-          const msg = toArabicErrorMessage(err, 'حدث خطأ أثناء توليد الأكواد لجميع الطلاب');
-          setApiError(msg);
-          toast.error(msg);
-        },
-      }
-    );
+    handleBatchSubmit(studentIDs, 'جميع طلاب المنصة');
   };
 
   const handleCopyCode = async (code: string) => {
@@ -312,7 +347,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
               <div>
                 <h3 className="text-base font-black text-slate-800">توليد أكواد التفعيل</h3>
                 <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                  توليد كود لطالب محدد، أو توليد جماعي لمجموعة كاملة أو كل الطلاب
+                  توليد كود لطالب محدد (بما يشمل تانية ثانوي)، أو توليد جماعي للدفعات والمجموعات
                 </p>
               </div>
             </div>
@@ -338,11 +373,13 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
                     setApiError('');
                   }}
                   className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    mode === 'single' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    mode === 'single'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <User size={15} />
-                  <span>طالب واحد</span>
+                  <span>طالب فردي</span>
                 </button>
                 <button
                   type="button"
@@ -352,11 +389,13 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
                     setApiError('');
                   }}
                   className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    mode === 'group' ? 'bg-white text-[#0D8A82] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    mode === 'group'
+                      ? 'bg-white text-[#0D8A82] shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <Users size={15} />
-                  <span>مجموعة كاملة</span>
+                  <span>دفعات ومجموعات</span>
                 </button>
                 <button
                   type="button"
@@ -366,7 +405,9 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
                     setApiError('');
                   }}
                   className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    mode === 'all' ? 'bg-white text-amber-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    mode === 'all'
+                      ? 'bg-white text-amber-600 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <Globe size={15} />
@@ -419,6 +460,7 @@ export const GenerateAccessCodeModal: React.FC<GenerateAccessCodeModalProps> = (
                 }}
                 onSingleSubmit={handleSingleSubmit}
                 onGroupBulkSubmit={handleGroupBulkSubmit}
+                onBatchSubmit={handleBatchSubmit}
                 onAllStudentsBulkSubmit={handleAllStudentsBulkSubmit}
                 onClose={handleClose}
               />

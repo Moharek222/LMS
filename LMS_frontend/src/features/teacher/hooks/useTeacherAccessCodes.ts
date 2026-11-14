@@ -1,17 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { getTeacherAccessCodes, getStudentAccessCodes } from '../api/teacherAccessCodesApi';
 import type { PaginatedAccessCodesResponse, AccessCodeQueryParams } from '../types/groupManagement';
+import {
+  teacherQueryKeys,
+  TEACHER_ACCESS_CODES_QUERY_KEY,
+  STUDENT_ACCESS_CODES_QUERY_KEY,
+} from '../constants/teacherQueryKeys';
 
-export const TEACHER_ACCESS_CODES_QUERY_KEY = ['teacher-access-codes'] as const;
-export const STUDENT_ACCESS_CODES_QUERY_KEY = ['student-access-codes'] as const;
+export { TEACHER_ACCESS_CODES_QUERY_KEY, STUDENT_ACCESS_CODES_QUERY_KEY };
 
 export const useTeacherAccessCodes = (params?: AccessCodeQueryParams) => {
   const page = params?.page;
   const limit = params?.limit;
 
   return useQuery<PaginatedAccessCodesResponse, Error>({
-    queryKey: [...TEACHER_ACCESS_CODES_QUERY_KEY, page, limit],
+    queryKey: teacherQueryKeys.accessCodes(page, limit),
     queryFn: () => getTeacherAccessCodes(params),
+    refetchOnWindowFocus: false,
+    staleTime: 2 * 60 * 1000,
   });
 };
 
@@ -20,9 +26,11 @@ export const useStudentAccessCodes = (studentId: string, params?: AccessCodeQuer
   const limit = params?.limit;
 
   return useQuery<PaginatedAccessCodesResponse, Error>({
-    queryKey: [...STUDENT_ACCESS_CODES_QUERY_KEY, studentId, page, limit],
+    queryKey: teacherQueryKeys.studentAccessCodes(studentId, page, limit),
     queryFn: () => getStudentAccessCodes(studentId, params),
     enabled: Boolean(studentId),
+    refetchOnWindowFocus: false,
+    staleTime: 2 * 60 * 1000,
   });
 };
 

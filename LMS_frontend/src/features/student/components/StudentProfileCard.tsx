@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../../../context/useAuth';
 import { getGroupsApi } from '../../../services/groupService';
 import { getMyStudentProfile } from '../api/studentProfileApi';
+import { studentQueryKeys } from '../constants/studentQueryKeys';
 import { StudentQRCode } from './StudentQRCode';
 import { StudentGradebookCard } from './StudentGradebookCard';
 import { EditStudentProfileModal } from './EditStudentProfileModal';
@@ -27,13 +28,13 @@ export const StudentProfileCard: React.FC = () => {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   const { data: myProfile } = useQuery({
-    queryKey: ['my-student-profile'],
+    queryKey: studentQueryKeys.profile(),
     queryFn: getMyStudentProfile,
     staleTime: 1000 * 60 * 5,
   });
 
   const { data: groups } = useQuery({
-    queryKey: ['active-groups-profile'],
+    queryKey: studentQueryKeys.activeGroups(),
     queryFn: getGroupsApi,
     staleTime: 1000 * 60 * 10,
   });

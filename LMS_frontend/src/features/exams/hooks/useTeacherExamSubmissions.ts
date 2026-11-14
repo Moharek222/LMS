@@ -5,6 +5,7 @@ import {
   gradeEssayQuestions,
   deleteExamSubmission,
 } from '../api/teacherExamSubmissionsApi';
+import { examQueryKeys } from '../constants/examQueryKeys';
 import type { GradeEssayPayload } from '../types/examSubmission';
 
 export const useTeacherExamSubmissions = (
@@ -15,9 +16,10 @@ export const useTeacherExamSubmissions = (
   status?: string
 ) => {
   return useQuery({
-    queryKey: ['teacher-exam-submissions', courseId, examId, page, limit, status],
+    queryKey: examQueryKeys.teacherSubmissions(courseId, examId, page, limit, status),
     queryFn: () => getTeacherExamSubmissions(courseId, examId, page, limit, status),
     enabled: Boolean(courseId && examId),
+    staleTime: 60 * 1000,
   });
 };
 
@@ -27,9 +29,15 @@ export const useTeacherExamSubmissionDetails = (
   submissionId: string | null
 ) => {
   return useQuery({
-    queryKey: ['teacher-exam-submission-details', courseId, examId, submissionId],
-    queryFn: () => getTeacherExamSubmissionDetails(courseId, examId, submissionId!),
+    queryKey: examQueryKeys.teacherSubmissionDetails(courseId, examId, submissionId),
+    queryFn: () => {
+      if (!submissionId) {
+        throw new Error('Submission ID is required');
+      }
+      return getTeacherExamSubmissionDetails(courseId, examId, submissionId);
+    },
     enabled: Boolean(courseId && examId && submissionId),
+    staleTime: 60 * 1000,
   });
 };
 
@@ -48,10 +56,14 @@ export const useGradeEssayQuestions = () => {
       gradeEssayQuestions(courseId, examId, submissionId, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['teacher-exam-submissions', variables.courseId, variables.examId],
+        queryKey: examQueryKeys.teacherSubmissions(variables.courseId, variables.examId),
       });
       queryClient.invalidateQueries({
-        queryKey: ['teacher-exam-submission-details', variables.courseId, variables.examId, variables.submissionId],
+        queryKey: examQueryKeys.teacherSubmissionDetails(
+          variables.courseId,
+          variables.examId,
+          variables.submissionId
+        ),
       });
     },
   });
@@ -71,10 +83,10 @@ export const useDeleteExamSubmission = () => {
       deleteExamSubmission(courseId, examId, submissionId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['teacher-exam-submissions', variables.courseId, variables.examId],
+        queryKey: examQueryKeys.teacherSubmissions(variables.courseId, variables.examId),
       });
       queryClient.invalidateQueries({
-        queryKey: ['student-exam-history'],
+        queryKey: examQueryKeys.studentHistory(),
       });
     },
   });

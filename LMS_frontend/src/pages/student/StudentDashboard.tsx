@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '../../components/dashboard/DashboardLayout';
-import StudentHomeView from '../../features/student/components/StudentHomeView';
+import {
+  StudentHomeView,
+  StudentProfileCard,
+  StudentAssessmentsView,
+  RedeemAccessCodeModal,
+} from '../../features/student';
 import { useAuth } from '../../context/useAuth';
-import { useStudentCourses } from '../../features/courses/hooks/useStudentCourses';
-import { useCourseLessons } from '../../features/lessons/hooks/useCourseLessons';
-import type { Lesson } from '../../features/lessons/types/lesson';
-import StudentProfileCard from '../../features/student/components/StudentProfileCard';
-import StudentAttendanceCard from '../../features/attendance/components/StudentAttendanceCard';
-import { StudentAssessmentsView } from '../../features/student/components/StudentAssessmentsView';
+import { useStudentCourses } from '../../features/courses';
+import {
+  StudentLessonsView,
+  useCourseLessons,
+  useStudentWatchHistory,
+  type Lesson,
+} from '../../features/lessons';
+import { StudentAttendanceCard } from '../../features/attendance';
 import {
   Video,
   FileText,
@@ -17,9 +24,6 @@ import {
   User,
   AlertTriangle,
 } from 'lucide-react';
-import StudentLessonsView from '../../features/lessons/components/StudentLessonsView';
-import RedeemAccessCodeModal from '../../features/student/components/RedeemAccessCodeModal';
-import { useStudentWatchHistory } from '../../features/lessons/hooks/useProgress';
 import { isStudentVerified } from '../../utils/subscriptionUtils';
 import type { Grade } from '../../types/grade';
 
@@ -70,8 +74,13 @@ export const StudentDashboard: React.FC = () => {
     }
   }, [isSolvingQuiz, selectedQuizId, user]);
 
+  const hasActiveAssessmentInProgress = React.useCallback((): boolean => {
+    if (isSolvingExam && selectedExamId) return true;
+    return hasUnsentQuizAnswers();
+  }, [isSolvingExam, selectedExamId, hasUnsentQuizAnswers]);
+
   const executeOrConfirmNav = (action: () => void) => {
-    if (hasUnsentQuizAnswers()) {
+    if (hasActiveAssessmentInProgress()) {
       setPendingNavAction(() => action);
     } else {
       action();
@@ -90,18 +99,22 @@ export const StudentDashboard: React.FC = () => {
   };
 
   const handleSelectExam = (examId: string) => {
-    const nextParams: Record<string, string> = { tab: activeTab };
-    if (selectedCourseId) nextParams.courseId = selectedCourseId;
-    if (selectedLessonId) nextParams.lessonId = selectedLessonId;
-    if (selectedQuizId) nextParams.quizId = selectedQuizId;
-    if (examId) nextParams.examId = examId;
-    setSearchParams(nextParams);
+    executeOrConfirmNav(() => {
+      const nextParams: Record<string, string> = { tab: activeTab };
+      if (selectedCourseId) nextParams.courseId = selectedCourseId;
+      if (selectedLessonId) nextParams.lessonId = selectedLessonId;
+      if (selectedQuizId) nextParams.quizId = selectedQuizId;
+      if (examId) nextParams.examId = examId;
+      setSearchParams(nextParams);
+    });
   };
 
   const handleBackToExams = () => {
-    const nextParams: Record<string, string> = { tab: 'lessons' };
+    const nextParams: Record<string, string> = { tab: activeTab };
     if (selectedCourseId) nextParams.courseId = selectedCourseId;
+    if (activeTab === 'lessons' && selectedLessonId) nextParams.lessonId = selectedLessonId;
     setSearchParams(nextParams);
+    setIsSolvingExam(false);
   };
 
   const handleSelectCourse = (courseId: string) => {
@@ -110,6 +123,7 @@ export const StudentDashboard: React.FC = () => {
       const nextParams: Record<string, string> = { tab: targetTab, courseId };
       setSearchParams(nextParams);
       setIsSolvingQuiz(false);
+      setIsSolvingExam(false);
     });
   };
 
@@ -122,6 +136,7 @@ export const StudentDashboard: React.FC = () => {
       }
       setSearchParams(nextParams);
       setIsSolvingQuiz(false);
+      setIsSolvingExam(false);
     });
   };
 
@@ -145,8 +160,9 @@ export const StudentDashboard: React.FC = () => {
   };
 
   const handleCloseExam = () => {
-    const nextParams: Record<string, string> = { tab: 'lessons' };
+    const nextParams: Record<string, string> = { tab: activeTab };
     if (selectedCourseId) nextParams.courseId = selectedCourseId;
+    if (activeTab === 'lessons' && selectedLessonId) nextParams.lessonId = selectedLessonId;
     setSearchParams(nextParams);
     setIsSolvingExam(false);
   };
@@ -344,9 +360,13 @@ export const StudentDashboard: React.FC = () => {
               <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
                 <AlertTriangle size={26} />
               </div>
-              <h4 className="text-base font-extrabold text-slate-800">مغادرة الاختبار</h4>
+              <h4 className="text-base font-extrabold text-slate-800">
+                {isSolvingExam ? 'مغادرة الامتحان' : 'مغادرة الاختبار'}
+              </h4>
               <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                لديك إجابات لم يتم تسليمها بعد. هل أنت متأكد أنك تريد الخروج؟
+                {isSolvingExam
+                  ? 'أنت تقوم بحل الامتحان الشامل حالياً. هل أنت متأكد أنك تريد المغادرة؟'
+                  : 'لديك إجابات لم يتم تسليمها بعد. هل أنت متأكد أنك تريد الخروج؟'}
               </p>
 
               <div className="flex items-center gap-2 pt-2">
@@ -360,6 +380,8 @@ export const StudentDashboard: React.FC = () => {
                   onClick={() => {
                     const action = pendingNavAction;
                     setPendingNavAction(null);
+                    setIsSolvingQuiz(false);
+                    setIsSolvingExam(false);
                     action?.();
                   }}
                   className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"

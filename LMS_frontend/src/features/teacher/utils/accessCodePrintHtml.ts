@@ -1,5 +1,7 @@
 import type { AccessCode } from '../types/groupManagement';
 import { isAccessCodeExpired } from './accessCodeUtils';
+import { Grade } from '../../../types/grade';
+import { AcademicTrack } from '../../../types/academicTrack';
 
 export const formatAccessCodeDate = (dateStr: string): string => {
   if (!dateStr) return '—';
@@ -16,18 +18,50 @@ export const formatAccessCodeDate = (dateStr: string): string => {
   }
 };
 
+export const getStudentGradeTrackDescription = (codeItem: AccessCode): string => {
+  const studentObj =
+    typeof codeItem.studentID === 'object' && codeItem.studentID !== null
+      ? codeItem.studentID
+      : null;
+
+  const grade = codeItem.enrichedStudent?.grade || studentObj?.grade;
+  const track = codeItem.enrichedStudent?.academicTrack || studentObj?.academicTrack;
+  const groupName = codeItem.enrichedStudent?.groupName || studentObj?.groupName;
+
+  if (grade === Grade.SecondSecondary || grade === 'second_secondary') {
+    if (track === AcademicTrack.General || track === 'general') {
+      return 'تانية ثانوي • مسار عام (أونلاين)';
+    }
+    if (track === AcademicTrack.Baccalaureate || track === 'baccalaureate') {
+      return 'تانية ثانوي • مسار بكالوريا (أونلاين)';
+    }
+    return 'تانية ثانوي (أونلاين)';
+  }
+
+  if (grade === Grade.FirstSecondary || grade === 'first_secondary') {
+    return `أولى ثانوي${groupName ? ` • ${groupName}` : ''}`;
+  }
+
+  if (grade === Grade.ThirdSecondary || grade === 'third_secondary') {
+    return `تالتة ثانوي${groupName ? ` • ${groupName}` : ''}`;
+  }
+
+  return groupName || '';
+};
+
 export const buildAccessCodesPrintHtml = (accessCodes: AccessCode[]): string => {
   const cardsHtml = accessCodes
     .map((codeItem, index) => {
-      const studentName =
-        typeof codeItem.studentID === 'object' && codeItem.studentID?.name
-          ? codeItem.studentID.name
-          : 'كود عام / طالب مسجل';
+      const studentObj =
+        typeof codeItem.studentID === 'object' && codeItem.studentID !== null
+          ? codeItem.studentID
+          : null;
 
+      const studentName =
+        codeItem.enrichedStudent?.name || studentObj?.name || 'كود عام / طالب مسجل';
       const studentPhone =
-        typeof codeItem.studentID === 'object' && codeItem.studentID?.phone
-          ? codeItem.studentID.phone
-          : '';
+        codeItem.enrichedStudent?.phone || studentObj?.phone || '';
+      const gradeTrackDesc = getStudentGradeTrackDescription(codeItem);
 
       const isExpired = isAccessCodeExpired(codeItem);
       const statusText = isExpired ? 'منتهي' : 'نشط ومفعل';
@@ -41,6 +75,7 @@ export const buildAccessCodesPrintHtml = (accessCodes: AccessCode[]): string => 
               <span class="index-badge">${index + 1}</span>
               <div>
                 <div class="student-name">${studentName}</div>
+                ${gradeTrackDesc ? `<div class="student-grade">${gradeTrackDesc}</div>` : ''}
                 ${studentPhone ? `<div class="student-phone">${studentPhone}</div>` : ''}
               </div>
             </div>
@@ -150,6 +185,12 @@ export const buildAccessCodesPrintHtml = (accessCodes: AccessCode[]): string => 
           font-weight: 800;
           color: #1e293b;
         }
+        .student-grade {
+          font-size: 10px;
+          color: #0D8A82;
+          font-weight: 700;
+          margin-top: 1px;
+        }
         .student-phone {
           font-size: 10px;
           color: #64748b;
@@ -210,17 +251,18 @@ export const buildAccessCodesPrintHtml = (accessCodes: AccessCode[]): string => 
 };
 
 export const exportAccessCodesToCsv = (accessCodes: AccessCode[]): void => {
-  const headers = ['م', 'اسم الطالب', 'رقم الهاتف', 'كود التفعيل', 'تاريخ الانتهاء', 'حالة الكود'];
+  const headers = ['م', 'اسم الطالب', 'رقم الهاتف', 'الصف / المسار', 'كود التفعيل', 'تاريخ الانتهاء', 'حالة الكود'];
   const rows = accessCodes.map((item, idx) => {
     const student =
       typeof item.studentID === 'object' && item.studentID !== null ? item.studentID : null;
-    const studentName = (student?.name || 'كود عام').replace(/"/g, '""');
-    const studentPhone = (student?.phone || '').replace(/"/g, '""');
+    const studentName = (item.enrichedStudent?.name || student?.name || 'كود عام').replace(/"/g, '""');
+    const studentPhone = (item.enrichedStudent?.phone || student?.phone || '').replace(/"/g, '""');
+    const gradeTrack = getStudentGradeTrackDescription(item).replace(/"/g, '""');
     const codeStr = (item.code || '').replace(/"/g, '""');
     const expires = formatAccessCodeDate(item.expiresAt);
     const statusStr = isAccessCodeExpired(item) ? 'منتهي' : 'نشط';
 
-    return [idx + 1, `"${studentName}"`, `"${studentPhone}"`, `"${codeStr}"`, `"${expires}"`, `"${statusStr}"`];
+    return [idx + 1, `"${studentName}"`, `"${studentPhone}"`, `"${gradeTrack}"`, `"${codeStr}"`, `"${expires}"`, `"${statusStr}"`];
   });
 
   const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
@@ -233,4 +275,3 @@ export const exportAccessCodesToCsv = (accessCodes: AccessCode[]): void => {
   link.click();
   document.body.removeChild(link);
 };
-

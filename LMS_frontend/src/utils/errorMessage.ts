@@ -105,7 +105,7 @@ const translateEnglishText = (text: string): string | null => {
     return 'لم يتم تحديد المرحلة الدراسية للطالب أو المقرر بعد.';
   }
   if (lower.includes('you are not authorized to access this course')) {
-    return 'غير مصرح لك بالوصول لهذا المقرر لأنه يتبع مرحلة دراسية أخرى.';
+    return 'غير مصرح لك بالوصول لهذا المقرر لأنه يتبع مرحلة دراسية أخرى أو مساراً دراسياً مختلفاً.';
   }
   if (lower.includes('cannot change group grade while students are assigned to it')) {
     return 'لا يمكن تغيير المرحلة الدراسية للمجموعة طالما يوجد طلاب مسجلون بها.';

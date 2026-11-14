@@ -1,4 +1,6 @@
 import apiClient from '../../../services/apiClient';
+import type { Grade } from '../../../types/grade';
+import type { AcademicTrack } from '../../../types/academicTrack';
 import type {
   PaginatedAccessCodesResponse,
   GenerateAccessCodeResponse,
@@ -54,6 +56,8 @@ export interface PlatformStudentItem {
   _id: string;
   name: string;
   phone: string;
+  grade?: Grade | string;
+  academicTrack?: AcademicTrack | string;
   groupID?: { _id: string; name: string } | string;
 }
 

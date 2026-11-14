@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { moveStudent } from '../api/teacherGroupsApi';
 import type { MoveStudentResult, MoveStudentPayload } from '../types/groupManagement';
-import { GROUP_STUDENTS_QUERY_KEY } from './useGroupStudents';
-import { TEACHER_GROUPS_QUERY_KEY } from './useTeacherGroups';
+import { teacherQueryKeys } from '../constants/teacherQueryKeys';
 
 export interface MoveStudentVariables {
   studentId: string;
@@ -16,10 +15,10 @@ export const useMoveStudent = () => {
     mutationFn: ({ studentId, payload }) => moveStudent(studentId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: GROUP_STUDENTS_QUERY_KEY,
+        queryKey: teacherQueryKeys.groupStudentsRoot(),
       });
       queryClient.invalidateQueries({
-        queryKey: TEACHER_GROUPS_QUERY_KEY,
+        queryKey: teacherQueryKeys.groupsRoot(),
       });
     },
   });

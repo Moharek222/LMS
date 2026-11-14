@@ -32,7 +32,9 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             <h5 className="text-sm font-bold text-slate-800">{course.title}</h5>
             {course.grade && (
               <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${gradeBadge.pill}`}>
-                {getGradeShortLabel(course.grade)}
+                {course.grade === 'second_secondary' && course.academicTrack
+                  ? `(تانية ثانوي • ${course.academicTrack === 'baccalaureate' ? 'بكالوريا' : 'عام'})`
+                  : getGradeShortLabel(course.grade)}
               </span>
             )}
             {!isCourseActive && (

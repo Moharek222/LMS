@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getExamStatistics } from '../api/teacherExamSubmissionsApi';
+import { examQueryKeys } from '../constants/examQueryKeys';
 import type { ExamStatisticsData } from '../api/teacherExamSubmissionsApi';
 
 export const EXAM_STATISTICS_QUERY_KEY = 'examStatistics';
@@ -9,8 +10,13 @@ export const useExamStatistics = (
   examId?: string
 ) => {
   return useQuery<ExamStatisticsData, Error>({
-    queryKey: [EXAM_STATISTICS_QUERY_KEY, courseId, examId],
-    queryFn: () => getExamStatistics(courseId!, examId!),
+    queryKey: examQueryKeys.statistics(courseId, examId),
+    queryFn: () => {
+      if (!courseId || !examId) {
+        throw new Error('Course ID and Exam ID are required');
+      }
+      return getExamStatistics(courseId, examId);
+    },
     enabled: Boolean(courseId && examId),
     staleTime: 1000 * 60 * 2, // 2 mins
   });

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateLesson } from '../api/teacherLessonsApi';
+import { lessonQueryKeys } from '../constants/lessonQueryKeys';
 import type { UpdateLessonPayload, UpdateLessonResponse } from '../types/lesson';
-import { COURSE_LESSONS_QUERY_KEY } from './useCourseLessons';
 
 export interface UpdateLessonVariables {
   lessonId: string;
@@ -15,7 +15,7 @@ export const useUpdateLesson = (courseId: string) => {
     mutationFn: ({ lessonId, payload }) => updateLesson(lessonId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [...COURSE_LESSONS_QUERY_KEY, courseId],
+        queryKey: lessonQueryKeys.courseLessons(courseId),
       });
     },
   });

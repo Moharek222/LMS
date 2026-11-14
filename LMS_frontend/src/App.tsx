@@ -11,10 +11,14 @@ import { ToastProvider } from './context/ToastContext';
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 
-const PageFallback = () => (
+interface PageFallbackProps {
+  message?: string;
+}
+
+const PageFallback: React.FC<PageFallbackProps> = ({ message = 'جاري تحميل المنصة...' }) => (
   <div dir="rtl" className="h-screen w-full flex flex-col items-center justify-center bg-[#091523] text-white">
-    <div className="w-12 h-12 border-4 border-[#0D8A82] border-t-transparent rounded-full animate-spin mb-4"></div>
-    <p className="text-slate-300 font-semibold text-sm">جاري تحميل المنصة...</p>
+    <div className="w-12 h-12 border-4 border-[#0D8A82] border-t-transparent rounded-full animate-spin mb-4" />
+    <p className="text-slate-300 font-semibold text-sm">{message}</p>
   </div>
 );
 
@@ -32,12 +36,7 @@ function RootRedirect() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div dir="rtl" className="h-screen w-full flex flex-col items-center justify-center bg-[#091523] text-white">
-        <div className="w-12 h-12 border-4 border-[#0D8A82] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-300 font-semibold text-sm">جاري التحقق من بيانات الجلسة...</p>
-      </div>
-    );
+    return <PageFallback message="جاري التحقق من بيانات الجلسة..." />;
   }
 
   if (!isAuthenticated || !user) {
@@ -98,13 +97,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <ToastProvider>
           <AppRoutes />
         </ToastProvider>
-      </QueryClientProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { deleteCourse } from '../api/teacherCoursesApi';
+import { deleteCourse } from '../api/coursesApi';
+import { courseQueryKeys } from '../constants/courseQueryKeys';
 import type { Course } from '../types/course';
 
 export const useDeleteCourse = () => {
@@ -8,8 +9,8 @@ export const useDeleteCourse = () => {
   return useMutation<Course, Error, string>({
     mutationFn: (courseId: string) => deleteCourse(courseId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teacher-courses'] });
-      queryClient.invalidateQueries({ queryKey: ['student-courses'] });
+      queryClient.invalidateQueries({ queryKey: courseQueryKeys.teacher() });
+      queryClient.invalidateQueries({ queryKey: courseQueryKeys.student() });
     },
   });
 };

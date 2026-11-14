@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteExam } from '../api/teacherExamsApi';
 import type { TeacherExam } from '../../exams/types/exam';
+import { examQueryKeys } from '../../exams/constants/examQueryKeys';
 
 export interface DeleteExamVariables {
   courseId: string;
@@ -13,7 +14,7 @@ export const useDeleteExam = () => {
   return useMutation<TeacherExam, Error, DeleteExamVariables>({
     mutationFn: ({ courseId, examId }) => deleteExam(courseId, examId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['course-exams', variables.courseId] });
+      queryClient.invalidateQueries({ queryKey: examQueryKeys.courseExams(variables.courseId) });
     },
   });
 };

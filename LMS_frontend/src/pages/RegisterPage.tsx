@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   User,
   Phone,
@@ -88,47 +89,23 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [isGroupsLoading, setIsGroupsLoading] = useState(true);
-  const [groupsError, setGroupsError] = useState<string | null>(null);
 
-  const loadGroups = React.useCallback(async () => {
-    setIsGroupsLoading(true);
-    setGroupsError(null);
-    try {
-      const data = await getGroupsApi();
-      setGroups(data);
-    } catch (err) {
-      setGroups([]);
-      setGroupsError(toArabicErrorMessage(err, 'تعذر تحميل المجموعات الدراسية حالياً.'));
-    } finally {
-      setIsGroupsLoading(false);
-    }
-  }, []);
+  const {
+    data: groups = [],
+    isLoading: isGroupsLoading,
+    isError: isGroupsError,
+    error: rawGroupsError,
+    refetch: refetchGroups,
+  } = useQuery<Group[], Error>({
+    queryKey: ['register-groups'],
+    queryFn: getGroupsApi,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
-  useEffect(() => {
-    let isMounted = true;
-    getGroupsApi()
-      .then((data) => {
-        if (isMounted) {
-          setGroups(data);
-        }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          setGroups([]);
-          setGroupsError(toArabicErrorMessage(err, 'تعذر تحميل المجموعات الدراسية حالياً.'));
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsGroupsLoading(false);
-        }
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const groupsError = isGroupsError
+    ? toArabicErrorMessage(rawGroupsError, 'تعذر تحميل المجموعات الدراسية حالياً.')
+    : null;
 
   const {
     register,
@@ -410,7 +387,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin })
                     <span>{groupsError}</span>
                     <button
                       type="button"
-                      onClick={() => void loadGroups()}
+                      onClick={() => void refetchGroups()}
                       className="text-[#0D8A82] hover:underline font-bold shrink-0 cursor-pointer"
                     >
                       إعادة المحاولة

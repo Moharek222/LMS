@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Phone,
   AlertCircle,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { AuthSplitLayout } from '../components/layout/AuthSplitLayout';
@@ -49,6 +50,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
   const [accountType, setAccountType] = useState<'teacher' | 'student'>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [infoNotice, setInfoNotice] = useState<string | null>(null);
 
   const { user, isAuthenticated, loginTeacher, loginStudent, isLoading } = useAuth();
 
@@ -61,6 +63,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
     resolver: zodResolver(studentSchema),
     mode: 'onTouched',
   });
+
+  const handleSwitchAccountType = (type: 'teacher' | 'student') => {
+    setAccountType(type);
+    setShowPassword(false);
+    setServerError(null);
+    setInfoNotice(null);
+    teacherForm.clearErrors();
+    studentForm.clearErrors();
+  };
 
   const onTeacherSubmit = async (data: TeacherInputs) => {
     setServerError(null);
@@ -143,10 +154,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
             <div className="flex flex-col items-center">
               <button
                 type="button"
-                onClick={() => {
-                  setAccountType('student');
-                  setServerError(null);
-                }}
+                onClick={() => handleSwitchAccountType('student')}
                 className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
                   accountType === 'student'
                     ? 'bg-[#0D8A82] text-white shadow-md shadow-teal-700/25 hover:bg-[#0B766F] hover:shadow-lg hover:-translate-y-0.5'
@@ -163,10 +171,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
             <div className="flex flex-col items-center">
               <button
                 type="button"
-                onClick={() => {
-                  setAccountType('teacher');
-                  setServerError(null);
-                }}
+                onClick={() => handleSwitchAccountType('teacher')}
                 className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
                   accountType === 'teacher'
                     ? 'bg-[#0D8A82] text-white shadow-md shadow-teal-700/25 hover:bg-[#0B766F] hover:shadow-lg hover:-translate-y-0.5'
@@ -196,6 +201,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
             <div className="flex items-center gap-2.5 p-3.5 mb-5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm font-bold">
               <AlertCircle size={20} className="shrink-0" />
               <span>{serverError}</span>
+            </div>
+          )}
+
+          {infoNotice && (
+            <div className="flex items-center justify-between p-3.5 mb-5 bg-teal-50 border border-teal-200 rounded-xl text-teal-800 text-xs sm:text-sm font-semibold">
+              <div className="flex items-center gap-2.5">
+                <Info size={18} className="shrink-0 text-[#0D8A82]" />
+                <span>{infoNotice}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInfoNotice(null)}
+                className="text-teal-600 hover:text-teal-900 p-1 text-xs font-bold cursor-pointer"
+                title="إغلاق"
+              >
+                ✕
+              </button>
             </div>
           )}
 
@@ -252,16 +274,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
               </div>
 
               <div className="flex items-center justify-between pt-1">
-                <a
-                  href="#forgot-password"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert('تواصل مع الدعم الفني لإعادة تعيين كلمة المرور الخاصة بك.');
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInfoNotice('يرجى التواصل مع الدعم الفني أو إدارة المنصة لإعادة تعيين كلمة المرور الخاصة بك.');
                   }}
-                  className="text-xs font-bold text-[#0D8A82] hover:underline transition"
+                  className="text-xs font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
                 >
                   نسيت كلمة المرور؟
-                </a>
+                </button>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
                   <input
@@ -340,6 +361,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
               </div>
 
               <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInfoNotice('يرجى التواصل مع المعلم أو إدارة السنتر لإعادة تعيين كلمة المرور الخاصة بك.');
+                  }}
+                  className="text-xs font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
+                >
+                  نسيت كلمة المرور؟
+                </button>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
                   <input

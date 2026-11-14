@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createGroup } from '../api/teacherGroupsApi';
 import type { Group, CreateGroupPayload } from '../types/groupManagement';
-import { TEACHER_GROUPS_QUERY_KEY } from './useTeacherGroups';
+import { teacherQueryKeys } from '../constants/teacherQueryKeys';
 
 export const useCreateGroup = () => {
   const queryClient = useQueryClient();
@@ -10,7 +10,7 @@ export const useCreateGroup = () => {
     mutationFn: (payload) => createGroup(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: TEACHER_GROUPS_QUERY_KEY,
+        queryKey: teacherQueryKeys.groupsRoot(),
       });
     },
   });

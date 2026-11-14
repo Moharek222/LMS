@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getStudentExamHistory } from '../api/studentHistoryApi';
+import { studentQueryKeys } from '../constants/studentQueryKeys';
 import type { ExamHistoryResponse, StudentHistoryQueryParams } from '../types/studentHistory';
 import { useAuth } from '../../../context/useAuth';
 
@@ -11,9 +12,10 @@ export const useStudentExamHistory = (params?: StudentHistoryQueryParams) => {
   const { user } = useAuth();
 
   return useQuery<ExamHistoryResponse, Error>({
-    queryKey: [...STUDENT_EXAM_HISTORY_QUERY_KEY, page, limit],
+    queryKey: studentQueryKeys.examHistory(page, limit),
     queryFn: () => getStudentExamHistory(params),
     enabled: Boolean(user && (user.role === 'student' || (user.role as string) === 'STUDENT')),
+    staleTime: 2 * 60 * 1000,
   });
 };
 

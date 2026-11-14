@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deactivateStudent } from '../api/teacherGroupsApi';
-import { GROUP_STUDENTS_QUERY_KEY } from './useGroupStudents';
-import { DEACTIVATED_STUDENTS_QUERY_KEY } from './useDeactivatedStudents';
+import { teacherQueryKeys } from '../constants/teacherQueryKeys';
 
 export const useDeactivateStudent = () => {
   const queryClient = useQueryClient();
@@ -9,8 +8,8 @@ export const useDeactivateStudent = () => {
   return useMutation<{ message: string }, Error, string>({
     mutationFn: (studentId: string) => deactivateStudent(studentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: GROUP_STUDENTS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: DEACTIVATED_STUDENTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: teacherQueryKeys.groupStudentsRoot() });
+      queryClient.invalidateQueries({ queryKey: teacherQueryKeys.deactivatedStudentsRoot() });
     },
   });
 };

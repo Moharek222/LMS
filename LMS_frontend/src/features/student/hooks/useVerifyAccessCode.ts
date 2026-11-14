@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { verifyAccessCode, type VerifyAccessCodeResponse } from '../api/studentAccessCodeApi';
+import { studentQueryKeys } from '../constants/studentQueryKeys';
 
 export const useVerifyAccessCode = () => {
   const queryClient = useQueryClient();
@@ -8,7 +9,7 @@ export const useVerifyAccessCode = () => {
     mutationFn: (code: string) => verifyAccessCode(code),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
-      queryClient.invalidateQueries({ queryKey: ['student-profile'] });
+      queryClient.invalidateQueries({ queryKey: studentQueryKeys.profile() });
       queryClient.invalidateQueries({ queryKey: ['student-courses'] });
       queryClient.invalidateQueries({ queryKey: ['student-groups'] });
     },

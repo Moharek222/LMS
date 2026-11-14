@@ -88,6 +88,7 @@ export const EditCourseModal: React.FC<EditCourseModalProps> = ({
             initialTitle={courseData.title || ''}
             initialIsPublished={Boolean(courseData.isPublished)}
             grade={courseData.grade}
+            academicTrack={courseData.academicTrack}
             onClose={onClose}
           />
         )}
@@ -101,8 +102,9 @@ const EditCourseForm: React.FC<{
   initialTitle: string;
   initialIsPublished: boolean;
   grade?: string;
+  academicTrack?: string;
   onClose: () => void;
-}> = ({ courseId, initialTitle, initialIsPublished, grade, onClose }) => {
+}> = ({ courseId, initialTitle, initialIsPublished, grade, academicTrack, onClose }) => {
   const toast = useToast();
   const queryClient = useQueryClient();
   const updateCourseMutation = useUpdateCourse();
@@ -169,7 +171,9 @@ const EditCourseForm: React.FC<{
               <span className="text-xs font-bold text-slate-700">المرحلة الدراسية:</span>
             </div>
             <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border ${getGradeBadgeStyle(grade).pill}`}>
-              {getGradeLabel(grade)}
+              {grade === 'second_secondary' && academicTrack
+                ? `(تانية ثانوي • ${academicTrack === 'baccalaureate' ? 'بكالوريا' : 'عام'})`
+                : getGradeLabel(grade)}
             </span>
           </div>
           <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">

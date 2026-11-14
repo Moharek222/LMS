@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Video, BookOpen, Lock, Sparkles, X, FileText, Loader2 } from 'lucide-react';
+import { AlertTriangle, Video, BookOpen, Lock, Sparkles, X, Download, Loader2 } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import type { Lesson } from '../types/lesson';
 import { LessonVideoPlayer } from './LessonVideoPlayer';
@@ -8,7 +8,7 @@ import { QuizList } from '../../quizzes/components/QuizList';
 import { useStudentQuizHistory } from '../../student/hooks/useStudentQuizHistory';
 import { useToast } from '../../../context/ToastContext';
 import { getLessonQuizzes } from '../../quizzes/api/quizzesApi';
-import { getLessonPdfPreview } from '../../teacher/api/teacherApi';
+import { getLessonPdfPreview } from '../api/lessonsApi';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { type Grade, getGradeShortLabel } from '../../../types/grade';
 
@@ -80,13 +80,31 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
   const [passedQuizIdsSession, setPassedQuizIdsSession] = React.useState<Set<string>>(() => new Set());
   const [loadingPdfLessonId, setLoadingPdfLessonId] = React.useState<string | null>(null);
 
-  const handleDownloadPdf = async (lessonId: string) => {
+  const handleDownloadPdf = async (lessonId: string, lessonTitle?: string) => {
     setLoadingPdfLessonId(lessonId);
     try {
       const res = await getLessonPdfPreview(lessonId);
       if (res?.pdfPreviewUrl) {
-        window.open(res.pdfPreviewUrl, '_blank', 'noopener,noreferrer');
-        toast.success('جاري فتح مذكرة الدرس (PDF) 📄');
+        const rawName = lessonTitle || res.title || 'مذكرة_الدرس';
+        const safeName = `${rawName.replace(/[\\/:*?"<>|]/g, '_').trim()}.pdf`;
+
+        try {
+          const fileResp = await fetch(res.pdfPreviewUrl);
+          const blob = await fileResp.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = safeName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(blobUrl);
+          toast.success(`تم بدء تحميل مذكرة: ${safeName} 📥`);
+        } catch {
+          // If direct fetch is blocked by CORS, fallback to opening the secure link in new tab
+          window.open(res.pdfPreviewUrl, '_blank', 'noopener,noreferrer');
+          toast.success('جاري فتح مذكرة الدرس (PDF) 📄');
+        }
       } else {
         toast.error('رابط مذكرة الـ PDF غير متوفر');
       }
@@ -313,16 +331,17 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                 {selectedLesson?.hasPdf && (
                   <button
                     type="button"
-                    onClick={() => handleDownloadPdf(selectedLesson._id)}
+                    onClick={() => handleDownloadPdf(selectedLesson._id, selectedLesson.title)}
                     disabled={loadingPdfLessonId === selectedLesson._id}
                     className="px-3.5 py-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 hover:text-white border border-teal-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                    title="تحميل مذكرة الدرس PDF مباشرة"
                   >
                     {loadingPdfLessonId === selectedLesson._id ? (
                       <Loader2 size={15} className="animate-spin text-teal-300" />
                     ) : (
-                      <FileText size={15} className="text-teal-400" />
+                      <Download size={15} className="text-teal-400" />
                     )}
-                    <span>مذكرة الدرس (PDF) 📄</span>
+                    <span>تحميل المذكرة (PDF) 📥</span>
                   </button>
                 )}
 
@@ -459,7 +478,7 @@ export const StudentLessonsView: React.FC<StudentLessonsViewProps> = ({
                 hasPassedCurrentQuiz={hasPassedCurrentQuiz}
                 isLoadingPdf={loadingPdfLessonId === lesson._id}
                 onLessonClick={handleLessonClick}
-                onDownloadPdf={() => handleDownloadPdf(lesson._id)}
+                onDownloadPdf={() => handleDownloadPdf(lesson._id, lesson.title)}
                 onStartQuizClick={handleStartQuizClick}
               />
             );

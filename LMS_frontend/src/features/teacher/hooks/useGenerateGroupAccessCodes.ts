@@ -4,7 +4,7 @@ import type {
   GenerateGroupAccessCodesResult,
   GenerateGroupAccessCodesPayload,
 } from '../types/groupManagement';
-import { TEACHER_ACCESS_CODES_QUERY_KEY } from './useTeacherAccessCodes';
+import { teacherQueryKeys } from '../constants/teacherQueryKeys';
 
 export const useGenerateGroupAccessCodes = () => {
   const queryClient = useQueryClient();
@@ -13,7 +13,7 @@ export const useGenerateGroupAccessCodes = () => {
     mutationFn: (payload) => generateGroupAccessCodes(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: TEACHER_ACCESS_CODES_QUERY_KEY,
+        queryKey: teacherQueryKeys.accessCodesRoot(),
       });
     },
   });

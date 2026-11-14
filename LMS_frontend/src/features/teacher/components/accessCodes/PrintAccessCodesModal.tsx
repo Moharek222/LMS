@@ -6,6 +6,7 @@ import {
   formatAccessCodeDate,
   buildAccessCodesPrintHtml,
   exportAccessCodesToCsv,
+  getStudentGradeTrackDescription,
 } from '../../utils/accessCodePrintHtml';
 
 interface PrintAccessCodesModalProps {
@@ -149,15 +150,18 @@ export const PrintAccessCodesModal: React.FC<PrintAccessCodesModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {accessCodes.map((codeItem, index) => {
               const studentName =
-                typeof codeItem.studentID === 'object' && codeItem.studentID?.name
+                codeItem.enrichedStudent?.name ||
+                (typeof codeItem.studentID === 'object' && codeItem.studentID?.name
                   ? codeItem.studentID.name
-                  : 'كود عام / طالب مسجل';
+                  : 'كود عام / طالب مسجل');
 
               const studentPhone =
-                typeof codeItem.studentID === 'object' && codeItem.studentID?.phone
+                codeItem.enrichedStudent?.phone ||
+                (typeof codeItem.studentID === 'object' && codeItem.studentID?.phone
                   ? codeItem.studentID.phone
-                  : null;
+                  : null);
 
+              const gradeTrackDesc = getStudentGradeTrackDescription(codeItem);
               const isExpired = isAccessCodeExpired(codeItem);
 
               return (
@@ -172,6 +176,11 @@ export const PrintAccessCodesModal: React.FC<PrintAccessCodesModalProps> = ({
                       </div>
                       <div>
                         <h4 className="text-xs font-black text-slate-800 line-clamp-1">{studentName}</h4>
+                        {gradeTrackDesc && (
+                          <span className="text-[10px] text-[#0D8A82] font-bold block">
+                            {gradeTrackDesc}
+                          </span>
+                        )}
                         {studentPhone && (
                           <span className="text-[10px] text-slate-500 font-mono block dir-ltr text-right">
                             {studentPhone}

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { KeyRound, Copy, Check, User, Phone, Calendar } from 'lucide-react';
+import { KeyRound, Copy, Check, User, Phone, Calendar, Sparkles, GraduationCap } from 'lucide-react';
 import type { AccessCode } from '../../types/groupManagement';
+import { Grade } from '../../../../types/grade';
+import { AcademicTrack } from '../../../../types/academicTrack';
 import { useToast } from '../../../../context/ToastContext';
 import { isAccessCodeExpired } from '../../utils/accessCodeUtils';
 
@@ -20,7 +22,6 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(accessCode.code);
       } else {
-        
         const textArea = document.createElement('textarea');
         textArea.value = accessCode.code;
         document.body.appendChild(textArea);
@@ -36,18 +37,19 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
     }
   };
 
-  
-  const studentName =
+  const studentObj =
     typeof accessCode.studentID === 'object' && accessCode.studentID !== null
-      ? accessCode.studentID.name
-      : 'طالب مغلق / محذوف';
-
-  const studentPhone =
-    typeof accessCode.studentID === 'object' && accessCode.studentID !== null
-      ? accessCode.studentID.phone
+      ? accessCode.studentID
       : null;
 
-  
+  const studentName = studentObj?.name || 'طالب مغلق / محذوف';
+  const studentPhone = studentObj?.phone || null;
+
+  const enriched = accessCode.enrichedStudent;
+  const grade = enriched?.grade || studentObj?.grade;
+  const track = enriched?.academicTrack || studentObj?.academicTrack;
+  const groupName = enriched?.groupName || studentObj?.groupName;
+
   const getStatusBadge = () => {
     if (isExpired) {
       return (
@@ -63,7 +65,61 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
     );
   };
 
-  
+  const getGradeTrackBadge = () => {
+    if (grade === Grade.SecondSecondary || grade === 'second_secondary') {
+      if (track === AcademicTrack.General || track === 'general') {
+        return (
+          <span className="px-2.5 py-0.5 rounded-lg bg-purple-50 text-purple-700 text-xs font-black border border-purple-200 flex items-center gap-1">
+            <Sparkles size={12} className="text-purple-600 shrink-0" />
+            <span>تانية ثانوي • مسار عام (أونلاين)</span>
+          </span>
+        );
+      }
+      if (track === AcademicTrack.Baccalaureate || track === 'baccalaureate') {
+        return (
+          <span className="px-2.5 py-0.5 rounded-lg bg-fuchsia-50 text-fuchsia-700 text-xs font-black border border-fuchsia-200 flex items-center gap-1">
+            <Sparkles size={12} className="text-fuchsia-600 shrink-0" />
+            <span>تانية ثانوي • مسار بكالوريا (أونلاين)</span>
+          </span>
+        );
+      }
+      return (
+        <span className="px-2.5 py-0.5 rounded-lg bg-purple-50 text-purple-700 text-xs font-black border border-purple-200 flex items-center gap-1">
+          <Sparkles size={12} className="text-purple-600 shrink-0" />
+          <span>تانية ثانوي • أونلاين</span>
+        </span>
+      );
+    }
+
+    if (grade === Grade.FirstSecondary || grade === 'first_secondary') {
+      return (
+        <span className="px-2.5 py-0.5 rounded-lg bg-sky-50 text-sky-700 text-xs font-black border border-sky-200 flex items-center gap-1">
+          <GraduationCap size={13} className="text-sky-600 shrink-0" />
+          <span>أولى ثانوي{groupName ? ` • ${groupName}` : ''}</span>
+        </span>
+      );
+    }
+
+    if (grade === Grade.ThirdSecondary || grade === 'third_secondary') {
+      return (
+        <span className="px-2.5 py-0.5 rounded-lg bg-teal-50 text-teal-800 text-xs font-black border border-teal-200 flex items-center gap-1">
+          <GraduationCap size={13} className="text-teal-600 shrink-0" />
+          <span>تالتة ثانوي{groupName ? ` • ${groupName}` : ''}</span>
+        </span>
+      );
+    }
+
+    if (groupName) {
+      return (
+        <span className="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
+          {groupName}
+        </span>
+      );
+    }
+
+    return null;
+  };
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '—';
     try {
@@ -81,7 +137,6 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
 
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-      
       <div className="space-y-3 w-full md:w-auto">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="px-4 py-2 rounded-2xl bg-teal-50/90 text-[#0D8A82] border-2 border-teal-200/90 flex items-center gap-2.5 font-mono font-black text-base sm:text-lg tracking-widest shadow-2xs select-all">
@@ -109,6 +164,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
           </button>
 
           {getStatusBadge()}
+          {getGradeTrackBadge()}
         </div>
 
         <div className="flex items-center gap-4 text-xs font-bold text-slate-700 flex-wrap">
@@ -125,7 +181,6 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
         </div>
       </div>
 
-      
       <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 w-full md:w-auto justify-between md:justify-end shrink-0">
         <div className="flex items-center gap-1.5">
           <Calendar size={14} className="text-slate-400" />

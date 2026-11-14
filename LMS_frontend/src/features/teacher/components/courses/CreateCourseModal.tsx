@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, Loader2, CheckCircle2, AlertTriangle, X, Layers } from 'lucide-react';
+import { Plus, Loader2, CheckCircle2, AlertTriangle, X, Layers, Compass } from 'lucide-react';
 import { useCreateCourse } from '../../hooks/useCreateCourse';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
 import { Grade, GRADE_OPTIONS } from '../../../../types/grade';
+import { AcademicTrack } from '../../../../types/academicTrack';
 
 interface CreateCourseModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
 
   const [title, setTitle] = useState('');
   const [grade, setGrade] = useState<Grade>(Grade.ThirdSecondary);
+  const [academicTrack, setAcademicTrack] = useState<AcademicTrack>(AcademicTrack.General);
   const [isPublished, setIsPublished] = useState(true);
   const [validationError, setValidationError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -25,6 +27,7 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
     onClose();
     setTitle('');
     setGrade(Grade.ThirdSecondary);
+    setAcademicTrack(AcademicTrack.General);
     setValidationError('');
     setSuccessMessage('');
   };
@@ -41,6 +44,11 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
       return;
     }
 
+    if (grade === Grade.SecondSecondary && !academicTrack) {
+      setValidationError('يرجى تحديد المسار الأكاديمي لمقرر الصف الثاني الثانوي (عام أو بكالوريا)');
+      return;
+    }
+
     setValidationError('');
     setSuccessMessage('');
 
@@ -48,12 +56,14 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
       {
         title: title.trim(),
         grade,
+        academicTrack: grade === Grade.SecondSecondary ? academicTrack : undefined,
         isPublished,
       },
       {
         onSuccess: () => {
           setTitle('');
           setGrade(Grade.ThirdSecondary);
+          setAcademicTrack(AcademicTrack.General);
           onClose();
           toast.success('تم إنشاء المقرر الدراسي بنجاح ✨');
         },
@@ -141,6 +151,68 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
               ))}
             </div>
           </div>
+
+          {/* المسار الأكاديمي في حالة الصف الثاني الثانوي */}
+          {grade === Grade.SecondSecondary && (
+            <div className="p-3.5 rounded-2xl bg-teal-50/60 border border-teal-100 space-y-2">
+              <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Compass size={15} className="text-[#0D8A82]" />
+                <span>المسار الأكاديمي المخصص للمقرر *</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAcademicTrack(AcademicTrack.General)}
+                  disabled={createCourseMutation.isPending}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
+                    academicTrack === AcademicTrack.General
+                      ? 'bg-white border-[#0D8A82] text-[#0D8A82] shadow-xs ring-1 ring-[#0D8A82]'
+                      : 'border-slate-200 bg-white/70 text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  <span>مسار عام</span>
+                  <span
+                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                      academicTrack === AcademicTrack.General
+                        ? 'border-[#0D8A82] bg-[#0D8A82]'
+                        : 'border-slate-300'
+                    }`}
+                  >
+                    {academicTrack === AcademicTrack.General && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                    )}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAcademicTrack(AcademicTrack.Baccalaureate)}
+                  disabled={createCourseMutation.isPending}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
+                    academicTrack === AcademicTrack.Baccalaureate
+                      ? 'bg-white border-[#0D8A82] text-[#0D8A82] shadow-xs ring-1 ring-[#0D8A82]'
+                      : 'border-slate-200 bg-white/70 text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  <span>مسار بكالوريا</span>
+                  <span
+                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                      academicTrack === AcademicTrack.Baccalaureate
+                        ? 'border-[#0D8A82] bg-[#0D8A82]'
+                        : 'border-slate-300'
+                    }`}
+                  >
+                    {academicTrack === AcademicTrack.Baccalaureate && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                    )}
+                  </span>
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
+                يظهر المقرر فقط لطلاب الصف الثاني الثانوي المقيدين بهذا المسار (عام أو بكالوريا).
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">

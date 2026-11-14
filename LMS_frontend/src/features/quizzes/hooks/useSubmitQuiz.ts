@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { submitQuiz } from '../api/quizSubmissionApi';
+import { quizQueryKeys } from '../constants/quizQueryKeys';
 import type { SubmitQuizRequestPayload, QuizSubmissionData } from '../api/quizSubmissionApi';
-import { STUDENT_QUIZ_HISTORY_QUERY_KEY } from '../../student/hooks/useStudentQuizHistory';
 
 interface SubmitQuizVariables {
   lessonId: string;
@@ -17,7 +17,7 @@ export const useSubmitQuiz = () => {
       submitQuiz(lessonId, quizId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: STUDENT_QUIZ_HISTORY_QUERY_KEY,
+        queryKey: quizQueryKeys.studentHistory(),
       });
     },
   });

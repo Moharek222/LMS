@@ -7,6 +7,7 @@ import {
   Award,
   Play,
   FileText,
+  Download,
   Loader2,
 } from 'lucide-react';
 import type { Lesson } from '../types/lesson';
@@ -117,14 +118,14 @@ export const StudentLessonCard: React.FC<StudentLessonCardProps> = ({
             }}
             disabled={isLoadingPdf}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-200 text-xs font-bold transition shadow-2xs cursor-pointer disabled:opacity-50"
-            title="تحميل مذكرة الدرس PDF"
+            title="تحميل مذكرة الدرس PDF مباشرة"
           >
             {isLoadingPdf ? (
               <Loader2 size={13} className="animate-spin text-[#0D8A82]" />
             ) : (
-              <FileText size={13} />
+              <Download size={13} />
             )}
-            <span>المذكرة PDF</span>
+            <span>تحميل المذكرة</span>
           </button>
         )}
 
