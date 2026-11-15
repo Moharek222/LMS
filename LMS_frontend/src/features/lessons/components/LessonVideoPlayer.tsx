@@ -138,11 +138,13 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
     const host = videoNodeRef.current;
     host.innerHTML = '';
 
-    const videoElement = document.createElement('video-js');
-    videoElement.classList.add('vjs-big-play-centered', 'vjs-fill');
+    const videoElement = document.createElement('video');
+    videoElement.classList.add('video-js', 'vjs-big-play-centered', 'vjs-fill');
     videoElement.setAttribute('controlsList', 'nodownload noremoteplayback');
     videoElement.setAttribute('disablePictureInPicture', 'true');
     videoElement.setAttribute('playsinline', 'true');
+    videoElement.setAttribute('webkit-playsinline', 'true');
+    videoElement.disablePictureInPicture = true;
     videoElement.oncontextmenu = (e) => e.preventDefault();
     host.appendChild(videoElement);
 
@@ -154,6 +156,9 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
       fill: true,
       responsive: true,
       playbackRates: [0.75, 1, 1.25, 1.5, 1.75, 2],
+      html5: {
+        nativeControlsForTouch: false,
+      },
       controlBar: {
         pictureInPictureToggle: false,
         skipButtons: { forward: 10, backward: 10 },
@@ -169,6 +174,28 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
         },
       ],
     });
+
+    // Enforce security properties directly onto the underlying HTMLVideoElement
+    const applyNativeSecurity = () => {
+      try {
+        const actualVideo =
+          (player.tech?.(true)?.el?.() as HTMLVideoElement | undefined) ||
+          player.el()?.querySelector('video');
+
+        if (actualVideo instanceof HTMLVideoElement) {
+          actualVideo.setAttribute('controlsList', 'nodownload noremoteplayback');
+          actualVideo.setAttribute('disablePictureInPicture', 'true');
+          actualVideo.setAttribute('playsinline', 'true');
+          actualVideo.setAttribute('webkit-playsinline', 'true');
+          actualVideo.disablePictureInPicture = true;
+          actualVideo.oncontextmenu = (e) => e.preventDefault();
+        }
+      } catch (err) {
+        console.warn('Could not apply direct security attributes on tech video element:', err);
+      }
+    };
+
+    applyNativeSecurity();
 
     // Redirect video.js fullscreen methods (bottom-right button, double-click, etc.)
     // to the parent container so floating & center watermarks remain visible in fullscreen.
@@ -202,6 +229,7 @@ export const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
     player.ready(() => {
       if (player.isDisposed()) return;
       player.playbackRate(playbackSpeedRef.current);
+      applyNativeSecurity();
     });
 
     player.on('timeupdate', () => {

@@ -146,7 +146,7 @@ export const AccessCodesGradeTabs: React.FC<AccessCodesGradeTabsProps> = ({
             <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
               <Info size={16} className="text-purple-600 shrink-0" />
               <span>
-                طلاب الصف الثاني الثانوي (أونلاين) - فلترة الأكواد حسب المسار التعليمي:
+                طلاب الصف الثاني الثانوي - فلترة الأكواد حسب المسار التعليمي:
               </span>
             </div>
 

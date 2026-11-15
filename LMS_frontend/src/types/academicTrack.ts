@@ -14,12 +14,12 @@ export interface AcademicTrackOption {
 export const ACADEMIC_TRACK_OPTIONS: AcademicTrackOption[] = [
   {
     value: AcademicTrack.General,
-    label: 'مسار عام (الثانوية العامة)',
+    label: ' عام',
     description: 'المسار العام  ',
   },
   {
     value: AcademicTrack.Baccalaureate,
-    label: 'مسار بكالوريا  (Baccalaureate)',
+    label: ' بكالوريا ',
     description: 'مسار البكالوريا',
   },
 ];

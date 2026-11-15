@@ -117,6 +117,19 @@
   background-color: rgba(255, 255, 255, 0.18) !important;
 }
 
+/* Enforce download and native overflow menu concealment across Blink/WebKit browsers */
+video::-internal-media-controls-download-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  overflow: hidden !important;
+}
+
+video::-webkit-media-controls-overflow-button {
+  display: none !important;
+}
+
 
 /* Continuous Floating / DVD-Bouncing Watermark */
 @keyframes watermarkFloatX {

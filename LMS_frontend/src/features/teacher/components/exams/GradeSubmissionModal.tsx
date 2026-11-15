@@ -4,6 +4,7 @@ import {
   Award,
   User,
   CheckCircle2,
+  XCircle,
   AlertTriangle,
   Loader2,
   Save,
@@ -161,6 +162,11 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                     <span className="text-xs font-extrabold text-slate-800">
                       {submission.studentID?.name || 'غير متوفر'}
                     </span>
+                    {submission.studentID?.phone && (
+                      <span className="text-[11px] text-slate-500 font-semibold dir-ltr block text-right mt-0.5">
+                        {submission.studentID.phone}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -248,13 +254,19 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                                 min={0}
                                 max={ans.maxScore || 100}
                                 value={currentGrade.score}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  const raw = Number(e.target.value);
+                                  const safeVal = isNaN(raw) ? 0 : raw;
+                                  const clamped =
+                                    ans.maxScore !== undefined
+                                      ? Math.min(Math.max(0, safeVal), ans.maxScore)
+                                      : Math.max(0, safeVal);
                                   handleScoreChange(
                                     ans.questionID,
-                                    Number(e.target.value),
+                                    clamped,
                                     ans.teacherFeedback || ''
-                                  )
-                                }
+                                  );
+                                }}
                                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-none focus:border-[#0D8A82]"
                               />
                             </div>
@@ -297,10 +309,11 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                           className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs"
                         >
                           <div className="flex items-center gap-2">
-                            <CheckCircle2
-                              size={16}
-                              className={ans.score > 0 || ans.isCorrect ? 'text-emerald-600' : 'text-rose-500'}
-                            />
+                            {ans.score > 0 || ans.isCorrect ? (
+                              <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                            ) : (
+                              <XCircle size={16} className="text-rose-500 shrink-0" />
+                            )}
                             <span className="font-bold text-slate-800">
                               سؤال اختيار #{idx + 1}: {studentAnsText}
                             </span>

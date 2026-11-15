@@ -1,142 +1,19 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import axios from 'axios';
-import { Navigate, Link } from 'react-router-dom';
-import {
-  Mail,
-  Eye,
-  EyeOff,
-  Headphones,
-  LogIn,
-  User,
-  GraduationCap,
-  CheckCircle2,
-  Phone,
-  AlertCircle,
-  Info,
-} from 'lucide-react';
-import { useAuth } from '../context/useAuth';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { AlertCircle, Info } from 'lucide-react';
 import { AuthSplitLayout } from '../components/layout/AuthSplitLayout';
-import type { ApiErrorResponse } from '../types/auth';
-
-const teacherSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: 'البريد الإلكتروني مطلوب' })
-    .email({ message: 'صيغة البريد الإلكتروني غير صحيحة' }),
-  password: z.string().min(1, { message: 'كلمة المرور مطلوبة' }),
-  rememberMe: z.boolean().optional(),
-});
-
-const studentSchema = z.object({
-  phone: z
-    .string()
-    .min(1, { message: 'رقم الهاتف مطلوب' })
-    .regex(/^01[0125][0-9]{8}$/, { message: 'يرجى إدخال رقم هاتف مصري صحيح (مثال: 01012345678)' }),
-  password: z.string().min(1, { message: 'كلمة المرور مطلوبة' }),
-  rememberMe: z.boolean().optional(),
-});
-
-type TeacherInputs = z.infer<typeof teacherSchema>;
-type StudentInputs = z.infer<typeof studentSchema>;
+import { useLoginLogic } from '../components/auth/useLoginLogic';
+import { AccountTypeSelector } from '../components/auth/AccountTypeSelector';
+import { TeacherLoginForm } from '../components/auth/TeacherLoginForm';
+import { StudentLoginForm } from '../components/auth/StudentLoginForm';
+import { LoginFooterActions } from '../components/auth/LoginFooterActions';
 
 interface LoginPageProps {
   onNavigateToRegister?: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) => {
-  const [accountType, setAccountType] = useState<'teacher' | 'student'>('student');
-  const [showPassword, setShowPassword] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [infoNotice, setInfoNotice] = useState<string | null>(null);
-
-  const { user, isAuthenticated, loginTeacher, loginStudent, isLoading } = useAuth();
-
-  const teacherForm = useForm<TeacherInputs>({
-    resolver: zodResolver(teacherSchema),
-    mode: 'onTouched',
-  });
-
-  const studentForm = useForm<StudentInputs>({
-    resolver: zodResolver(studentSchema),
-    mode: 'onTouched',
-  });
-
-  const handleSwitchAccountType = (type: 'teacher' | 'student') => {
-    setAccountType(type);
-    setShowPassword(false);
-    setServerError(null);
-    setInfoNotice(null);
-    teacherForm.clearErrors();
-    studentForm.clearErrors();
-  };
-
-  const onTeacherSubmit = async (data: TeacherInputs) => {
-    setServerError(null);
-    try {
-      await loginTeacher({ email: data.email, password: data.password });
-    } catch (error: unknown) {
-      if (axios.isAxiosError<ApiErrorResponse>(error)) {
-        if (error.response) {
-          const status = error.response.status;
-          const msg = error.response.data?.message;
-
-          if (status === 401) {
-            setServerError('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
-          } else if (status === 403) {
-            setServerError('هذا الحساب تم تعطيله. يرجى التواصل مع الدعم الفني.');
-          } else if (status === 400 && error.response.data?.errors) {
-            const firstErr = error.response.data.errors[0]?.message;
-            setServerError(firstErr || 'يرجى التأكد من البيانات المدخلة.');
-          } else {
-            setServerError(msg || 'حدث خطأ غير متوقع في السيرفر.');
-          }
-        } else if (error.request) {
-          setServerError('تعذر الاتصال بالسيرفر. يرجى التأكد من تشغيل الباك إند أو الاتصال بالشبكة.');
-        } else {
-          setServerError(error.message || 'حدث خطأ أثناء إرسال البيانات.');
-        }
-      } else if (error instanceof Error) {
-        setServerError(error.message);
-      } else {
-        setServerError('حدث خطأ غير متوقع.');
-      }
-    }
-  };
-
-  const onStudentSubmit = async (data: StudentInputs) => {
-    setServerError(null);
-    try {
-      await loginStudent({ phone: data.phone, password: data.password });
-    } catch (error: unknown) {
-      if (axios.isAxiosError<ApiErrorResponse>(error)) {
-        if (error.response) {
-          const status = error.response.status;
-          const msg = error.response.data?.message;
-
-          if (status === 401) {
-            setServerError('رقم الهاتف أو كلمة المرور غير صحيحة.');
-          } else if (status === 403) {
-            setServerError('حساب الطالب معطل. يرجى التواصل مع المعلم أو السكرتارية.');
-          } else if (status === 404) {
-            setServerError('خدمة تسجيل دخول الطلاب غير متاحة حالياً.');
-          } else {
-            setServerError(msg || 'حدث خطأ في السيرفر أثناء تسجيل دخول الطالب.');
-          }
-        } else if (error.request) {
-          setServerError('حدث خطأ في الاتصال بالشبكة، حاول مرة أخرى.');
-        } else {
-          setServerError(error.message || 'حدث خطأ أثناء معالجة البيانات.');
-        }
-      } else if (error instanceof Error) {
-        setServerError(error.message);
-      } else {
-        setServerError('حدث خطأ غير متوقع.');
-      }
-    }
-  };
+  const login = useLoginLogic();
 
   return (
     <AuthSplitLayout securityText="منصة آمنة ومحمية">
@@ -145,74 +22,37 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
         <p className="text-slate-500 text-xs sm:text-sm font-semibold">اختر نوع الحساب للمتابعة</p>
       </div>
 
-      {isAuthenticated && user ? (
-        <Navigate to={user.role === 'student' ? '/student/dashboard' : '/teacher/dashboard'} replace />
+      {login.isAuthenticated && login.user ? (
+        <Navigate
+          to={login.user.role === 'student' ? '/student/dashboard' : '/teacher/dashboard'}
+          replace
+        />
       ) : (
         <>
           {/* Account Type Selector Buttons */}
-          <div className="grid grid-cols-2 gap-3 mb-2">
-            <div className="flex flex-col items-center">
-              <button
-                type="button"
-                onClick={() => handleSwitchAccountType('student')}
-                className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
-                  accountType === 'student'
-                    ? 'bg-[#0D8A82] text-white shadow-md shadow-teal-700/25 hover:bg-[#0B766F] hover:shadow-lg hover:-translate-y-0.5'
-                    : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-slate-50 hover:border-[#0D8A82]/50 hover:text-[#0D8A82] hover:shadow-sm hover:-translate-y-0.5'
-                }`}
-              >
-                <GraduationCap size={20} />
-                <span>طالب</span>
-                {accountType === 'student' && <CheckCircle2 size={18} className="text-white fill-white/20" />}
-              </button>
-              <div className={`h-1 w-12 rounded-full mt-2 transition-all duration-300 ${accountType === 'student' ? 'bg-[#0D8A82]' : 'bg-transparent'}`} />
-            </div>
+          <AccountTypeSelector
+            accountType={login.accountType}
+            onSelectType={login.handleSwitchAccountType}
+          />
 
-            <div className="flex flex-col items-center">
-              <button
-                type="button"
-                onClick={() => handleSwitchAccountType('teacher')}
-                className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
-                  accountType === 'teacher'
-                    ? 'bg-[#0D8A82] text-white shadow-md shadow-teal-700/25 hover:bg-[#0B766F] hover:shadow-lg hover:-translate-y-0.5'
-                    : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-slate-50 hover:border-[#0D8A82]/50 hover:text-[#0D8A82] hover:shadow-sm hover:-translate-y-0.5'
-                }`}
-              >
-                <User size={20} />
-                <span>مدرس</span>
-                {accountType === 'teacher' && <CheckCircle2 size={18} className="text-white fill-white/20" />}
-              </button>
-              <div className={`h-1 w-12 rounded-full mt-2 transition-all duration-300 ${accountType === 'teacher' ? 'bg-[#0D8A82]' : 'bg-transparent'}`} />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 mb-6 mt-2">
-            <span className="text-base font-bold text-slate-800">
-              {accountType === 'teacher' ? 'تسجيل دخول المدرس' : 'تسجيل دخول الطالب'}
-            </span>
-            {accountType === 'teacher' ? (
-              <User size={20} className="text-[#0D8A82]" />
-            ) : (
-              <GraduationCap size={20} className="text-[#0D8A82]" />
-            )}
-          </div>
-
-          {serverError && (
-            <div className="flex items-center gap-2.5 p-3.5 mb-5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm font-bold">
+          {/* Server Error Alert */}
+          {login.serverError && (
+            <div className="flex items-center gap-2.5 p-3.5 mb-5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm font-bold animate-in fade-in duration-150">
               <AlertCircle size={20} className="shrink-0" />
-              <span>{serverError}</span>
+              <span>{login.serverError}</span>
             </div>
           )}
 
-          {infoNotice && (
-            <div className="flex items-center justify-between p-3.5 mb-5 bg-teal-50 border border-teal-200 rounded-xl text-teal-800 text-xs sm:text-sm font-semibold">
+          {/* Info Notice Alert */}
+          {login.infoNotice && (
+            <div className="flex items-center justify-between p-3.5 mb-5 bg-teal-50 border border-teal-200 rounded-xl text-teal-800 text-xs sm:text-sm font-semibold animate-in fade-in duration-150">
               <div className="flex items-center gap-2.5">
                 <Info size={18} className="shrink-0 text-[#0D8A82]" />
-                <span>{infoNotice}</span>
+                <span>{login.infoNotice}</span>
               </div>
               <button
                 type="button"
-                onClick={() => setInfoNotice(null)}
+                onClick={() => login.setInfoNotice(null)}
                 className="text-teal-600 hover:text-teal-900 p-1 text-xs font-bold cursor-pointer"
                 title="إغلاق"
               >
@@ -221,221 +61,36 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
             </div>
           )}
 
-          {accountType === 'teacher' ? (
-            <form className="space-y-4" onSubmit={teacherForm.handleSubmit(onTeacherSubmit)}>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">البريد الإلكتروني</label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    dir="rtl"
-                    placeholder="أدخل بريدك الإلكتروني"
-                    {...teacherForm.register('email')}
-                    className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
-                      teacherForm.formState.errors.email ? 'border-red-400' : 'border-slate-200'
-                    } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
-                  />
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                </div>
-                {teacherForm.formState.errors.email && (
-                  <p className="text-xs font-semibold text-red-600 mt-1">
-                    {teacherForm.formState.errors.email.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    dir="rtl"
-                    placeholder="أدخل كلمة المرور"
-                    {...teacherForm.register('password')}
-                    className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
-                      teacherForm.formState.errors.password ? 'border-red-400' : 'border-slate-200'
-                    } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0D8A82] transition-colors p-1 cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {teacherForm.formState.errors.password && (
-                  <p className="text-xs font-semibold text-red-600 mt-1">
-                    {teacherForm.formState.errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInfoNotice('يرجى التواصل مع الدعم الفني أو إدارة المنصة لإعادة تعيين كلمة المرور الخاصة بك.');
-                  }}
-                  className="text-xs font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
-                >
-                  نسيت كلمة المرور؟
-                </button>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
-                  <input
-                    type="checkbox"
-                    {...teacherForm.register('rememberMe')}
-                    className="w-4 h-4 rounded border-slate-300 text-[#0D8A82] focus:ring-[#0D8A82] cursor-pointer accent-[#0D8A82]"
-                  />
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer text-sm"
-              >
-                {isLoading ? (
-                  <span>جاري تسجيل الدخول...</span>
-                ) : (
-                  <>
-                    <span>تسجيل الدخول</span>
-                    <LogIn size={18} className="rotate-180" />
-                  </>
-                )}
-              </button>
-            </form>
+          {/* Active Login Form */}
+          {login.accountType === 'teacher' ? (
+            <TeacherLoginForm
+              form={login.teacherForm}
+              onSubmit={login.onTeacherSubmit}
+              isLoading={login.isLoading}
+              onForgotPassword={() =>
+                login.setInfoNotice(
+                  'يرجى التواصل مع الدعم الفني أو إدارة المنصة لإعادة تعيين كلمة المرور الخاصة بك.'
+                )
+              }
+            />
           ) : (
-            <form className="space-y-4" onSubmit={studentForm.handleSubmit(onStudentSubmit)}>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">رقم الهاتف</label>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    dir="rtl"
-                    placeholder="أدخل رقم الهاتف (مثال: 01012345678)"
-                    {...studentForm.register('phone')}
-                    className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
-                      studentForm.formState.errors.phone ? 'border-red-400' : 'border-slate-200'
-                    } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
-                  />
-                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                </div>
-                {studentForm.formState.errors.phone && (
-                  <p className="text-xs font-semibold text-red-600 mt-1">
-                    {studentForm.formState.errors.phone.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    dir="rtl"
-                    placeholder="أدخل كلمة المرور"
-                    {...studentForm.register('password')}
-                    className={`w-full pr-4 pl-11 py-3 rounded-xl border text-right ${
-                      studentForm.formState.errors.password ? 'border-red-400' : 'border-slate-200'
-                    } focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition bg-white text-slate-900 text-sm font-medium`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0D8A82] transition-colors p-1 cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {studentForm.formState.errors.password && (
-                  <p className="text-xs font-semibold text-red-600 mt-1">
-                    {studentForm.formState.errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInfoNotice('يرجى التواصل مع المعلم أو إدارة السنتر لإعادة تعيين كلمة المرور الخاصة بك.');
-                  }}
-                  className="text-xs font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
-                >
-                  نسيت كلمة المرور؟
-                </button>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs text-slate-600 font-semibold">تذكرني</span>
-                  <input
-                    type="checkbox"
-                    {...studentForm.register('rememberMe')}
-                    className="w-4 h-4 rounded border-slate-300 text-[#0D8A82] focus:ring-[#0D8A82] cursor-pointer accent-[#0D8A82]"
-                  />
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-[#0D8A82] hover:bg-[#0B766F] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 mt-4 shadow-lg shadow-teal-700/20 cursor-pointer text-sm"
-              >
-                {isLoading ? (
-                  <span>جاري تسجيل الدخول...</span>
-                ) : (
-                  <>
-                    <span>تسجيل الدخول</span>
-                    <LogIn size={18} className="rotate-180" />
-                  </>
-                )}
-              </button>
-            </form>
+            <StudentLoginForm
+              form={login.studentForm}
+              onSubmit={login.onStudentSubmit}
+              isLoading={login.isLoading}
+              onForgotPassword={() =>
+                login.setInfoNotice(
+                  'يرجى التواصل مع المعلم أو إدارة السنتر لإعادة تعيين كلمة المرور الخاصة بك.'
+                )
+              }
+            />
           )}
 
-          <div className="flex items-center gap-4 my-5">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-slate-400 text-xs font-medium">أو</span>
-            <div className="flex-1 h-px bg-slate-200" />
-          </div>
-
-          <a
-            href="https://wa.me/mahmoud_3zb"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full bg-white border border-slate-200/90 hover:bg-slate-50 text-[#0D8A82] font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer text-sm"
-          >
-            <span>تواصل معنا للمساعدة</span>
-            <Headphones size={18} />
-          </a>
-
-          {accountType === 'student' && (
-            <div className="text-center mt-4 pt-2">
-              <p className="text-xs text-slate-600 font-medium">
-                ليس لديك حساب طالب؟{' '}
-                {onNavigateToRegister ? (
-                  <button
-                    type="button"
-                    onClick={onNavigateToRegister}
-                    className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
-                  >
-                    انشاء حساب جديد
-                  </button>
-                ) : (
-                  <Link
-                    to="/register"
-                    className="font-bold text-[#0D8A82] hover:underline transition cursor-pointer"
-                  >
-                    انشاء حساب جديد
-                  </Link>
-                )}
-              </p>
-            </div>
-          )}
+          {/* Support Link & Register Link */}
+          <LoginFooterActions
+            accountType={login.accountType}
+            onNavigateToRegister={onNavigateToRegister}
+          />
         </>
       )}
     </AuthSplitLayout>

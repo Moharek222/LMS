@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Loader2, CheckCircle2, AlertTriangle, X, Layers, Compass } from 'lucide-react';
+import { Plus, Loader2, AlertTriangle, X, Layers, Compass } from 'lucide-react';
 import { useCreateCourse } from '../../hooks/useCreateCourse';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
@@ -20,7 +20,6 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
   const [academicTrack, setAcademicTrack] = useState<AcademicTrack>(AcademicTrack.General);
   const [isPublished, setIsPublished] = useState(true);
   const [validationError, setValidationError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   const handleCloseModal = () => {
     if (createCourseMutation.isPending) return;
@@ -29,7 +28,6 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
     setGrade(Grade.ThirdSecondary);
     setAcademicTrack(AcademicTrack.General);
     setValidationError('');
-    setSuccessMessage('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,7 +48,6 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
     }
 
     setValidationError('');
-    setSuccessMessage('');
 
     createCourseMutation.mutate(
       {
@@ -109,13 +106,6 @@ export const CreateCourseModal: React.FC<CreateCourseModalProps> = ({ isOpen, on
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-bold flex items-center gap-2">
             <AlertTriangle size={16} className="shrink-0" />
             <span>{validationError}</span>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
-            <CheckCircle2 size={16} className="shrink-0" />
-            <span>{successMessage}</span>
           </div>
         )}
 

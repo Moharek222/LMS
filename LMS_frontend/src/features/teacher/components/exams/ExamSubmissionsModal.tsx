@@ -29,6 +29,16 @@ interface ExamSubmissionsModalProps {
   examTitle?: string;
 }
 
+const normalizeArabic = (text: string) => {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/[\u064B-\u065F]/g, '');
+};
+
 export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
   isOpen,
   onClose,
@@ -61,10 +71,11 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
 
   const submissions = rawSubmissions.filter((sub) => {
     if (!searchTerm.trim()) return true;
-    const sName = sub.studentID?.name || '';
-    const sPhone = sub.studentID?.phone || '';
-    const q = searchTerm.trim().toLowerCase();
-    return sName.toLowerCase().includes(q) || sPhone.toLowerCase().includes(q);
+    const sName = normalizeArabic(sub.studentID?.name || '');
+    const sPhone = (sub.studentID?.phone || '').trim().toLowerCase();
+    const q = normalizeArabic(searchTerm);
+    const rawQ = searchTerm.trim().toLowerCase();
+    return sName.includes(q) || sPhone.includes(rawQ);
   });
 
   const formatDate = (dateStr?: string) => {
@@ -136,8 +147,11 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
                 <input
                   type="text"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="ابحث باسم الطالب..."
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="ابحث باسم الطالب أو رقم الهاتف..."
                   className="w-full pl-3 pr-9 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82]"
                 />
               </div>
@@ -201,8 +215,13 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
                       className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-teal-50/30 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                     >
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-black text-slate-800">{studentName}</span>
+                          {sub.studentID?.phone && (
+                            <span className="text-[11px] text-slate-400 font-semibold dir-ltr">
+                              ({sub.studentID.phone})
+                            </span>
+                          )}
                           <span
                             className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold border ${
                               sub.status === 'GRADED'

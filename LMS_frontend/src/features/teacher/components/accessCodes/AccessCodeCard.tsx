@@ -71,7 +71,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
         return (
           <span className="px-2.5 py-0.5 rounded-lg bg-purple-50 text-purple-700 text-xs font-black border border-purple-200 flex items-center gap-1">
             <Sparkles size={12} className="text-purple-600 shrink-0" />
-            <span>تانية ثانوي • مسار عام (أونلاين)</span>
+            <span>تانية ثانوي • مسار عام</span>
           </span>
         );
       }
@@ -79,7 +79,7 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
         return (
           <span className="px-2.5 py-0.5 rounded-lg bg-fuchsia-50 text-fuchsia-700 text-xs font-black border border-fuchsia-200 flex items-center gap-1">
             <Sparkles size={12} className="text-fuchsia-600 shrink-0" />
-            <span>تانية ثانوي • مسار بكالوريا (أونلاين)</span>
+            <span>تانية ثانوي • مسار بكالوريا</span>
           </span>
         );
       }
