@@ -16,6 +16,16 @@ interface GroupStudentsModalProps {
   onResetPassword?: (student: GroupStudent, currentGroup: Group) => void;
 }
 
+const normalizeArabic = (text: string) => {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/[\u064B-\u065F]/g, '');
+};
+
 export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   isOpen,
   onClose,
@@ -36,30 +46,16 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   const filteredStudents = React.useMemo(() => {
     if (!students) return [];
     if (!searchQuery.trim()) return students;
-    const q = searchQuery
-      .trim()
-      .toLowerCase()
-      .replace(/[أإآ]/g, 'ا')
-      .replace(/ة/g, 'ه')
-      .replace(/ى/g, 'ي')
-      .replace(/[\u064B-\u065F]/g, '');
+    const q = normalizeArabic(searchQuery);
 
     return students.filter((s) => {
-      const normName = (s.name || '')
-        .trim()
-        .toLowerCase()
-        .replace(/[أإآ]/g, 'ا')
-        .replace(/ة/g, 'ه')
-        .replace(/ى/g, 'ي')
-        .replace(/[\u064B-\u065F]/g, '');
+      const normName = normalizeArabic(s.name || '');
       const nameMatch = normName.includes(q);
       const phoneMatch = (s.phone || '').includes(searchQuery.trim());
       const parentMatch = (s.parentPhone || '').includes(searchQuery.trim());
       return nameMatch || phoneMatch || parentMatch;
     });
   }, [students, searchQuery]);
-
-  const displayStudents = filteredStudents;
 
   const handleConfirmDeactivate = (student: GroupStudent) => {
     deactivateStudentMutation.mutate(student._id, {
@@ -177,7 +173,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
               </div>
             )}
 
-            {!isLoading && !isError && students && students.length > 0 && displayStudents.length === 0 && (
+            {!isLoading && !isError && students && students.length > 0 && filteredStudents.length === 0 && (
               <div className="py-16 text-center space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto border border-amber-200">
                   <Search size={22} />
@@ -194,9 +190,9 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
               </div>
             )}
 
-            {!isLoading && !isError && displayStudents && displayStudents.length > 0 && (
+            {!isLoading && !isError && filteredStudents && filteredStudents.length > 0 && (
               <div className="space-y-3">
-                {displayStudents.map((student) => {
+                {filteredStudents.map((student) => {
                   const isDeactivated = student.isDeactivated || student.isActive === false;
 
                   return (
@@ -297,7 +293,9 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between shrink-0">
             <span className="text-xs font-bold text-slate-500">
-              {displayStudents ? `إجمالي الطلاب: ${displayStudents.length}` : ''}
+              {searchQuery.trim()
+                ? `نتائج البحث: ${filteredStudents.length} من أصل ${students?.length || 0} طالب`
+                : `إجمالي طلاب المجموعة: ${students?.length || 0} طالب`}
             </span>
             <button
               type="button"
@@ -319,7 +317,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
               <div className="text-center space-y-2">
                 <h4 className="text-base font-extrabold text-slate-800">تأكيد تعطيل حساب الطالب</h4>
                 <p className="text-xs text-slate-600 font-semibold leading-relaxed">
-                  هل أنت تأكد من تعطيل حساب الطالب <span className="text-rose-600 font-bold">({studentToDeactivate.name})</span> بالمنصة؟
+                  هل أنت متأكد من تعطيل حساب الطالب <span className="text-rose-600 font-bold">({studentToDeactivate.name})</span> بالمنصة؟
                 </p>
                 <p className="text-[11px] text-slate-500 font-semibold bg-rose-50/50 p-2.5 rounded-xl border border-rose-100">
                   ⚠️ عند التعطيل لن يتمكن الطالب من تسجيل الدخول حتى يتم إعادة تنشيطه.

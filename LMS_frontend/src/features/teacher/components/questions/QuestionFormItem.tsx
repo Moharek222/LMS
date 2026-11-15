@@ -70,7 +70,7 @@ export const QuestionFormItem: React.FC<QuestionFormItemProps> = ({
               type="number"
               min={1}
               value={q.points}
-              onChange={(e) => onPointsChange(q.id, Number(e.target.value))}
+              onChange={(e) => onPointsChange(q.id, Math.max(1, Number(e.target.value) || 1))}
               disabled={isDisabled}
               className="w-16 px-2 py-1 rounded-lg border border-slate-200 text-xs font-bold bg-white text-center"
             />
