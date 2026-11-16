@@ -72,7 +72,11 @@ export const TeacherAttendanceManager: React.FC = () => {
     refetch: refetchGroups,
   } = useTeacherGroups({ limit: 100 });
 
-  const activeGroups = (groupsData?.data || []).filter((g) => g.isActive !== false);
+  const activeGroups = useMemo(() => {
+    return (groupsData?.data || []).filter(
+      (g) => g.isActive !== false && g.grade !== Grade.SecondSecondary
+    );
+  }, [groupsData]);
 
   const filteredActiveGroups = useMemo(() => {
     if (selectedGradeFilter === 'ALL') return activeGroups;
@@ -113,49 +117,50 @@ export const TeacherAttendanceManager: React.FC = () => {
     return `${mName} ${selectedYear}`;
   }, [selectedMonth, selectedYear]);
 
+  const recordAttendanceMutation = useRecordStudentAttendance();
+
+  const handleRecordAttendance = async (studentId: string, studentName: string) => {
+    if (!selectedGroupId) {
+      toast.error('يرجى اختيار المجموعة الدراسية أولاً');
+      return;
+    }
+    setRecordingStudentId(studentId);
+    try {
+      await recordAttendanceMutation.mutateAsync({
+        groupId: selectedGroupId,
+        studentId,
+      });
+      toast.success(`تم تسجيل حضور الطالب (${studentName}) بنجاح! 🟢`);
+      refetchSheets();
+      refetchStudents();
+    } catch (err: unknown) {
+      toast.error(toArabicErrorMessage(err, 'فشل تسجيل الحضور'));
+    } finally {
+      setRecordingStudentId(null);
+    }
+  };
+
+  const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedGroupId(val);
+    setSelectedSheetId(null);
+    setSheetsPage(1);
+  };
+
   const {
     data: sheetDetailsData,
     isLoading: isLoadingSheetDetails,
     isError: isErrorSheetDetails,
     error: errorSheetDetails,
     refetch: refetchSheetDetails,
-  } = useAttendanceSheetDetails(selectedGroupId, selectedSheetId || undefined);
+  } = useAttendanceSheetDetails(selectedGroupId, selectedSheetId || '');
 
-  const recordAttendanceMutation = useRecordStudentAttendance();
-
-  const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedGroupId(e.target.value);
-    setSheetsPage(1);
-    setSelectedSheetId(null);
-  };
-
-  const handleRecordAttendance = (studentId: string, studentName: string) => {
-    if (!selectedGroupId) return;
-    setRecordingStudentId(studentId);
-
-    recordAttendanceMutation.mutate(
-      { groupId: selectedGroupId, studentId },
-      {
-        onSuccess: () => {
-          toast.success(`تم تسجيل حضور الطالب (${studentName}) بنجاح.`);
-          setRecordingStudentId(null);
-        },
-        onError: (err) => {
-          const msg = toArabicErrorMessage(err, 'حدث خطأ أثناء تسجيل حضور الطالب');
-          toast.error(msg);
-          setRecordingStudentId(null);
-        },
-      }
-    );
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '—';
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '';
     try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-      return date.toLocaleDateString('ar-EG', {
-        weekday: 'long',
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('ar-EG', {
+        weekday: 'short',
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -248,7 +253,7 @@ export const TeacherAttendanceManager: React.FC = () => {
 
       {/* Group, Year & Month Selectors */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-        {/* Grade Filter Tabs */}
+        {/* Grade Filter Tabs (1st and 3rd Secondary only) */}
         {activeGroups.length > 0 && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
             <span className="text-xs font-bold text-slate-500 shrink-0 ml-1">تصفية بالمرحلة:</span>
@@ -390,7 +395,7 @@ export const TeacherAttendanceManager: React.FC = () => {
             isLoadingStudents={isLoadingStudents}
             isErrorStudents={isErrorStudents}
             errorStudents={errorStudents}
-            onRefetchStudents={() => refetchStudents()}
+            onRefetchStudents={() => void refetchStudents()}
             recordingStudentId={recordingStudentId}
             isRecordingPending={recordAttendanceMutation.isPending}
             onRecordAttendance={handleRecordAttendance}

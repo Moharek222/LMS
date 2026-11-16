@@ -10,9 +10,11 @@ import {
   Search,
   X,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useTeacherGroups } from '../hooks/useTeacherGroups';
 import type { Group, GroupStudent } from '../types/groupManagement';
 import { Grade, GRADE_OPTIONS } from '../../../types/grade';
+import { AcademicTrack } from '../../../types/academicTrack';
 import { GroupCard } from './groups/GroupCard';
 import { CreateGroupModal } from './groups/CreateGroupModal';
 import { EditGroupModal } from './groups/EditGroupModal';
@@ -21,8 +23,11 @@ import { GroupStudentsModal } from './groups/GroupStudentsModal';
 import { MoveStudentModal } from './groups/MoveStudentModal';
 import { ResetStudentPasswordModal } from './groups/ResetStudentPasswordModal';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
-
-const ALLOWED_GROUP_GRADES = GRADE_OPTIONS.filter((opt) => opt.value !== Grade.SecondSecondary);
+import {
+  STATIC_SECOND_SEC_GENERAL_GROUP,
+  STATIC_SECOND_SEC_BAC_GROUP,
+} from '../utils/staticSecondSecGroups';
+import { getAllStudentsApi } from '../api/teacherAccessCodesApi';
 
 export const TeacherGroupManager: React.FC = () => {
   const [page, setPage] = useState<number>(1);
@@ -51,13 +56,53 @@ export const TeacherGroupManager: React.FC = () => {
     limit,
   });
 
-  const groups = useMemo(() => data?.data || [], [data]);
+  const rawGroups = useMemo(() => data?.data || [], [data]);
   const totalPages = data?.totalPages || 1;
-  const totalItems = data?.total || 0;
+
+  // Fetch all students to count 2nd secondary students by academic track
+  const { data: allStudents } = useQuery({
+    queryKey: ['all-platform-students-for-groups-manager'],
+    queryFn: getAllStudentsApi,
+    staleTime: 60 * 1000,
+  });
+
+  const secondSecGeneralCount = useMemo(() => {
+    if (!allStudents) return 0;
+    return allStudents.filter(
+      (s) =>
+        (s.grade === Grade.SecondSecondary || s.grade === 'second_secondary') &&
+        (s.academicTrack === AcademicTrack.General || s.academicTrack === 'general')
+    ).length;
+  }, [allStudents]);
+
+  const secondSecBacCount = useMemo(() => {
+    if (!allStudents) return 0;
+    return allStudents.filter(
+      (s) =>
+        (s.grade === Grade.SecondSecondary || s.grade === 'second_secondary') &&
+        (s.academicTrack === AcademicTrack.Baccalaureate || s.academicTrack === 'baccalaureate')
+    ).length;
+  }, [allStudents]);
+
+  const enrichedStaticGroups: Group[] = useMemo(() => {
+    return [
+      {
+        ...STATIC_SECOND_SEC_GENERAL_GROUP,
+        studentCount: secondSecGeneralCount,
+      },
+      {
+        ...STATIC_SECOND_SEC_BAC_GROUP,
+        studentCount: secondSecBacCount,
+      },
+    ];
+  }, [secondSecGeneralCount, secondSecBacCount]);
+
+  const allCombinedGroups: Group[] = useMemo(() => {
+    return [...rawGroups, ...enrichedStaticGroups];
+  }, [rawGroups, enrichedStaticGroups]);
 
   const filteredGroups = useMemo(() => {
-    if (!groups) return [];
-    let list = groups;
+    let list = allCombinedGroups;
 
     if (selectedGradeFilter !== 'ALL') {
       list = list.filter((g) => g.grade === selectedGradeFilter);
@@ -82,7 +127,7 @@ export const TeacherGroupManager: React.FC = () => {
         .replace(/[\u064B-\u065F]/g, '');
       return name.includes(q);
     });
-  }, [groups, selectedGradeFilter, groupSearchQuery]);
+  }, [allCombinedGroups, selectedGradeFilter, groupSearchQuery]);
 
   if (isLoading) {
     return (
@@ -127,7 +172,7 @@ export const TeacherGroupManager: React.FC = () => {
               <h3 className="text-base font-extrabold text-slate-800">المجموعات الدراسية</h3>
               {data?.total !== undefined && (
                 <span className="px-2.5 py-0.5 rounded-lg bg-teal-50 text-[#0D8A82] text-xs font-bold border border-teal-100">
-                  إجمالي المجموعات: {totalItems}
+                  إجمالي المجموعات: {allCombinedGroups.length}
                 </span>
               )}
             </div>
@@ -148,7 +193,7 @@ export const TeacherGroupManager: React.FC = () => {
       </div>
 
       {/* Grade Filter Tabs + Instant Search Bar */}
-      {groups.length > 0 && (
+      {allCombinedGroups.length > 0 && (
         <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-3">
           {/* Grade Filter Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -161,10 +206,10 @@ export const TeacherGroupManager: React.FC = () => {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              جميع المراحل ({groups.length})
+              جميع المراحل ({allCombinedGroups.length})
             </button>
-            {ALLOWED_GROUP_GRADES.map((opt) => {
-              const count = groups.filter((g) => g.grade === opt.value).length;
+            {GRADE_OPTIONS.map((opt) => {
+              const count = allCombinedGroups.filter((g) => g.grade === opt.value).length;
               return (
                 <button
                   key={opt.value}
@@ -206,13 +251,13 @@ export const TeacherGroupManager: React.FC = () => {
             </div>
 
             <span className="text-xs font-bold text-[#0D8A82] bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-100 self-start sm:self-auto shrink-0">
-              المعروض: {filteredGroups.length} من {groups.length}
+              المعروض: {filteredGroups.length} من {allCombinedGroups.length}
             </span>
           </div>
         </div>
       )}
 
-      {groups.length === 0 ? (
+      {allCombinedGroups.length === 0 ? (
         <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-xs text-center space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100">
             <FolderKanban size={28} />
@@ -234,7 +279,7 @@ export const TeacherGroupManager: React.FC = () => {
             onClick={() => setGroupSearchQuery('')}
             className="text-xs text-[#0D8A82] font-bold hover:underline cursor-pointer"
           >
-            مسح البحث وعرض جميع المجموعات ({groups.length})
+            مسح البحث وعرض جميع المجموعات ({allCombinedGroups.length})
           </button>
         </div>
       ) : (

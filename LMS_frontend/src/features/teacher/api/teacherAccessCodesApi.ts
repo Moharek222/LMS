@@ -56,6 +56,7 @@ export interface PlatformStudentItem {
   _id: string;
   name: string;
   phone: string;
+  parentPhone?: string;
   grade?: Grade | string;
   academicTrack?: AcademicTrack | string;
   groupID?: { _id: string; name: string } | string;

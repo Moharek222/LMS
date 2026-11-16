@@ -19,6 +19,9 @@ export interface Group {
   _id: string;
   name: string;
   grade?: Grade;
+  academicTrack?: AcademicTrack;
+  isStatic?: boolean;
+  studentCount?: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;

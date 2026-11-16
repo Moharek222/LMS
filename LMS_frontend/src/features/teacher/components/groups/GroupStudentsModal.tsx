@@ -1,5 +1,6 @@
 import React from 'react';
-import { Users, User, UserX, UserCheck, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X, BarChart3, Search } from 'lucide-react';
+import { Users, User, UserX, UserCheck, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X, BarChart3, Search, GraduationCap } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useGroupStudents } from '../../hooks/useGroupStudents';
 import { useDeactivateStudent } from '../../hooks/useDeactivateStudent';
 import { useActivateStudent } from '../../hooks/useActivateStudent';
@@ -7,6 +8,10 @@ import type { Group, GroupStudent } from '../../types/groupManagement';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
 import { StudentDetailsModal } from './StudentDetailsModal';
+import { isStaticSecondSecGroup, getStaticTrackFromGroupId } from '../../utils/staticSecondSecGroups';
+import { getAllStudentsApi } from '../../api/teacherAccessCodesApi';
+import { Grade } from '../../../../types/grade';
+import { AcademicTrack } from '../../../../types/academicTrack';
 
 interface GroupStudentsModalProps {
   isOpen: boolean;
@@ -35,7 +40,58 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
 }) => {
   const toast = useToast();
   const groupId = group?._id || '';
-  const { data: students, isLoading, isError, error, refetch } = useGroupStudents(groupId);
+  const isStatic = isStaticSecondSecGroup(groupId);
+  const staticTrack = getStaticTrackFromGroupId(groupId);
+
+  const {
+    data: students,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGroupStudents(!isStatic ? groupId : '');
+
+  const {
+    data: allStudents,
+    isLoading: isLoadingAllStudents,
+    isError: isErrorAllStudents,
+    error: errorAllStudents,
+    refetch: refetchAllStudents,
+  } = useQuery({
+    queryKey: ['all-platform-students-for-group-modal'],
+    queryFn: getAllStudentsApi,
+    enabled: isStatic && isOpen,
+    staleTime: 60 * 1000,
+  });
+
+  const staticStudents: GroupStudent[] = React.useMemo(() => {
+    if (!allStudents || !staticTrack) return [];
+    return allStudents
+      .filter((s) => {
+        const isSecondSec = s.grade === Grade.SecondSecondary || s.grade === 'second_secondary';
+        const trackMatches =
+          staticTrack === AcademicTrack.General
+            ? s.academicTrack === AcademicTrack.General || s.academicTrack === 'general'
+            : s.academicTrack === AcademicTrack.Baccalaureate || s.academicTrack === 'baccalaureate';
+        return isSecondSec && trackMatches;
+      })
+      .map((s) => ({
+        _id: s._id,
+        name: s.name,
+        phone: s.phone,
+        parentPhone: s.parentPhone || '',
+        grade: Grade.SecondSecondary,
+      }));
+  }, [allStudents, staticTrack]);
+
+  const effectiveStudents = React.useMemo(() => {
+    return isStatic ? staticStudents : (students || []);
+  }, [isStatic, staticStudents, students]);
+  const effectiveLoading = isStatic ? isLoadingAllStudents : isLoading;
+  const effectiveError = isStatic ? isErrorAllStudents : isError;
+  const effectiveErrorMessage = isStatic ? errorAllStudents : error;
+  const effectiveRefetch = isStatic ? refetchAllStudents : refetch;
+
   const deactivateStudentMutation = useDeactivateStudent();
   const activateStudentMutation = useActivateStudent();
 
@@ -44,25 +100,25 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   const [searchQuery, setSearchQuery] = React.useState<string>('');
 
   const filteredStudents = React.useMemo(() => {
-    if (!students) return [];
-    if (!searchQuery.trim()) return students;
+    if (!effectiveStudents) return [];
+    if (!searchQuery.trim()) return effectiveStudents;
     const q = normalizeArabic(searchQuery);
 
-    return students.filter((s) => {
+    return effectiveStudents.filter((s) => {
       const normName = normalizeArabic(s.name || '');
       const nameMatch = normName.includes(q);
       const phoneMatch = (s.phone || '').includes(searchQuery.trim());
       const parentMatch = (s.parentPhone || '').includes(searchQuery.trim());
       return nameMatch || phoneMatch || parentMatch;
     });
-  }, [students, searchQuery]);
+  }, [effectiveStudents, searchQuery]);
 
   const handleConfirmDeactivate = (student: GroupStudent) => {
     deactivateStudentMutation.mutate(student._id, {
       onSuccess: () => {
         toast.success(`تم تعطيل حساب الطالب (${student.name}) ونقله لصفحة (تفعيل الطلاب) 🔴`);
         setStudentToDeactivate(null);
-        refetch();
+        effectiveRefetch();
       },
       onError: (err) => {
         toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء تعطيل حساب الطالب'));
@@ -74,7 +130,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
     try {
       await activateStudentMutation.mutateAsync(student._id);
       toast.success(`تم إعادة تفعيل حساب الطالب (${student.name}) بنجاح! 🟢`);
-      refetch();
+      effectiveRefetch();
     } catch (err) {
       toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء إعادة تفعيل حساب الطالب'));
     }
@@ -89,13 +145,25 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
           
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center border border-teal-100">
-                <Users size={22} />
+              <div
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center border ${
+                  isStatic
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    : 'bg-teal-50 text-[#0D8A82] border-teal-100'
+                }`}
+              >
+                {isStatic ? <GraduationCap size={22} /> : <Users size={22} />}
               </div>
               <div>
                 <h3 className="text-base font-black text-slate-800">طلاب المجموعة ومتابعة السجل</h3>
                 <p className="text-xs text-slate-500 font-semibold mt-0.5">
                   اسم المجموعة: <span className="text-[#0D8A82] font-extrabold">{group.name}</span>
+                  {isStatic && (
+                    <span className="mr-2 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200 inline-flex items-center gap-1">
+                      <GraduationCap size={11} />
+                      <span>مجموعة تلقائية حسب المسار</span>
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
@@ -103,97 +171,61 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
               type="button"
               onClick={onClose}
               className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-              aria-label="إغلاق"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
 
-          {/* Instant Student Search Bar */}
-          {!isLoading && !isError && students && students.length > 0 && (
-            <div className="relative shrink-0">
-              <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث باسم الطالب، رقم هاتفه، أو هاتف ولي الأمر..."
-                className="w-full pr-10 pl-9 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-slate-50/70 transition"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition cursor-pointer"
-                  title="مسح البحث"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          )}
+          <div className="relative shrink-0">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ابحث باسم الطالب أو رقم الهاتف أو هاتف ولي الأمر..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] outline-none transition"
+            />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          </div>
 
-          <div className="overflow-y-auto min-h-60 flex-1 space-y-4 pr-1 custom-scrollbar">
-            {isLoading && (
-              <div className="py-16 flex flex-col items-center justify-center text-center space-y-3">
+          <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-60">
+            {effectiveLoading ? (
+              <div className="py-16 flex flex-col items-center justify-center space-y-3">
                 <Loader2 size={32} className="animate-spin text-[#0D8A82]" />
-                <p className="text-xs font-bold text-slate-600">جاري تحميل الطلاب...</p>
+                <p className="text-xs font-bold text-slate-500">جاري تحميل طلاب المجموعة...</p>
               </div>
-            )}
-
-            {isError && (
-              <div className="p-6 rounded-2xl border border-red-200 bg-red-50/40 text-center space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center mx-auto border border-red-200">
-                  <AlertTriangle size={24} />
+            ) : effectiveError ? (
+              <div className="p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-between gap-3 text-red-700 text-xs font-bold">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={18} />
+                  <span>{toArabicErrorMessage(effectiveErrorMessage, 'حدث خطأ أثناء تحميل الطلاب')}</span>
                 </div>
-                <h4 className="text-sm font-bold text-slate-800">حدث خطأ أثناء تحميل بيانات الطلاب</h4>
-                <p className="text-xs text-slate-600 font-semibold">
-                  {toArabicErrorMessage(error, 'تعذر تحميل بيانات طلاب المجموعة.')}
-                </p>
                 <button
                   type="button"
-                  onClick={() => refetch()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs mt-1"
+                  onClick={() => effectiveRefetch()}
+                  className="inline-flex items-center gap-1 text-xs underline cursor-pointer"
                 >
                   <RefreshCw size={14} />
                   <span>إعادة المحاولة</span>
                 </button>
               </div>
-            )}
-
-            {!isLoading && !isError && (!students || students.length === 0) && (
-              <div className="py-16 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto border border-slate-200">
-                  <Users size={24} />
-                </div>
-                <h4 className="text-sm font-bold text-slate-700">لا يوجد طلاب نشطون في هذه المجموعة حتى الآن</h4>
-                <p className="text-xs text-slate-400 font-semibold max-w-xs mx-auto">
-                  يمكنك إضافة الطلاب ونقلهم بين المجموعات عند بدء التنشيط.
+            ) : filteredStudents.length === 0 ? (
+              <div className="py-16 text-center space-y-2">
+                <Users size={36} className="mx-auto text-slate-300" />
+                <p className="text-sm font-bold text-slate-600">
+                  {searchQuery.trim()
+                    ? 'لم يتم العثور على طلاب يطابقون بحثك'
+                    : 'لا يوجد طلاب مسجلون في هذه المجموعة حالياً'}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {isStatic
+                    ? 'عندما يسجل أي طالب في الصف الثاني الثانوي ويختار هذا المسار، سيظهر هنا فوراً.'
+                    : 'الطلاب المسجلون في هذه المجموعة سيظهرون هنا تلقائياً.'}
                 </p>
               </div>
-            )}
-
-            {!isLoading && !isError && students && students.length > 0 && filteredStudents.length === 0 && (
-              <div className="py-16 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto border border-amber-200">
-                  <Search size={22} />
-                </div>
-                <h4 className="text-sm font-bold text-slate-700">لا توجد نتائج مطابقة لبحثك</h4>
-                <p className="text-xs text-slate-400 font-semibold">"{searchQuery}"</p>
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="text-xs text-[#0D8A82] font-bold hover:underline cursor-pointer"
-                >
-                  مسح البحث وعرض جميع الطلاب ({students.length})
-                </button>
-              </div>
-            )}
-
-            {!isLoading && !isError && filteredStudents && filteredStudents.length > 0 && (
-              <div className="space-y-3">
+            ) : (
+              <div className="space-y-2.5">
                 {filteredStudents.map((student) => {
-                  const isDeactivated = student.isDeactivated || student.isActive === false;
+                  const isDeactivated = Boolean(student.isDeactivated || student.isActive === false);
 
                   return (
                     <div
@@ -252,14 +284,16 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                             <span>كلمة السر</span>
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => onMoveStudent(student, group)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer shrink-0"
-                        >
-                          <ArrowLeftRight size={13} />
-                          <span>نقل</span>
-                        </button>
+                        {!isStatic && (
+                          <button
+                            type="button"
+                            onClick={() => onMoveStudent(student, group)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-[#0D8A82] hover:bg-teal-100 border border-teal-100 text-xs font-bold transition cursor-pointer shrink-0"
+                          >
+                            <ArrowLeftRight size={13} />
+                            <span>نقل</span>
+                          </button>
+                        )}
                         {isDeactivated ? (
                           <button
                             type="button"
@@ -294,64 +328,64 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between shrink-0">
             <span className="text-xs font-bold text-slate-500">
               {searchQuery.trim()
-                ? `نتائج البحث: ${filteredStudents.length} من أصل ${students?.length || 0} طالب`
-                : `إجمالي طلاب المجموعة: ${students?.length || 0} طالب`}
+                ? `نتائج البحث: ${filteredStudents.length} من أصل ${effectiveStudents.length} طالب`
+                : `إجمالي طلاب المجموعة: ${effectiveStudents.length} طالب`}
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold transition cursor-pointer"
             >
               إغلاق
             </button>
           </div>
+
         </div>
-
-        {studentToDeactivate && (
-          <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl max-w-sm w-full border border-slate-200 shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
-              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100 mx-auto">
-                <UserX size={24} />
-              </div>
-
-              <div className="text-center space-y-2">
-                <h4 className="text-base font-extrabold text-slate-800">تأكيد تعطيل حساب الطالب</h4>
-                <p className="text-xs text-slate-600 font-semibold leading-relaxed">
-                  هل أنت متأكد من تعطيل حساب الطالب <span className="text-rose-600 font-bold">({studentToDeactivate.name})</span> بالمنصة؟
-                </p>
-                <p className="text-[11px] text-slate-500 font-semibold bg-rose-50/50 p-2.5 rounded-xl border border-rose-100">
-                  ⚠️ عند التعطيل لن يتمكن الطالب من تسجيل الدخول حتى يتم إعادة تنشيطه.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setStudentToDeactivate(null)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleConfirmDeactivate(studentToDeactivate)}
-                  disabled={deactivateStudentMutation.isPending}
-                  className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition cursor-pointer shadow-xs disabled:opacity-50"
-                >
-                  {deactivateStudentMutation.isPending ? 'جاري التعطيل...' : 'تأكيد التعطيل 🛑'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      <StudentDetailsModal
-        isOpen={Boolean(selectedStudentForDetails)}
-        onClose={() => setSelectedStudentForDetails(null)}
-        student={selectedStudentForDetails}
-        groupId={groupId}
-      />
+      {studentToDeactivate && (
+        <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center border border-rose-100">
+                <AlertTriangle size={20} />
+              </div>
+              <h4 className="text-sm font-bold">تأكيد تعطيل حساب الطالب</h4>
+            </div>
+            <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+              هل أنت متأكد من رغبتك في تعطيل حساب الطالب <span className="text-slate-900 font-extrabold font-mono">({studentToDeactivate.name})</span>؟ سيتم منعه من الدخول للمنصة ونقله إلى صفحة تفعيل الطلاب الموقوفين.
+            </p>
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setStudentToDeactivate(null)}
+                disabled={deactivateStudentMutation.isPending}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmDeactivate(studentToDeactivate)}
+                disabled={deactivateStudentMutation.isPending}
+                className="px-4 py-2 rounded-xl bg-rose-600 text-white hover:bg-rose-700 text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                {deactivateStudentMutation.isPending && <Loader2 size={13} className="animate-spin" />}
+                <span>نعم، تعطيل الحساب</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedStudentForDetails && (
+        <StudentDetailsModal
+          isOpen={Boolean(selectedStudentForDetails)}
+          onClose={() => setSelectedStudentForDetails(null)}
+          student={selectedStudentForDetails}
+          groupId={group._id}
+        />
+      )}
     </>
   );
 };
