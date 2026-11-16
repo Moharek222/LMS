@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Users,
+  GraduationCap,
   Sparkles,
 } from 'lucide-react';
 import type { Group, GroupStudent } from '../../../types/groupManagement';
@@ -105,12 +106,12 @@ export const CohortBatchGenerationForm: React.FC<CohortBatchGenerationFormProps>
           onClick={() => setBatchCategory('second_secondary')}
           className={`py-2.5 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
             batchCategory === 'second_secondary'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'text-purple-800 hover:bg-purple-50'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-indigo-800 hover:bg-indigo-50'
           }`}
         >
-          <Sparkles size={15} />
-          <span>دفعة تانية ثانوي (أونلاين)</span>
+          <GraduationCap size={15} />
+          <span>دفعة تانية ثانوي</span>
         </button>
 
         <button
@@ -130,31 +131,31 @@ export const CohortBatchGenerationForm: React.FC<CohortBatchGenerationFormProps>
       {/* SECTION 1: 2nd Secondary Cohorts (General / Baccalaureate / All) */}
       {batchCategory === 'second_secondary' && (
         <div className="space-y-3 animate-in fade-in duration-150">
-          <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs text-purple-900 font-bold space-y-1">
+          <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200 text-xs text-indigo-900 font-bold space-y-1">
             <p>
               طلاب الصف الثاني الثانوي يدرسون بنظام الأونلاين (المسار العام ومسار البكالوريا).
             </p>
-            <p className="text-[11px] text-purple-700 font-semibold">
+            <p className="text-[11px] text-indigo-700 font-semibold">
               اختر المسار المراد توليد أكواد تفعيل لجميع طلابه دفعة واحدة:
             </p>
           </div>
 
           {isLoadingAllStudents ? (
             <div className="p-6 text-center text-xs text-slate-500 font-semibold flex items-center justify-center gap-2 bg-slate-50 rounded-2xl border border-slate-200">
-              <Loader2 size={18} className="animate-spin text-purple-600" />
+              <Loader2 size={18} className="animate-spin text-indigo-600" />
               <span>جاري إحصاء طلاب الصف الثاني الثانوي...</span>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Cohort 1: General Track */}
-              <div className="p-4 rounded-2xl bg-white border border-purple-200 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl bg-white border border-indigo-200 shadow-2xs space-y-3 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-purple-900 flex items-center gap-1.5">
-                      <Sparkles size={15} className="text-purple-600" />
+                    <span className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                      <GraduationCap size={15} className="text-indigo-600" />
                       <span>المسار العام (General)</span>
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-lg bg-purple-50 text-purple-700 font-black text-xs border border-purple-200">
+                    <span className="px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 font-black text-xs border border-indigo-200">
                       {secondSecGeneralStudents.length} طالب
                     </span>
                   </div>
@@ -172,26 +173,26 @@ export const CohortBatchGenerationForm: React.FC<CohortBatchGenerationFormProps>
                     )
                   }
                   disabled={isPending || secondSecGeneralStudents.length === 0}
-                  className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black transition cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                 >
                   {isGeneratingGroup ? (
                     <Loader2 size={14} className="animate-spin" />
                   ) : (
-                    <Sparkles size={14} />
+                    <GraduationCap size={14} />
                   )}
                   <span>توليد أكواد المسار العام ({secondSecGeneralStudents.length})</span>
                 </button>
               </div>
 
               {/* Cohort 2: Baccalaureate Track */}
-              <div className="p-4 rounded-2xl bg-white border border-fuchsia-200 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl bg-white border border-indigo-200 shadow-2xs space-y-3 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-fuchsia-900 flex items-center gap-1.5">
-                      <Sparkles size={15} className="text-fuchsia-600" />
+                    <span className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                      <GraduationCap size={15} className="text-indigo-700" />
                       <span>مسار البكالوريا (Baccalaureate)</span>
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-lg bg-fuchsia-50 text-fuchsia-700 font-black text-xs border border-fuchsia-200">
+                    <span className="px-2.5 py-0.5 rounded-lg bg-indigo-50/90 text-indigo-800 font-black text-xs border border-indigo-200">
                       {secondSecBacStudents.length} طالب
                     </span>
                   </div>
@@ -209,12 +210,12 @@ export const CohortBatchGenerationForm: React.FC<CohortBatchGenerationFormProps>
                     )
                   }
                   disabled={isPending || secondSecBacStudents.length === 0}
-                  className="w-full py-2.5 rounded-xl bg-fuchsia-700 hover:bg-fuchsia-800 text-white text-xs font-black transition cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-black transition cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                 >
                   {isGeneratingGroup ? (
                     <Loader2 size={14} className="animate-spin" />
                   ) : (
-                    <Sparkles size={14} />
+                    <GraduationCap size={14} />
                   )}
                   <span>توليد أكواد مسار البكالوريا ({secondSecBacStudents.length})</span>
                 </button>

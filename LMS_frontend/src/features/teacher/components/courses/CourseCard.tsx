@@ -1,7 +1,8 @@
 import React from 'react';
 import { BookOpen, Globe, Lock, Loader2, Edit, XCircle } from 'lucide-react';
 import type { Course } from '../../../courses/types/course';
-import { getGradeShortLabel, getGradeBadgeStyle } from '../../../../types/grade';
+import { getGradeBadgeStyle } from '../../../../types/grade';
+import { getCourseGradeTrackLabel } from '../../../courses/utils/courseTrackUtils';
 
 interface CourseCardProps {
   course: Course;
@@ -32,9 +33,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             <h5 className="text-sm font-bold text-slate-800">{course.title}</h5>
             {course.grade && (
               <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${gradeBadge.pill}`}>
-                {course.grade === 'second_secondary' && course.academicTrack
-                  ? `(تانية ثانوي • ${course.academicTrack === 'baccalaureate' ? 'بكالوريا' : 'عام'})`
-                  : getGradeShortLabel(course.grade)}
+                {getCourseGradeTrackLabel(course)}
               </span>
             )}
             {!isCourseActive && (

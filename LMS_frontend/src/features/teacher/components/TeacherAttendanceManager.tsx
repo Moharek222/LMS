@@ -24,6 +24,8 @@ import { MonthlyAttendanceControlPanel } from './attendance/MonthlyAttendanceCon
 import { GroupStudentsAttendanceRoster } from './attendance/GroupStudentsAttendanceRoster';
 import { AttendanceSheetDetailsModal } from './attendance/AttendanceSheetDetailsModal';
 
+const ALLOWED_GROUP_GRADES = GRADE_OPTIONS.filter((opt) => opt.value !== Grade.SecondSecondary);
+
 const MONTH_NAMES_AR = [
   { value: '01', label: 'يناير (شهر 1)' },
   { value: '02', label: 'فبراير (شهر 2)' },
@@ -261,7 +263,7 @@ export const TeacherAttendanceManager: React.FC = () => {
             >
               الكل ({activeGroups.length})
             </button>
-            {GRADE_OPTIONS.map((opt) => {
+            {ALLOWED_GROUP_GRADES.map((opt) => {
               const count = activeGroups.filter((g) => g.grade === opt.value).length;
               return (
                 <button

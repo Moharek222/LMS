@@ -1,6 +1,6 @@
 import React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { Layers, ChevronDown, Compass, GraduationCap } from 'lucide-react';
+import { Layers, ChevronDown, GraduationCap } from 'lucide-react';
 import { Grade, GRADE_OPTIONS } from '../../types/grade';
 import { AcademicTrack, ACADEMIC_TRACK_OPTIONS } from '../../types/academicTrack';
 import type { Group } from '../../types/group';
@@ -103,12 +103,7 @@ export const RegisterAcademicFields: React.FC<RegisterAcademicFieldsProps> = ({
           {errors.academicTrack && (
             <p className="text-xs font-semibold text-red-600 mt-0.5">{errors.academicTrack.message}</p>
           )}
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-            <Compass size={14} className="text-[#0D8A82] shrink-0" />
-            <span>
-              طلاب الصف الثاني الثانوي يتم قيدهم بالمنصة إلكترونياً مباشرة وفق المسار المحدد بدون مجموعات سنتر.
-            </span>
-          </div>
+          
         </div>
       ) : (
         /* 1st & 3rd Secondary: Center Group Dropdown */

@@ -10,6 +10,8 @@ interface CreateGroupModalProps {
   onClose: () => void;
 }
 
+const ALLOWED_GROUP_GRADES = GRADE_OPTIONS.filter((opt) => opt.value !== Grade.SecondSecondary);
+
 export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   isOpen,
   onClose,
@@ -112,21 +114,21 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <label className="block text-xs font-bold text-slate-700">
               المرحلة الدراسية <span className="text-rose-500">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {GRADE_OPTIONS.map((opt) => (
+            <div className="grid grid-cols-2 gap-2.5">
+              {ALLOWED_GROUP_GRADES.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setGrade(opt.value)}
                   disabled={createGroupMutation.isPending}
-                  className={`py-2.5 px-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                     grade === opt.value
                       ? 'bg-teal-50 border-[#0D8A82] text-[#0D8A82] shadow-xs'
                       : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   <Layers size={14} />
-                  <span>{opt.shortLabel}</span>
+                  <span>{opt.label}</span>
                 </button>
               ))}
             </div>

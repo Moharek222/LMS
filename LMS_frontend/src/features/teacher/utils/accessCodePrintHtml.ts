@@ -30,12 +30,12 @@ export const getStudentGradeTrackDescription = (codeItem: AccessCode): string =>
 
   if (grade === Grade.SecondSecondary || grade === 'second_secondary') {
     if (track === AcademicTrack.General || track === 'general') {
-      return 'تانية ثانوي • مسار عام (أونلاين)';
+      return 'تانية ثانوي • مسار عام';
     }
     if (track === AcademicTrack.Baccalaureate || track === 'baccalaureate') {
-      return 'تانية ثانوي • مسار بكالوريا (أونلاين)';
+      return 'تانية ثانوي • مسار بكالوريا';
     }
-    return 'تانية ثانوي (أونلاين)';
+    return 'تانية ثانوي';
   }
 
   if (grade === Grade.FirstSecondary || grade === 'first_secondary') {

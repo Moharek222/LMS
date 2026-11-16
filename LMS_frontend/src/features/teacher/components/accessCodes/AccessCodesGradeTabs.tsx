@@ -1,5 +1,5 @@
 import React from 'react';
-import { KeyRound, GraduationCap, Sparkles, Info } from 'lucide-react';
+import { KeyRound, GraduationCap, Info } from 'lucide-react';
 import { Grade } from '../../../../types/grade';
 import { AcademicTrack } from '../../../../types/academicTrack';
 import type { Group } from '../../types/groupManagement';
@@ -90,14 +90,14 @@ export const AccessCodesGradeTabs: React.FC<AccessCodesGradeTabsProps> = ({
           onClick={() => onSelectGrade(Grade.SecondSecondary)}
           className={`p-3 rounded-xl text-xs font-black transition flex items-center justify-between cursor-pointer border ${
             gradeFilter === Grade.SecondSecondary
-              ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-              : 'bg-purple-50/50 text-purple-800 hover:bg-purple-100/70 border-purple-200'
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+              : 'bg-indigo-50/50 text-indigo-800 hover:bg-indigo-100/70 border-indigo-200'
           }`}
         >
           <div className="flex items-center gap-2">
-            <Sparkles
+            <GraduationCap
               size={16}
-              className={gradeFilter === Grade.SecondSecondary ? 'text-white' : 'text-purple-600'}
+              className={gradeFilter === Grade.SecondSecondary ? 'text-white' : 'text-indigo-600'}
             />
             <span>الصف الثاني الثانوي</span>
           </div>
@@ -105,7 +105,7 @@ export const AccessCodesGradeTabs: React.FC<AccessCodesGradeTabsProps> = ({
             className={`px-2 py-0.5 rounded-lg text-[11px] font-black ${
               gradeFilter === Grade.SecondSecondary
                 ? 'bg-white/20 text-white'
-                : 'bg-purple-100 text-purple-800'
+                : 'bg-indigo-100 text-indigo-800'
             }`}
           >
             {counts.secondSec}
@@ -141,10 +141,10 @@ export const AccessCodesGradeTabs: React.FC<AccessCodesGradeTabsProps> = ({
 
       {/* 2nd Secondary Track Filter Bar & Info */}
       {gradeFilter === Grade.SecondSecondary && (
-        <div className="mt-3 p-3.5 rounded-xl bg-purple-50/80 border border-purple-200/90 space-y-2.5 animate-in fade-in duration-150">
+        <div className="mt-3 p-3.5 rounded-xl bg-indigo-50/80 border border-indigo-200/90 space-y-2.5 animate-in fade-in duration-150">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
-              <Info size={16} className="text-purple-600 shrink-0" />
+            <div className="flex items-center gap-2 text-xs font-bold text-indigo-900">
+              <Info size={16} className="text-indigo-600 shrink-0" />
               <span>
                 طلاب الصف الثاني الثانوي - فلترة الأكواد حسب المسار التعليمي:
               </span>
@@ -156,8 +156,8 @@ export const AccessCodesGradeTabs: React.FC<AccessCodesGradeTabsProps> = ({
                 onClick={() => onSelectTrack('ALL')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                   trackFilter === 'ALL'
-                    ? 'bg-purple-700 text-white shadow-2xs'
-                    : 'bg-white text-purple-800 hover:bg-purple-100 border border-purple-200'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
                 }`}
               >
                 جميع مسارات تانية ({counts.secondSec})
@@ -166,26 +166,26 @@ export const AccessCodesGradeTabs: React.FC<AccessCodesGradeTabsProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectTrack(AcademicTrack.General)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                   trackFilter === AcademicTrack.General
-                    ? 'bg-purple-700 text-white shadow-2xs'
-                    : 'bg-white text-purple-800 hover:bg-purple-100 border border-purple-200'
+                    ? 'bg-indigo-700 text-white shadow-2xs'
+                    : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
                 }`}
               >
-                <Sparkles size={13} className="text-amber-500" />
+                <GraduationCap size={13} className={trackFilter === AcademicTrack.General ? 'text-white' : 'text-indigo-600'} />
                 <span>المسار العام ({counts.secondSecGeneral})</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => onSelectTrack(AcademicTrack.Baccalaureate)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                   trackFilter === AcademicTrack.Baccalaureate
-                    ? 'bg-fuchsia-700 text-white shadow-2xs'
-                    : 'bg-white text-fuchsia-800 hover:bg-fuchsia-100 border border-fuchsia-200'
+                    ? 'bg-indigo-800 text-white shadow-2xs'
+                    : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
                 }`}
               >
-                <Sparkles size={13} className="text-fuchsia-500" />
+                <GraduationCap size={13} className={trackFilter === AcademicTrack.Baccalaureate ? 'text-white' : 'text-indigo-600'} />
                 <span>مسار البكالوريا ({counts.secondSecBac})</span>
               </button>
             </div>

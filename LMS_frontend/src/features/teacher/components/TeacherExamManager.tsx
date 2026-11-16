@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Award, Plus, Loader2, AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
+import { Award, Plus, Loader2, AlertTriangle, BookOpen, RefreshCw, GraduationCap } from 'lucide-react';
 import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useCourseExams } from '../../exams/hooks/useCourseExams';
 import { useUpdateExam } from '../hooks/useUpdateExam';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
-import { Grade, GRADE_OPTIONS, getGradeShortLabel } from '../../../types/grade';
+import { Grade, GRADE_OPTIONS } from '../../../types/grade';
+import { AcademicTrack } from '../../../types/academicTrack';
+import { getCourseGradeTrackLabel } from '../../courses/utils/courseTrackUtils';
 import type { ExamListItem } from '../../exams/types/exam';
 import { ExamCard } from './exams/ExamCard';
 import { CreateExamModal } from './exams/CreateExamModal';
@@ -25,13 +27,39 @@ export const TeacherExamManager: React.FC = () => {
   } = useTeacherCourses();
 
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
+  const [selectedTrackFilter, setSelectedTrackFilter] = useState<'ALL' | AcademicTrack>('ALL');
   const [selectedCourseIdState, setSelectedCourseId] = useState<string>('');
+
+  const handleGradeFilterChange = (grade: 'ALL' | Grade) => {
+    setSelectedGradeFilter(grade);
+    if (grade !== Grade.SecondSecondary) {
+      setSelectedTrackFilter('ALL');
+    }
+  };
+
+  const secondSecCourses = React.useMemo(() => {
+    return courses ? courses.filter((c) => c.grade === Grade.SecondSecondary) : [];
+  }, [courses]);
+
+  const secondSecGeneralCount = React.useMemo(() => {
+    return secondSecCourses.filter((c) => c.academicTrack === AcademicTrack.General).length;
+  }, [secondSecCourses]);
+
+  const secondSecBacCount = React.useMemo(() => {
+    return secondSecCourses.filter((c) => c.academicTrack === AcademicTrack.Baccalaureate).length;
+  }, [secondSecCourses]);
 
   const filteredCourses = React.useMemo(() => {
     if (!courses) return [];
-    if (selectedGradeFilter === 'ALL') return courses;
-    return courses.filter((c) => c.grade === selectedGradeFilter);
-  }, [courses, selectedGradeFilter]);
+    let list = courses;
+    if (selectedGradeFilter !== 'ALL') {
+      list = list.filter((c) => c.grade === selectedGradeFilter);
+      if (selectedGradeFilter === Grade.SecondSecondary && selectedTrackFilter !== 'ALL') {
+        list = list.filter((c) => c.academicTrack === selectedTrackFilter);
+      }
+    }
+    return list;
+  }, [courses, selectedGradeFilter, selectedTrackFilter]);
 
   const selectedCourseId =
     selectedCourseIdState && filteredCourses.some((c) => c._id === selectedCourseIdState)
@@ -215,7 +243,7 @@ export const TeacherExamManager: React.FC = () => {
             <span className="text-xs font-bold text-slate-500 shrink-0 ml-1">تصفية بالمرحلة:</span>
             <button
               type="button"
-              onClick={() => setSelectedGradeFilter('ALL')}
+              onClick={() => handleGradeFilterChange('ALL')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
                 selectedGradeFilter === 'ALL'
                   ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
@@ -230,7 +258,7 @@ export const TeacherExamManager: React.FC = () => {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  onClick={() => handleGradeFilterChange(opt.value)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
                     selectedGradeFilter === opt.value
                       ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
@@ -241,6 +269,49 @@ export const TeacherExamManager: React.FC = () => {
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {/* 2nd Secondary Track Filter Tabs */}
+        {selectedGradeFilter === Grade.SecondSecondary && secondSecCourses.length > 0 && (
+          <div className="flex items-center gap-2 p-2 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex-wrap animate-in fade-in duration-150">
+            <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5 ml-1">
+              <GraduationCap size={15} className="text-indigo-600" />
+              <span>مسار تانية ثانوي:</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter('ALL')}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === 'ALL'
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              الكل ({secondSecCourses.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter(AcademicTrack.General)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === AcademicTrack.General
+                  ? 'bg-indigo-700 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              المسار العام ({secondSecGeneralCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter(AcademicTrack.Baccalaureate)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === AcademicTrack.Baccalaureate
+                  ? 'bg-indigo-800 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              مسار البكالوريا ({secondSecBacCount})
+            </button>
           </div>
         )}
 
@@ -284,7 +355,7 @@ export const TeacherExamManager: React.FC = () => {
           </div>
         ) : filteredCourses.length === 0 ? (
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-slate-600 text-xs font-semibold text-center">
-            لا توجد كورسات مضافة لهذه المرحلة الدراسية.
+            لا توجد كورسات مضافة لهذه المرحلة أو المسار الدراسي المحدد.
           </div>
         ) : (
           <select
@@ -294,7 +365,7 @@ export const TeacherExamManager: React.FC = () => {
           >
             {filteredCourses.map((course) => (
               <option key={course._id} value={course._id}>
-                {course.title} {course.grade ? `— (${getGradeShortLabel(course.grade)})` : ''}
+                {course.title} — ({getCourseGradeTrackLabel(course)})
               </option>
             ))}
           </select>

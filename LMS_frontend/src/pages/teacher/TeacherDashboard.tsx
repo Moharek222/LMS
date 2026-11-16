@@ -160,7 +160,7 @@ export const TeacherDashboard: React.FC = () => {
               value={totalCourses}
               subtitle="مقرر تعليمي نشط"
               icon={<BookOpen size={24} />}
-              color="purple"
+              color="blue"
             />
             <KpiStatCard
               title="المجموعات الدراسية"

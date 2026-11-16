@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Loader2, AlertTriangle, BookOpen, Video, RefreshCw } from 'lucide-react';
+import { Plus, Loader2, AlertTriangle, BookOpen, Video, RefreshCw, GraduationCap } from 'lucide-react';
 import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useCourseLessons } from '../../lessons/hooks/useCourseLessons';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
-import { Grade, GRADE_OPTIONS, getGradeShortLabel } from '../../../types/grade';
+import { Grade, GRADE_OPTIONS } from '../../../types/grade';
+import { AcademicTrack } from '../../../types/academicTrack';
+import { getCourseGradeTrackLabel } from '../../courses/utils/courseTrackUtils';
 import type { Lesson } from '../../lessons/types/lesson';
 import { LessonCard } from './lessons/LessonCard';
 import { CreateLessonModal } from './lessons/CreateLessonModal';
@@ -13,16 +15,46 @@ import { DeleteLessonModal } from './lessons/DeleteLessonModal';
 export const LessonManager: React.FC = () => {
   const { data: courses, isLoading: isLoadingCourses } = useTeacherCourses();
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
+  const [selectedTrackFilter, setSelectedTrackFilter] = useState<'ALL' | AcademicTrack>('ALL');
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [deletingLesson, setDeletingLesson] = useState<Lesson | null>(null);
 
+  const handleGradeFilterChange = (grade: 'ALL' | Grade) => {
+    setSelectedGradeFilter(grade);
+    if (grade !== Grade.SecondSecondary) {
+      setSelectedTrackFilter('ALL');
+    }
+  };
+
+  const secondSecCourses = React.useMemo(() => {
+    return courses ? courses.filter((c) => c.grade === Grade.SecondSecondary) : [];
+  }, [courses]);
+
+  const secondSecGeneralCount = React.useMemo(() => {
+    return secondSecCourses.filter((c) => c.academicTrack === AcademicTrack.General).length;
+  }, [secondSecCourses]);
+
+  const secondSecBacCount = React.useMemo(() => {
+    return secondSecCourses.filter((c) => c.academicTrack === AcademicTrack.Baccalaureate).length;
+  }, [secondSecCourses]);
+
   const filteredCourses = React.useMemo(() => {
     if (!courses) return [];
-    if (selectedGradeFilter === 'ALL') return courses;
-    return courses.filter((c) => c.grade === selectedGradeFilter);
-  }, [courses, selectedGradeFilter]);
+    let list = courses;
+    if (selectedGradeFilter !== 'ALL') {
+      list = list.filter((c) => c.grade === selectedGradeFilter);
+      if (selectedGradeFilter === Grade.SecondSecondary && selectedTrackFilter !== 'ALL') {
+        list = list.filter((c) => c.academicTrack === selectedTrackFilter);
+      }
+    }
+    return list;
+  }, [courses, selectedGradeFilter, selectedTrackFilter]);
+
+  const selectedCourse = React.useMemo(() => {
+    return courses?.find((c) => c._id === selectedCourseId);
+  }, [courses, selectedCourseId]);
 
   const {
     data: lessons,
@@ -46,7 +78,7 @@ export const LessonManager: React.FC = () => {
             <span className="text-xs font-bold text-slate-500 shrink-0 ml-1">تصفية بالمرحلة:</span>
             <button
               type="button"
-              onClick={() => setSelectedGradeFilter('ALL')}
+              onClick={() => handleGradeFilterChange('ALL')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
                 selectedGradeFilter === 'ALL'
                   ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
@@ -61,7 +93,7 @@ export const LessonManager: React.FC = () => {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  onClick={() => handleGradeFilterChange(opt.value)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
                     selectedGradeFilter === opt.value
                       ? 'bg-[#0D8A82] text-white border-[#0D8A82] shadow-xs'
@@ -72,6 +104,49 @@ export const LessonManager: React.FC = () => {
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {/* 2nd Secondary Track Filter Tabs */}
+        {selectedGradeFilter === Grade.SecondSecondary && secondSecCourses.length > 0 && (
+          <div className="flex items-center gap-2 p-2 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex-wrap animate-in fade-in duration-150">
+            <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5 ml-1">
+              <GraduationCap size={15} className="text-indigo-600" />
+              <span>مسار تانية ثانوي:</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter('ALL')}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === 'ALL'
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              الكل ({secondSecCourses.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter(AcademicTrack.General)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === AcademicTrack.General
+                  ? 'bg-indigo-700 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              المسار العام ({secondSecGeneralCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter(AcademicTrack.Baccalaureate)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === AcademicTrack.Baccalaureate
+                  ? 'bg-indigo-800 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              مسار البكالوريا ({secondSecBacCount})
+            </button>
           </div>
         )}
 
@@ -91,23 +166,40 @@ export const LessonManager: React.FC = () => {
             </div>
           ) : filteredCourses.length === 0 ? (
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-xs font-semibold">
-              لا توجد كورسات مضافة لهذه المرحلة الدراسية.
+              لا توجد كورسات مضافة لهذه المرحلة أو المسار الدراسي المحدد.
             </div>
           ) : (
             <select
               value={selectedCourseId}
               onChange={(e) => setSelectedCourseId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 bg-white"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-[#0D8A82] focus:ring-1 focus:ring-[#0D8A82] bg-white transition"
             >
               <option value="">-- اختر كورس لتنفيذ إضافة الدرس --</option>
               {filteredCourses.map((c) => (
                 <option key={c._id} value={c._id}>
-                  {c.title} {c.grade ? `— (${getGradeShortLabel(c.grade)})` : ''}
+                  {c.title} — ({getCourseGradeTrackLabel(c)})
                 </option>
               ))}
             </select>
           )}
         </div>
+
+        {selectedCourse && (
+          <div className="p-3 bg-teal-50/60 border border-teal-100 rounded-2xl flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <BookOpen size={16} className="text-[#0D8A82]" />
+              <span className="text-xs font-extrabold text-slate-800">{selectedCourse.title}</span>
+              {selectedCourse.grade && (
+                <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-white text-slate-700 border border-slate-200">
+                  {getCourseGradeTrackLabel(selectedCourse)}
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] text-teal-800 font-semibold">
+              جاهز لإضافة وإدارة دروس هذا المقرر
+            </span>
+          </div>
+        )}
 
         <div className="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-3">
           <div className="text-xs text-slate-500 font-medium">
@@ -126,7 +218,7 @@ export const LessonManager: React.FC = () => {
             type="button"
             disabled={!selectedCourseId}
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition cursor-pointer shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            className="px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
           >
             <Plus size={16} />
             <span> إضافة درس جديد</span>
@@ -200,6 +292,8 @@ export const LessonManager: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         selectedCourseId={selectedCourseId}
+        courseTitle={selectedCourse?.title}
+        courseLabel={getCourseGradeTrackLabel(selectedCourse)}
       />
 
       

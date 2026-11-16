@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyRound, Copy, Check, User, Phone, Calendar, Sparkles, GraduationCap } from 'lucide-react';
+import { KeyRound, Copy, Check, User, Phone, Calendar, GraduationCap } from 'lucide-react';
 import type { AccessCode } from '../../types/groupManagement';
 import { Grade } from '../../../../types/grade';
 import { AcademicTrack } from '../../../../types/academicTrack';
@@ -69,24 +69,24 @@ export const AccessCodeCard: React.FC<AccessCodeCardProps> = ({ accessCode }) =>
     if (grade === Grade.SecondSecondary || grade === 'second_secondary') {
       if (track === AcademicTrack.General || track === 'general') {
         return (
-          <span className="px-2.5 py-0.5 rounded-lg bg-purple-50 text-purple-700 text-xs font-black border border-purple-200 flex items-center gap-1">
-            <Sparkles size={12} className="text-purple-600 shrink-0" />
+          <span className="px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-black border border-indigo-200 flex items-center gap-1">
+            <GraduationCap size={13} className="text-indigo-600 shrink-0" />
             <span>تانية ثانوي • مسار عام</span>
           </span>
         );
       }
       if (track === AcademicTrack.Baccalaureate || track === 'baccalaureate') {
         return (
-          <span className="px-2.5 py-0.5 rounded-lg bg-fuchsia-50 text-fuchsia-700 text-xs font-black border border-fuchsia-200 flex items-center gap-1">
-            <Sparkles size={12} className="text-fuchsia-600 shrink-0" />
+          <span className="px-2.5 py-0.5 rounded-lg bg-indigo-50/90 text-indigo-800 text-xs font-black border border-indigo-200 flex items-center gap-1">
+            <GraduationCap size={13} className="text-indigo-600 shrink-0" />
             <span>تانية ثانوي • مسار بكالوريا</span>
           </span>
         );
       }
       return (
-        <span className="px-2.5 py-0.5 rounded-lg bg-purple-50 text-purple-700 text-xs font-black border border-purple-200 flex items-center gap-1">
-          <Sparkles size={12} className="text-purple-600 shrink-0" />
-          <span>تانية ثانوي • أونلاين</span>
+        <span className="px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-black border border-indigo-200 flex items-center gap-1">
+          <GraduationCap size={13} className="text-indigo-600 shrink-0" />
+          <span>تانية ثانوي</span>
         </span>
       );
     }

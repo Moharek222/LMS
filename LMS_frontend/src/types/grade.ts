@@ -55,11 +55,11 @@ export const GRADE_BADGE_STYLES: Record<
     dot: 'bg-sky-500',
   },
   [Grade.SecondSecondary]: {
-    bg: 'bg-purple-50',
-    text: 'text-purple-700',
-    border: 'border-purple-200',
-    pill: 'bg-purple-50 text-purple-700 border-purple-200',
-    dot: 'bg-purple-500',
+    bg: 'bg-indigo-50',
+    text: 'text-indigo-700',
+    border: 'border-indigo-200',
+    pill: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    dot: 'bg-indigo-500',
   },
   [Grade.ThirdSecondary]: {
     bg: 'bg-teal-50',

@@ -40,6 +40,7 @@ export interface DeactivatedStudent {
   phone: string;
   parentPhone?: string;
   grade?: Grade;
+  academicTrack?: AcademicTrack | string;
   isActive: boolean;
   groupID?: {
     _id: string;

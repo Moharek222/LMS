@@ -8,7 +8,6 @@ import {
   GraduationCap,
   X,
   Check,
-  Sparkles,
 } from 'lucide-react';
 import type { Group, GroupStudent } from '../../../types/groupManagement';
 import type { PlatformStudentItem } from '../../../api/teacherAccessCodesApi';
@@ -192,19 +191,6 @@ export const SingleStudentGenerationForm: React.FC<SingleStudentGenerationFormPr
 
             <button
               type="button"
-              onClick={() => setSingleGradeTab(Grade.SecondSecondary)}
-              className={`py-2 px-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-1 cursor-pointer ${
-                singleGradeTab === Grade.SecondSecondary
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'text-purple-700 hover:bg-purple-50'
-              }`}
-            >
-              <Sparkles size={14} />
-              <span>تانية ثانوي (أونلاين)</span>
-            </button>
-
-            <button
-              type="button"
               onClick={() => setSingleGradeTab(Grade.FirstSecondary)}
               className={`py-2 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
                 singleGradeTab === Grade.FirstSecondary
@@ -214,6 +200,19 @@ export const SingleStudentGenerationForm: React.FC<SingleStudentGenerationFormPr
             >
               <GraduationCap size={14} />
               <span>أولى ثانوي</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSingleGradeTab(Grade.SecondSecondary)}
+              className={`py-2 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
+                singleGradeTab === Grade.SecondSecondary
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <GraduationCap size={14} />
+              <span>تانية ثانوي</span>
             </button>
 
             <button
@@ -290,9 +289,9 @@ export const SingleStudentGenerationForm: React.FC<SingleStudentGenerationFormPr
 
           {/* TAB 2: Second Secondary (General vs Baccalaureate) */}
           {singleGradeTab === Grade.SecondSecondary && (
-            <div className="space-y-3 p-3.5 rounded-2xl bg-purple-50/60 border border-purple-200">
+            <div className="space-y-3 p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-200">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-xs font-black text-purple-900">
+                <span className="text-xs font-black text-indigo-900">
                   فلترة مسار طلاب تانية ثانوي:
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -301,8 +300,8 @@ export const SingleStudentGenerationForm: React.FC<SingleStudentGenerationFormPr
                     onClick={() => setSingleTrackFilter('all')}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                       singleTrackFilter === 'all'
-                        ? 'bg-purple-700 text-white'
-                        : 'bg-white text-purple-800 border border-purple-200'
+                        ? 'bg-indigo-700 text-white'
+                        : 'bg-white text-indigo-800 border border-indigo-200'
                     }`}
                   >
                     الكل ({secondSecAllStudents.length})
@@ -310,10 +309,10 @@ export const SingleStudentGenerationForm: React.FC<SingleStudentGenerationFormPr
                   <button
                     type="button"
                     onClick={() => setSingleTrackFilter(AcademicTrack.General)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                       singleTrackFilter === AcademicTrack.General
-                        ? 'bg-purple-700 text-white'
-                        : 'bg-white text-purple-800 border border-purple-200'
+                        ? 'bg-indigo-700 text-white'
+                        : 'bg-white text-indigo-800 border border-indigo-200'
                     }`}
                   >
                     عام ({secondSecGeneralStudents.length})
@@ -321,10 +320,10 @@ export const SingleStudentGenerationForm: React.FC<SingleStudentGenerationFormPr
                   <button
                     type="button"
                     onClick={() => setSingleTrackFilter(AcademicTrack.Baccalaureate)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                       singleTrackFilter === AcademicTrack.Baccalaureate
-                        ? 'bg-fuchsia-700 text-white'
-                        : 'bg-white text-fuchsia-800 border border-fuchsia-200'
+                        ? 'bg-indigo-800 text-white'
+                        : 'bg-white text-indigo-800 border border-indigo-200'
                     }`}
                   >
                     بكالوريا ({secondSecBacStudents.length})
@@ -334,11 +333,11 @@ export const SingleStudentGenerationForm: React.FC<SingleStudentGenerationFormPr
 
               {isLoadingAllStudents ? (
                 <div className="p-3 text-center text-xs text-slate-500 font-semibold flex items-center justify-center gap-2">
-                  <Loader2 size={15} className="animate-spin text-purple-600" />
+                  <Loader2 size={15} className="animate-spin text-indigo-600" />
                   <span>جاري تحميل طلاب تانية ثانوي...</span>
                 </div>
               ) : singleSecondSecStudents.length === 0 ? (
-                <p className="text-xs text-purple-800 font-semibold text-center py-2">
+                <p className="text-xs text-indigo-800 font-semibold text-center py-2">
                   لا يوجد طلاب مسجلون في هذا المسار حالياً.
                 </p>
               ) : (
@@ -347,7 +346,7 @@ export const SingleStudentGenerationForm: React.FC<SingleStudentGenerationFormPr
                   value={selectedStudentId}
                   onChange={(e) => onStudentChange(e.target.value)}
                   disabled={isPending}
-                  className="w-full px-4 py-2.5 rounded-xl border border-purple-200 text-right text-xs font-semibold focus:border-purple-600 focus:ring-1 focus:ring-purple-600 bg-white transition outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-indigo-200 text-right text-xs font-semibold focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-white transition outline-none"
                 >
                   <option value="">
                     اختر الطالب من قائمة طلاب تانية ثانوي ({singleSecondSecStudents.length} طالب)

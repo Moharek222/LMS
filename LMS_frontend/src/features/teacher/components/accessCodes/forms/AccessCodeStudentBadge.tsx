@@ -14,20 +14,20 @@ export const AccessCodeStudentBadge: React.FC<AccessCodeStudentBadgeProps> = ({ 
   if (g === Grade.SecondSecondary || g === 'second_secondary') {
     if (t === AcademicTrack.General || t === 'general') {
       return (
-        <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[11px] font-bold border border-purple-200">
+        <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-200">
           تانية ثانوي • عام 
         </span>
       );
     }
     if (t === AcademicTrack.Baccalaureate || t === 'baccalaureate') {
       return (
-        <span className="px-2 py-0.5 rounded-md bg-fuchsia-50 text-fuchsia-700 text-[11px] font-bold border border-fuchsia-200">
+        <span className="px-2 py-0.5 rounded-md bg-indigo-50/90 text-indigo-800 text-[11px] font-bold border border-indigo-200">
           تانية ثانوي • بكالوريا 
         </span>
       );
     }
     return (
-      <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[11px] font-bold border border-purple-200">
+      <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-200">
         تانية ثانوي
       </span>
     );

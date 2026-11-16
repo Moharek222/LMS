@@ -8,12 +8,16 @@ interface CreateLessonModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedCourseId: string;
+  courseTitle?: string;
+  courseLabel?: string;
 }
 
 export const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
   isOpen,
   onClose,
   selectedCourseId,
+  courseTitle,
+  courseLabel,
 }) => {
   const {
     title,
@@ -68,6 +72,20 @@ export const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
             <X size={20} />
           </button>
         </div>
+
+        {courseTitle && (
+          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500">إضافة درس للمقرر:</span>
+              <span className="text-xs font-extrabold text-slate-800">{courseTitle}</span>
+            </div>
+            {courseLabel && (
+              <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                {courseLabel}
+              </span>
+            )}
+          </div>
+        )}
 
         {validationError && (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs font-bold flex items-center gap-2">

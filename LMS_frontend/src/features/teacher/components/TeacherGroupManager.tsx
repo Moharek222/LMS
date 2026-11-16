@@ -22,6 +22,8 @@ import { MoveStudentModal } from './groups/MoveStudentModal';
 import { ResetStudentPasswordModal } from './groups/ResetStudentPasswordModal';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 
+const ALLOWED_GROUP_GRADES = GRADE_OPTIONS.filter((opt) => opt.value !== Grade.SecondSecondary);
+
 export const TeacherGroupManager: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const limit = 100;
@@ -161,7 +163,7 @@ export const TeacherGroupManager: React.FC = () => {
             >
               جميع المراحل ({groups.length})
             </button>
-            {GRADE_OPTIONS.map((opt) => {
+            {ALLOWED_GROUP_GRADES.map((opt) => {
               const count = groups.filter((g) => g.grade === opt.value).length;
               return (
                 <button

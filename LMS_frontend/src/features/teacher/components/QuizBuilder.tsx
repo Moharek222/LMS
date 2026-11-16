@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { FileText, Plus, Loader2, AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
+import { FileText, Plus, Loader2, AlertTriangle, BookOpen, RefreshCw, GraduationCap } from 'lucide-react';
 import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useCourseLessons } from '../../lessons/hooks/useCourseLessons';
 import { useLessonQuizzes } from '../../quizzes/hooks/useLessonQuizzes';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
-import { Grade, GRADE_OPTIONS, getGradeShortLabel } from '../../../types/grade';
+import { Grade, GRADE_OPTIONS } from '../../../types/grade';
+import { AcademicTrack } from '../../../types/academicTrack';
+import { getCourseGradeTrackLabel } from '../../courses/utils/courseTrackUtils';
 import type { QuizListItem } from '../../quizzes/types/quiz';
 import { QuizCard } from './quizzes/QuizCard';
 import { CreateQuizModal } from './quizzes/CreateQuizModal';
@@ -15,13 +17,39 @@ import { QuizSubmissionsModal } from './quizzes/QuizSubmissionsModal';
 export const QuizBuilder: React.FC = () => {
   const { data: courses, isLoading: isLoadingCourses } = useTeacherCourses();
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
+  const [selectedTrackFilter, setSelectedTrackFilter] = useState<'ALL' | AcademicTrack>('ALL');
   const [selectedCourseId, setSelectedCourseId] = useState('');
+
+  const handleGradeFilterChange = (grade: 'ALL' | Grade) => {
+    setSelectedGradeFilter(grade);
+    if (grade !== Grade.SecondSecondary) {
+      setSelectedTrackFilter('ALL');
+    }
+  };
+
+  const secondSecCourses = React.useMemo(() => {
+    return courses ? courses.filter((c) => c.grade === Grade.SecondSecondary) : [];
+  }, [courses]);
+
+  const secondSecGeneralCount = React.useMemo(() => {
+    return secondSecCourses.filter((c) => c.academicTrack === AcademicTrack.General).length;
+  }, [secondSecCourses]);
+
+  const secondSecBacCount = React.useMemo(() => {
+    return secondSecCourses.filter((c) => c.academicTrack === AcademicTrack.Baccalaureate).length;
+  }, [secondSecCourses]);
 
   const filteredCourses = React.useMemo(() => {
     if (!courses) return [];
-    if (selectedGradeFilter === 'ALL') return courses;
-    return courses.filter((c) => c.grade === selectedGradeFilter);
-  }, [courses, selectedGradeFilter]);
+    let list = courses;
+    if (selectedGradeFilter !== 'ALL') {
+      list = list.filter((c) => c.grade === selectedGradeFilter);
+      if (selectedGradeFilter === Grade.SecondSecondary && selectedTrackFilter !== 'ALL') {
+        list = list.filter((c) => c.academicTrack === selectedTrackFilter);
+      }
+    }
+    return list;
+  }, [courses, selectedGradeFilter, selectedTrackFilter]);
 
   const { data: lessons, isLoading: isLoadingLessons } = useCourseLessons(selectedCourseId);
   const [selectedLessonId, setSelectedLessonId] = useState('');
@@ -49,7 +77,7 @@ export const QuizBuilder: React.FC = () => {
             <span className="text-xs font-bold text-slate-500 shrink-0 ml-1">تصفية بالمرحلة:</span>
             <button
               type="button"
-              onClick={() => setSelectedGradeFilter('ALL')}
+              onClick={() => handleGradeFilterChange('ALL')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
                 selectedGradeFilter === 'ALL'
                   ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
@@ -64,7 +92,7 @@ export const QuizBuilder: React.FC = () => {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  onClick={() => handleGradeFilterChange(opt.value)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 border ${
                     selectedGradeFilter === opt.value
                       ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
@@ -75,6 +103,49 @@ export const QuizBuilder: React.FC = () => {
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {/* 2nd Secondary Track Filter Tabs */}
+        {selectedGradeFilter === Grade.SecondSecondary && secondSecCourses.length > 0 && (
+          <div className="flex items-center gap-2 p-2 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex-wrap animate-in fade-in duration-150">
+            <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5 ml-1">
+              <GraduationCap size={15} className="text-indigo-600" />
+              <span>مسار تانية ثانوي:</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter('ALL')}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === 'ALL'
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              الكل ({secondSecCourses.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter(AcademicTrack.General)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === AcademicTrack.General
+                  ? 'bg-indigo-700 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              المسار العام ({secondSecGeneralCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter(AcademicTrack.Baccalaureate)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === AcademicTrack.Baccalaureate
+                  ? 'bg-indigo-800 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              مسار البكالوريا ({secondSecBacCount})
+            </button>
           </div>
         )}
 
@@ -90,7 +161,7 @@ export const QuizBuilder: React.FC = () => {
               </div>
             ) : filteredCourses.length === 0 ? (
               <div className="p-2.5 bg-white rounded-xl text-xs font-semibold text-slate-400 border border-slate-200">
-                لا توجد كورسات لهذه المرحلة
+                لا توجد كورسات لهذه المرحلة أو المسار المحدد
               </div>
             ) : (
               <select
@@ -104,7 +175,7 @@ export const QuizBuilder: React.FC = () => {
                 <option value="">-- اختر كورس --</option>
                 {filteredCourses.map((c) => (
                   <option key={c._id} value={c._id}>
-                    {c.title} {c.grade ? `— (${getGradeShortLabel(c.grade)})` : ''}
+                    {c.title} — ({getCourseGradeTrackLabel(c)})
                   </option>
                 ))}
               </select>

@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { BookOpen, Plus, Loader2, AlertTriangle } from 'lucide-react';
+import { BookOpen, Plus, Loader2, AlertTriangle, GraduationCap } from 'lucide-react';
 import { useTeacherCourses } from '../hooks/useTeacherCourses';
 import { useUpdateCourse } from '../hooks/useUpdateCourse';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useToast } from '../../../context/ToastContext';
 import { Grade, GRADE_OPTIONS } from '../../../types/grade';
+import { AcademicTrack } from '../../../types/academicTrack';
 import { CourseCard } from './courses/CourseCard';
 import { CreateCourseModal } from './courses/CreateCourseModal';
 import { EditCourseModal } from './courses/EditCourseModal';
@@ -16,6 +17,7 @@ export const CourseManager: React.FC = () => {
   const updateCourseMutation = useUpdateCourse();
 
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
+  const [selectedTrackFilter, setSelectedTrackFilter] = useState<'ALL' | AcademicTrack>('ALL');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [editingCourseId, setEditingCourseId] = useState<string>('');
@@ -25,11 +27,36 @@ export const CourseManager: React.FC = () => {
   const [deactivatingCourseTitle, setDeactivatingCourseTitle] = useState<string>('');
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
 
+  const handleGradeFilterChange = (grade: 'ALL' | Grade) => {
+    setSelectedGradeFilter(grade);
+    if (grade !== Grade.SecondSecondary) {
+      setSelectedTrackFilter('ALL');
+    }
+  };
+
+  const secondSecCourses = useMemo(() => {
+    return courses ? courses.filter((c) => c.grade === Grade.SecondSecondary) : [];
+  }, [courses]);
+
+  const secondSecGeneralCount = useMemo(() => {
+    return secondSecCourses.filter((c) => c.academicTrack === AcademicTrack.General).length;
+  }, [secondSecCourses]);
+
+  const secondSecBacCount = useMemo(() => {
+    return secondSecCourses.filter((c) => c.academicTrack === AcademicTrack.Baccalaureate).length;
+  }, [secondSecCourses]);
+
   const filteredCourses = useMemo(() => {
     if (!courses) return [];
-    if (selectedGradeFilter === 'ALL') return courses;
-    return courses.filter((c) => c.grade === selectedGradeFilter);
-  }, [courses, selectedGradeFilter]);
+    let list = courses;
+    if (selectedGradeFilter !== 'ALL') {
+      list = list.filter((c) => c.grade === selectedGradeFilter);
+      if (selectedGradeFilter === Grade.SecondSecondary && selectedTrackFilter !== 'ALL') {
+        list = list.filter((c) => c.academicTrack === selectedTrackFilter);
+      }
+    }
+    return list;
+  }, [courses, selectedGradeFilter, selectedTrackFilter]);
 
   const handleOpenEditModal = (courseId: string) => {
     setEditingCourseId(courseId);
@@ -103,7 +130,7 @@ export const CourseManager: React.FC = () => {
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <button
               type="button"
-              onClick={() => setSelectedGradeFilter('ALL')}
+              onClick={() => handleGradeFilterChange('ALL')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
                 selectedGradeFilter === 'ALL'
                   ? 'bg-[#0D8A82] text-white shadow-xs'
@@ -118,7 +145,7 @@ export const CourseManager: React.FC = () => {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setSelectedGradeFilter(opt.value)}
+                  onClick={() => handleGradeFilterChange(opt.value)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
                     selectedGradeFilter === opt.value
                       ? 'bg-[#0D8A82] text-white shadow-xs'
@@ -129,6 +156,49 @@ export const CourseManager: React.FC = () => {
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {/* 2nd Secondary Track Filter Tabs */}
+        {selectedGradeFilter === Grade.SecondSecondary && secondSecCourses.length > 0 && (
+          <div className="flex items-center gap-2 p-2 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex-wrap animate-in fade-in duration-150">
+            <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5 ml-1">
+              <GraduationCap size={15} className="text-indigo-600" />
+              <span>مسار تانية ثانوي:</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter('ALL')}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === 'ALL'
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              الكل ({secondSecCourses.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter(AcademicTrack.General)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === AcademicTrack.General
+                  ? 'bg-indigo-700 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              المسار العام ({secondSecGeneralCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTrackFilter(AcademicTrack.Baccalaureate)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                selectedTrackFilter === AcademicTrack.Baccalaureate
+                  ? 'bg-indigo-800 text-white shadow-2xs'
+                  : 'bg-white text-indigo-800 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              مسار البكالوريا ({secondSecBacCount})
+            </button>
           </div>
         )}
 

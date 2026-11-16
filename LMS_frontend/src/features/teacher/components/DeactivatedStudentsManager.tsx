@@ -8,12 +8,14 @@ import {
   CheckCircle2,
   Loader2,
   RefreshCw,
+  GraduationCap,
 } from 'lucide-react';
 import { useActivateStudent } from '../hooks/useActivateStudent';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useDeactivatedStudents } from '../hooks/useDeactivatedStudents';
 import { useToast } from '../../../context/ToastContext';
 import { Grade, GRADE_OPTIONS, getGradeBadgeStyle, getGradeShortLabel } from '../../../types/grade';
+import { AcademicTrack } from '../../../types/academicTrack';
 import type { DeactivatedStudent } from '../types/groupManagement';
 
 export interface DeactivatedStudentViewItem {
@@ -24,6 +26,7 @@ export interface DeactivatedStudentViewItem {
   groupId?: string;
   groupName?: string;
   grade?: Grade;
+  academicTrack?: AcademicTrack | string;
   deactivatedAt: string;
 }
 
@@ -40,14 +43,17 @@ export const DeactivatedStudentsManager: React.FC = () => {
     if (!apiData?.data || !Array.isArray(apiData.data)) return [];
     return apiData.data.map((s: DeactivatedStudent) => {
       const groupObj = typeof s.groupID === 'object' ? s.groupID : null;
+      const studentGrade = s.grade || groupObj?.grade;
+      const isSecondSec = studentGrade === Grade.SecondSecondary;
       return {
         _id: s._id,
         name: s.name,
         phone: s.phone || '',
         parentPhone: s.parentPhone || '',
         groupId: groupObj?._id || (typeof s.groupID === 'string' ? s.groupID : undefined),
-        groupName: groupObj?.name || 'مجموعة دراسية',
-        grade: s.grade || groupObj?.grade,
+        groupName: isSecondSec ? undefined : (groupObj?.name || (s.groupID ? 'مجموعة دراسية' : undefined)),
+        grade: studentGrade,
+        academicTrack: s.academicTrack,
         deactivatedAt: s.updatedAt || s.createdAt || '',
       };
     });
@@ -60,7 +66,9 @@ export const DeactivatedStudentsManager: React.FC = () => {
       await refetch();
 
       toast.success(
-        student.groupName
+        student.grade === Grade.SecondSecondary
+          ? `تم إعادة تفعيل الطالب (${student.name}) بنجاح! 🟢`
+          : student.groupName
           ? `تم إعادة تفعيل الطالب (${student.name}) بنجاح وعودته لمجموعة (${student.groupName})! 🟢`
           : `تم إعادة تفعيل الطالب (${student.name}) بنجاح! 🟢`
       );
@@ -211,12 +219,23 @@ export const DeactivatedStudentsManager: React.FC = () => {
                           <span>معطل 🔴</span>
                         </span>
                       </div>
-                      {student.groupName && (
+                      {student.grade === Grade.SecondSecondary ? (
+                        <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 mt-1 inline-flex items-center gap-1">
+                          <GraduationCap size={12} />
+                          <span>
+                            {student.academicTrack === AcademicTrack.General || student.academicTrack === 'general'
+                              ? 'تانية ثانوي • مسار عام'
+                              : student.academicTrack === AcademicTrack.Baccalaureate || student.academicTrack === 'baccalaureate'
+                              ? 'تانية ثانوي • مسار بكالوريا'
+                              : 'تانية ثانوي • طالب أونلاين'}
+                          </span>
+                        </span>
+                      ) : student.groupName ? (
                         <span className="text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-100 mt-1 inline-flex items-center gap-1">
                           <FolderKanban size={12} />
                           <span>المجموعة: {student.groupName}</span>
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>
