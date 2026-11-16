@@ -56,6 +56,10 @@ export const createExamValidation = [
             }
             return true;
         }),
+    body("isAviable")
+        .optional()
+        .isBoolean()
+        .withMessage("isAviable must be a boolean"),
 ];
 
 interface IQuestion {
@@ -71,6 +75,7 @@ interface IRequest {
     title: string;
     questions: IQuestion[];
     duration: number;
+    isAvailable?: boolean;
 }
 
 interface IResponse {
@@ -94,12 +99,13 @@ export const createExam: RequestHandler<{ courseID: string }, IResponse, IReques
             });
         }
         
-        const { title, questions, duration } = req.body;
+        const { title, questions, duration, isAvailable } = req.body;
         const exam = await Exam.create({
             courseID,
             title,
             questions,
-            duration
+            duration,
+            isAvailable
         });
         
         res.status(StatusCodes.CREATED).json({

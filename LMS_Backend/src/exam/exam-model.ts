@@ -7,6 +7,7 @@ interface IQuestion extends mongoose.Document {
     questionImage?: string;
     options?: string[];
     answer?: string;
+    
 }
 
 export interface IExam extends mongoose.Document {
@@ -16,6 +17,8 @@ export interface IExam extends mongoose.Document {
     questions: IQuestion[];
     isActive: boolean;
     isPublished: boolean;
+    isAviable: boolean;
+    isResultsPublished: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -104,6 +107,14 @@ const examSchema = new mongoose.Schema<IExam>({
     isActive: {
         type: Boolean,
         default: true
+    },
+    isAviable: {
+        type: Boolean,
+        default: true
+    },
+    isResultsPublished: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true,

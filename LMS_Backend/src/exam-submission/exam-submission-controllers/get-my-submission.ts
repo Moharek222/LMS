@@ -13,7 +13,7 @@ export const getMySubmissions: RequestHandler = async (req, res, next) => {
             ExamSubmission.find({ studentID })
                 .sort({ createdAt: -1 })
                 .select("-answers")
-                .populate("examID", "title")
+                .populate({ path: "examID", select: "title isResultsPublished" })
                 .skip(skip)
                 .limit(limit)
                 .lean()
@@ -21,13 +21,36 @@ export const getMySubmissions: RequestHandler = async (req, res, next) => {
             ExamSubmission.countDocuments({ studentID })
         ]);
 
+        // This endpoint is not currently registered in the router, but keep it safe if enabled later.
+        const safeSubmissions = submissions.map((submission: any) => {
+            const resultsPublished =
+                submission.status === "GRADED" && submission.examID?.isResultsPublished === true;
+
+            const safeSubmission: any = {
+                ...submission,
+                examID: submission.examID
+                    ? { _id: submission.examID._id, title: submission.examID.title }
+                    : submission.examID,
+                resultsPublished
+            };
+
+            if (!resultsPublished) {
+                delete safeSubmission.mcqScore;
+                delete safeSubmission.essayScore;
+                delete safeSubmission.totalScore;
+                delete safeSubmission.totalExamPoints;
+            }
+
+            return safeSubmission;
+        });
+
         res.status(StatusCodes.OK).json({
             message: "My submissions fetched successfully",
             page,
             limit,
             total,
             totalPages: Math.ceil(total / limit),
-            data: submissions
+            data: safeSubmissions
         });
     } catch (err) {
         next(err);

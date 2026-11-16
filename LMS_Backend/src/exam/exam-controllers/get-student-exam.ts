@@ -13,7 +13,11 @@ export const getExamForStudent: RequestHandler<{examID: string}> = async (req, r
             });
         }
 
-        const exam = await Exam.findOne({ _id: examID, isActive: true , isPublished: true })
+        const exam = await Exam.findOne({
+            _id: examID,
+            isActive: true,
+            isPublished: true,
+        })
             .select("-questions.answer")
             .lean()
             .exec();
@@ -21,6 +25,11 @@ export const getExamForStudent: RequestHandler<{examID: string}> = async (req, r
         if (!exam) {
             return res.status(StatusCodes.NOT_FOUND).json({
                 message: "No exam found for this Course"
+            });
+        }
+        if(exam.isAvailable === false){
+            return res.status(StatusCodes.NOT_FOUND).json({
+                message: "exam is not aviable"
             });
         }
 

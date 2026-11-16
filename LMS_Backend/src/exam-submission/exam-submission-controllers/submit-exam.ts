@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
 import { Exam } from "../../exam/exam-model";
-import { ExamSubmission , IStudentAnswer } from "../exam-submission-model";
+import { ExamSubmission, IStudentAnswer } from "../exam-submission-model";
 import { body } from "express-validator";
 
 export const submitExamValidation = [
@@ -45,20 +45,20 @@ export const submitExam: RequestHandler<{ examID: string }, {}, IRequest> = asyn
 
         const existingSubmission = await ExamSubmission.findOne({ examID, studentID }).lean().exec();
         if (existingSubmission) {
-            return res.status(StatusCodes.CONFLICT).json({ 
-                message: "You have already submitted this exam" 
+            return res.status(StatusCodes.CONFLICT).json({
+                message: "You have already submitted this exam"
             });
         }
         const exam = await Exam.findById(examID).lean().exec();
         if (!exam || !exam.isActive) {
-            return res.status(StatusCodes.NOT_FOUND).json({ 
-                message: "Exam not found or inactive" 
+            return res.status(StatusCodes.NOT_FOUND).json({
+                message: "Exam not found or inactive"
             });
         }
         let mcqScore = 0;
         let totalExamPoints = 0;
         let hasEssay = false;
-        const processedAnswers:IStudentAnswer[] = [];
+        const processedAnswers: IStudentAnswer[] = [];
 
         for (const question of exam.questions) {
             totalExamPoints += question.points;
@@ -71,7 +71,7 @@ export const submitExam: RequestHandler<{ examID: string }, {}, IRequest> = asyn
             if (question.type === "MCQ") {
                 const isCorrect = providedAnswer === question.answer;
                 const earnedScore = isCorrect ? question.points : 0;
-                
+
                 mcqScore += earnedScore;
 
                 processedAnswers.push({
@@ -81,15 +81,15 @@ export const submitExam: RequestHandler<{ examID: string }, {}, IRequest> = asyn
                     score: earnedScore,
                     isCorrect: isCorrect
                 });
-            } 
+            }
             else if (question.type === "ESSAY") {
                 hasEssay = true;
-                
+
                 processedAnswers.push({
                     questionID: question._id as mongoose.Types.ObjectId,
                     type: "ESSAY",
                     studentAnswer: providedAnswer,
-                    score: 0, 
+                    score: 0,
                     isCorrect: false,
                     teacherFeedback: ""
                 });
@@ -110,18 +110,13 @@ export const submitExam: RequestHandler<{ examID: string }, {}, IRequest> = asyn
         });
 
         res.status(StatusCodes.CREATED).json({
-            message: hasEssay 
-                ? "Exam submitted successfully. Pending manual review for essay questions."
-                : "Exam submitted and graded successfully.",
+            message: "Exam submitted successfully. Results will be announced later.",
             data: {
-                submissionID: submission._id,
-                status: submission.status,
-                totalScore: status === "GRADED" ? submission.totalScore : undefined,
-                totalExamPoints: submission.totalExamPoints
+                submissionID: submission._id
             }
         });
 
     } catch (err) {
         next(err);
     }
-};
+}; 

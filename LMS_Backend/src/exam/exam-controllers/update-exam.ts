@@ -61,6 +61,10 @@ export const updateExamValidation =[
             }
             return true;
         }),
+    body("isAviable")
+        .optional()
+        .isBoolean()
+        .withMessage("isAviable must be a boolean"),
 ];
 
 interface IQuestion {
@@ -78,6 +82,7 @@ interface IRequest {
     duration?: number;
     isActive?: boolean;
     isPublished?: boolean;
+    isAvailable?: boolean;
 }
 
 interface IResponse {
@@ -95,13 +100,14 @@ export const updateExam: RequestHandler<{ examID: string }, IResponse, IRequest>
             });
         }
 
-        const { title, questions, duration, isActive } = req.body;
+        const { title, questions, duration, isActive, isAvailable } = req.body;
         const updateData: any = {};
 
         if (title !== undefined) updateData.title = title;
         if (questions !== undefined) updateData.questions = questions;
         if (duration !== undefined) updateData.duration = duration;
         if (typeof isActive === "boolean") updateData.isActive = isActive;
+        if (typeof isAvailable === "boolean") updateData.isAvailable = isAvailable;
         if (typeof req.body.isPublished === "boolean") updateData.isPublished = req.body.isPublished;
 
         if (Object.keys(updateData).length === 0) {

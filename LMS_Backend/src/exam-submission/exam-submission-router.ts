@@ -13,6 +13,7 @@ import { deleteSubmission } from "./exam-submission-controllers/delete-submissio
 import { requireActiveSubscription } from "../middlewares/is-active-code";
 import { handleValidationErrors } from "../middlewares/handleValidationErrors";
 import { getStudentSubmissions } from "./exam-submission-controllers/get-student-submissinos";
+import { publishExamResults } from "./exam-submission-controllers/publish-exam-results";
 
 const router = Router({ mergeParams: true });
 
@@ -39,6 +40,11 @@ router.post("/",
 router.put("/:submissionID/grade",
     isAuthorized(Role.Admin, Role.Teacher),
     gradeEssayQuestions
+);
+
+router.patch("/publish-results",
+    isAuthorized(Role.Admin, Role.Teacher),
+    publishExamResults
 );
 
 
