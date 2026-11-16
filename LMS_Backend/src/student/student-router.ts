@@ -14,6 +14,7 @@ import { resetPasswordValidation, resetStudentPassword } from "./student-control
 import { deactivateStudent } from "./student-controllers/deactivate-student";
 import { activeStudent } from "./student-controllers/active-student";
 import { getDeactivatedStudents } from "./student-controllers/get-deactivated-students";
+import { deleteStudent } from "./student-controllers/delete-student";
 
 const router = Router();
 
@@ -60,6 +61,9 @@ router.put("/activate/:id",
     activeStudent
 );
 
+router.delete("/:id",
+    isAuthorized(Role.Admin, Role.Teacher),
+    deleteStudent)
 
 // Quiz history
 router.get("/quiz-history", getMySubmissionsQuiz)
