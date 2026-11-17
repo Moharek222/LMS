@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="px-3 pt-4 pb-1 flex items-center justify-center relative shrink-0">
             <img
               src="/logo.png"
-              alt="منصة الصادق في الكيمياء"
+              alt="منصة الصادق في الكيمياء والفيزياء"
               className="h-24 sm:h-28 w-full max-w-50 object-contain mx-auto"
             />
 
