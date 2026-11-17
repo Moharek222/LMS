@@ -42,7 +42,7 @@ export const publishExamResults: RequestHandler<{ examID: string }> = async (req
         }
 
         exam.isResultsPublished = true;
-        exam.isAviable = false;
+        exam.isAvailable = false;
         await exam.save();
 
         return res.status(StatusCodes.OK).json({
@@ -50,7 +50,7 @@ export const publishExamResults: RequestHandler<{ examID: string }> = async (req
             data: {
                 examID: exam._id,
                 isResultsPublished: true,
-                isAviable: false
+                isAvailable: false
             }
         });
     } catch (err) {
