@@ -98,6 +98,9 @@ const EditExamForm: React.FC<{
 
   const [editTitle, setEditTitle] = useState(teacherExamData.title || '');
   const [editDuration, setEditDuration] = useState<number>(teacherExamData.duration || 30);
+  const [editIsPublished, setEditIsPublished] = useState<boolean>(
+    teacherExamData.isPublished ?? teacherExamData.isActive ?? true
+  );
   const [editQuestions, setEditQuestions] = useState<ExamQuestionDraft[]>(() =>
     teacherExamData.questions && teacherExamData.questions.length > 0
       ? teacherExamData.questions.map((q, idx) => ({
@@ -180,6 +183,8 @@ const EditExamForm: React.FC<{
     const payload = {
       title: editTitle.trim(),
       duration: numDuration,
+      isPublished: editIsPublished,
+      isActive: true,
       questions: formattedEditQuestions,
     };
 
@@ -226,7 +231,7 @@ const EditExamForm: React.FC<{
   return (
     <form onSubmit={handleEditSubmit} className="space-y-6 overflow-y-auto flex-1 pr-1">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="sm:col-span-2">
+        <div className="sm:col-span-1">
           <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
             عنوان الامتحان الشامل *
           </label>
@@ -252,6 +257,21 @@ const EditExamForm: React.FC<{
             disabled={updateExamMutation.isPending}
             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition"
           />
+        </div>
+
+        <div>
+          <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
+            حالة النشر للطلاب *
+          </label>
+          <select
+            value={editIsPublished ? 'published' : 'draft'}
+            onChange={(e) => setEditIsPublished(e.target.value === 'published')}
+            disabled={updateExamMutation.isPending}
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition cursor-pointer"
+          >
+            <option value="published">منشور ومتاح للطلاب 🟢</option>
+            <option value="draft">حفظ كمسودة (غير منشور) 🟡</option>
+          </select>
         </div>
       </div>
 

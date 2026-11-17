@@ -5,6 +5,8 @@ export interface ExamListItem {
   duration: number; // in minutes
   isActive: boolean;
   isPublished?: boolean;
+  isResultsPublished?: boolean;
+  isAviable?: boolean;
   startAt?: string; // Optional scheduled start date/time (ISO string)
   createdAt?: string;
   updatedAt?: string;

@@ -9,8 +9,10 @@ import {
   Loader2,
   RefreshCw,
   GraduationCap,
+  Trash2,
 } from 'lucide-react';
 import { useActivateStudent } from '../hooks/useActivateStudent';
+import { useDeleteStudent } from '../hooks/useDeleteStudent';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
 import { useDeactivatedStudents } from '../hooks/useDeactivatedStudents';
 import { useToast } from '../../../context/ToastContext';
@@ -33,11 +35,13 @@ export interface DeactivatedStudentViewItem {
 export const DeactivatedStudentsManager: React.FC = () => {
   const toast = useToast();
   const activateStudentMutation = useActivateStudent();
+  const deleteStudentMutation = useDeleteStudent();
   const { data: apiData, isLoading, refetch } = useDeactivatedStudents({ page: 1, limit: 100 });
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | Grade>('ALL');
   const [activatingId, setActivatingId] = useState<string | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<DeactivatedStudentViewItem | null>(null);
 
   const displayStudents = React.useMemo<DeactivatedStudentViewItem[]>(() => {
     if (!apiData?.data || !Array.isArray(apiData.data)) return [];
@@ -76,6 +80,17 @@ export const DeactivatedStudentsManager: React.FC = () => {
       toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء إعادة تفعيل الطالب'));
     } finally {
       setActivatingId(null);
+    }
+  };
+
+  const handleConfirmDelete = async (student: DeactivatedStudentViewItem) => {
+    try {
+      await deleteStudentMutation.mutateAsync(student._id);
+      await refetch();
+      toast.success(`تم حذف الطالب (${student.name}) نهائياً من المنصة بنجاح.`);
+      setStudentToDelete(null);
+    } catch (err) {
+      toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء حذف الطالب'));
     }
   };
 
@@ -259,27 +274,79 @@ export const DeactivatedStudentsManager: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleActivate(student)}
-                  disabled={isActivating}
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-black transition cursor-pointer shadow-xs flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isActivating ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>جاري إعادة التفعيل وعودته للمجموعة...</span>
-                    </>
-                  ) : (
-                    <>
-                      <UserCheck size={16} />
-                      <span>تفعيل الطالب وعودته لمجموعته 🟢</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleActivate(student)}
+                    disabled={isActivating || deleteStudentMutation.isPending}
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-black transition cursor-pointer shadow-xs flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isActivating ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>جاري التفعيل...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck size={16} />
+                        <span>تفعيل الطالب 🟢</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStudentToDelete(student)}
+                    disabled={isActivating || deleteStudentMutation.isPending}
+                    className="px-3.5 py-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold transition cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 shrink-0"
+                    title="حذف حساب الطالب نهائياً من قاعدة البيانات"
+                  >
+                    <Trash2 size={15} />
+                    <span>حذف نهائي</span>
+                  </button>
+                </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {studentToDelete && (
+        <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center border border-red-100">
+                <Trash2 size={20} />
+              </div>
+              <h4 className="text-sm font-bold">تأكيد الحذف النهائي لحساب الطالب</h4>
+            </div>
+            <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+              هل أنت متأكد تماماً من رغبتك في حذف الطالب <span className="text-slate-900 font-extrabold font-mono">({studentToDelete.name})</span> نهائياً من المنصة؟
+              <br />
+              <span className="text-red-600 font-bold block mt-1">
+                ⚠️ تحذير: هذا الإجراء نهائي ولا يمكن التراجع عنه، وسيتم مسح بيانات حساب الطالب بالكامل من قاعدة البيانات.
+              </span>
+            </p>
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setStudentToDelete(null)}
+                disabled={deleteStudentMutation.isPending}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmDelete(studentToDelete)}
+                disabled={deleteStudentMutation.isPending}
+                className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                {deleteStudentMutation.isPending && <Loader2 size={13} className="animate-spin" />}
+                <span>نعم، حذف نهائي</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

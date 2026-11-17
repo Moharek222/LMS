@@ -82,6 +82,13 @@ export const activateStudent = async (studentId: string): Promise<{ message: str
   return response.data;
 };
 
+export const deleteStudent = async (studentId: string): Promise<{ message: string }> => {
+  const response = await apiClient.delete<{ message: string }>(
+    `/api/students/${studentId}`
+  );
+  return response.data;
+};
+
 export const getDeactivatedStudentsApi = async (
   params?: BaseQueryParams
 ): Promise<PaginatedDeactivatedStudentsResponse> => {
@@ -102,6 +109,7 @@ export const teacherGroupsApi = {
   resetStudentPassword,
   deactivateStudent,
   activateStudent,
+  deleteStudent,
   getDeactivatedStudentsApi,
 };
 

@@ -42,6 +42,7 @@ export interface ExamHistoryItem extends BaseAssessmentHistoryItem {
   mcqScore?: number;
   essayScore?: number;
   status?: 'PENDING' | 'GRADED';
+  resultsPublished?: boolean;
 }
 
 export interface ExamHistoryResponse {

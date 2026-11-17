@@ -11,11 +11,16 @@ import {
   FileCheck,
   Search,
   Trash2,
+  Megaphone,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   useTeacherExamSubmissions,
   useDeleteExamSubmission,
 } from '../../../exams/hooks/useTeacherExamSubmissions';
+import { useTeacherExam } from '../../hooks/useTeacherExam';
+import { useExamStatistics } from '../../../exams/hooks/useExamStatistics';
+import { usePublishExamResults } from '../../../exams/hooks/usePublishExamResults';
 import { GradeSubmissionModal } from './GradeSubmissionModal';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
@@ -52,8 +57,15 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [submissionToDelete, setSubmissionToDelete] = useState<TeacherExamSubmissionItem | null>(null);
+  const [isConfirmPublishOpen, setIsConfirmPublishOpen] = useState<boolean>(false);
 
+  const { data: examData, refetch: refetchExam } = useTeacherExam(courseId, examId);
+  const { data: statistics, refetch: refetchStats } = useExamStatistics(courseId, examId);
   const deleteSubmissionMutation = useDeleteExamSubmission();
+  const publishResultsMutation = usePublishExamResults();
+
+  const isResultsPublished = Boolean(examData?.isResultsPublished);
+  const pendingSubmissionsCount = statistics?.pendingSubmissions ?? 0;
 
   const { data, isLoading, isError, error, refetch } = useTeacherExamSubmissions(
     courseId,
@@ -106,8 +118,30 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
       toast.success(`تم حذف تسليم الطالب "${submissionToDelete.studentID?.name || ''}" بنجاح، ويمكنه الآن دخول الامتحان وإعادته.`);
       setSubmissionToDelete(null);
       refetch();
+      refetchStats();
     } catch (err) {
       toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء حذف تسليم الطالب'));
+    }
+  };
+
+  const handleConfirmPublishResults = async () => {
+    try {
+      await publishResultsMutation.mutateAsync({
+        courseId,
+        examId,
+      });
+      toast.success('تم إعلان ونشر نتائج الامتحان للطلاب بنجاح! 🎉 أصبحت النتائج مرئية للطلاب الآن وتم إغلاق الامتحان.');
+      setIsConfirmPublishOpen(false);
+      refetch();
+      refetchExam();
+      refetchStats();
+    } catch (err) {
+      toast.error(
+        toArabicErrorMessage(
+          err,
+          'تعذر إعلان ونشر النتائج. تأكد من الانتهاء من تصحيح جميع الأسئلة المقالية أولاً.'
+        )
+      );
     }
   };
 
@@ -138,6 +172,53 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
               <X size={18} />
             </button>
           </div>
+
+          {/* Results Publishing Status / Action Banner */}
+          {isResultsPublished ? (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 text-emerald-800 text-xs font-bold shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                  <CheckCircle2 size={18} />
+                </div>
+                <div>
+                  <span className="font-extrabold">تم إعلان ونشر النتائج رسمياً للطلاب 📢</span>
+                  <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">
+                    الامتحان مغلق الآن أمام التسليمات الجديدة، والدرجات معتمدة وظاهرة في حسابات الطلاب.
+                  </p>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-xl bg-white border border-emerald-300 text-emerald-800 text-[11px] font-black shrink-0">
+                النتائج معلنة
+              </span>
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-800 text-xs shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                  <Megaphone size={18} />
+                </div>
+                <div>
+                  <span className="font-extrabold text-slate-900">إعلان ونشر النتائج للطلاب</span>
+                  <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+                    {pendingSubmissionsCount > 0
+                      ? `يتبقى ${pendingSubmissionsCount} طلاب بانتظار تصحيح أسئلتهم المقالية أولاً قبل التمكن من نشر النتائج.`
+                      : 'تم تصحيح جميع التسليمات، يمكنك الآن إعلان النتائج رسميًا لجميع الطلاب.'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsConfirmPublishOpen(true)}
+                disabled={pendingSubmissionsCount > 0 || publishResultsMutation.isPending}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 text-xs font-black transition cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                title={pendingSubmissionsCount > 0 ? 'يجب تصحيح كل الأسئلة المقالية أولاً' : 'إعلان ونشر النتائج'}
+              >
+                <Megaphone size={14} />
+                <span>إعلان ونشر النتائج للطلاب</span>
+              </button>
+            </div>
+          )}
 
          
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
@@ -310,7 +391,48 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
           courseId={courseId}
           examId={examId}
           submissionId={selectedSubmissionId}
+          isResultsPublished={isResultsPublished}
         />
+      )}
+
+      {/* Confirm Publish Results Modal */}
+      {isConfirmPublishOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
+              <Megaphone size={26} />
+            </div>
+            <h4 className="text-base font-extrabold text-slate-800">إعلان ونشر نتائج الامتحان للطلاب</h4>
+            <div className="text-xs text-slate-600 font-semibold space-y-2 text-right bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 leading-relaxed">
+              <p className="font-bold text-slate-800">عند تأكيد نشر النتائج:</p>
+              <ul className="list-disc list-inside space-y-1 text-slate-600">
+                <li>ستصبح درجات الامتحان وتقييماته مرئية رسمياً لجميع الطلاب في صفحاتهم.</li>
+                <li>سيتم إغلاق الامتحان ومنع الطلاب من إرسال أي تسليمات جديدة.</li>
+                <li>سيتم اعتماد وتجميد درجات الأسئلة المقالية وإغلاق باب التعديل.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleConfirmPublishResults}
+                disabled={publishResultsMutation.isPending}
+                className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition cursor-pointer shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {publishResultsMutation.isPending && <Loader2 size={14} className="animate-spin" />}
+                <span>نعم، إعلان النتائج الآن</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsConfirmPublishOpen(false)}
+                disabled={publishResultsMutation.isPending}
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       

@@ -84,12 +84,32 @@ export const deleteExamSubmission = async (
   return response.data;
 };
 
+export interface PublishExamResultsResponse {
+  message: string;
+  data: {
+    examID: string;
+    isResultsPublished: boolean;
+    isAviable?: boolean;
+  };
+}
+
+export const publishExamResults = async (
+  courseId: string,
+  examId: string
+): Promise<PublishExamResultsResponse> => {
+  const response = await apiClient.patch<PublishExamResultsResponse>(
+    `/api/courses/${courseId}/exams/${examId}/submissions/publish-results`
+  );
+  return response.data;
+};
+
 export const teacherExamSubmissionsApi = {
   getTeacherExamSubmissions,
   getTeacherExamSubmissionDetails,
   gradeEssayQuestions,
   getExamStatistics,
   deleteExamSubmission,
+  publishExamResults,
 };
 
 export default teacherExamSubmissionsApi;

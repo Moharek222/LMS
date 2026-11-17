@@ -26,9 +26,10 @@ export const createExam = async (
     payload
   );
   const createdExam = response.data.data;
+  const shouldPublish = payload.isPublished !== undefined ? payload.isPublished : true;
   if (createdExam?._id) {
     try {
-      return await updateExam(courseId, createdExam._id, { isPublished: true });
+      return await updateExam(courseId, createdExam._id, { isPublished: shouldPublish });
     } catch {
       return createdExam;
     }

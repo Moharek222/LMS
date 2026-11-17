@@ -210,7 +210,41 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
 
   // Submission Result View
   if (submissionResult) {
-    const isPendingGrade = submissionResult.status === 'PENDING';
+    const hasPublishedScore =
+      (submissionResult.totalScore !== undefined || submissionResult.score !== undefined) &&
+      submissionResult.status === 'GRADED';
+
+    if (!hasPublishedScore) {
+      return (
+        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xs text-center space-y-6 max-w-2xl mx-auto">
+          <div className="w-20 h-20 rounded-3xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100 shadow-xs">
+            <CheckCircle2 size={44} />
+          </div>
+
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+              <Clock size={16} />
+              <span>النتيجة قيد المراجعة والاعتماد ⏳</span>
+            </span>
+            <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
+            <p className="text-xs text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
+              تم تسليم إجاباتك وحفظها بنجاح في النظام. نتيجتك قيد المراجعة والاعتماد من قبل المعلم، وسيتم إعلان درجاتك فور نشر النتائج رسمياً.
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100">
+            <button
+              onClick={onClose}
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
+            >
+              <span>العودة لصفحة الكورس</span>
+              <ArrowLeft size={16} />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     const score = submissionResult.totalScore ?? submissionResult.score ?? 0;
     const totalPoints = submissionResult.totalExamPoints ?? submissionResult.totalQuestions ?? (exam?.questions?.length || 1);
     const totalQuestionsCount = exam?.questions?.length || submissionResult.totalQuestions || 1;
@@ -221,48 +255,38 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xs text-center space-y-6 max-w-2xl mx-auto">
         <div
           className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto border shadow-sm ${
-            isPendingGrade
-              ? 'bg-amber-50 text-amber-600 border-amber-200'
-              : isPassed
+            isPassed
               ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
               : 'bg-rose-50 text-rose-600 border-rose-200'
           }`}
         >
-          {isPendingGrade ? <Clock size={44} /> : isPassed ? <CheckCircle2 size={44} /> : <XCircle size={44} />}
+          {isPassed ? <CheckCircle2 size={44} /> : <XCircle size={44} />}
         </div>
 
         <div className="space-y-2">
           <span
             className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-extrabold border ${
-              isPendingGrade
-                ? 'bg-amber-100 text-amber-800 border-amber-300'
-                : isPassed
+              isPassed
                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                 : 'bg-rose-100 text-rose-800 border-rose-300'
             }`}
           >
             <Award size={16} />
             <span>
-              {isPendingGrade
-                ? 'تم التسليم وبانتظار تصحيح الأسئلة المقالية'
-                : isPassed
-                ? 'تم اجتياز الامتحان بنجاح 🏆'
-                : 'لم يتم اجتياز الامتحان'}
+              {isPassed ? 'تم اجتياز الامتحان بنجاح 🏆' : 'لم يتم اجتياز الامتحان'}
             </span>
           </span>
           <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
           <p className="text-xs text-slate-500 font-semibold">
             {isAutoSubmitted
               ? 'انتهى الوقت المحدد للامتحان وتم حفظ وتأكيد إجاباتك المسجلة تلقائياً في النظام.'
-              : isPendingGrade
-              ? 'تم تسليم إجاباتك بنجاح وفي انتظار تقييم المعلم للأسئلة المقالية.'
               : 'تم تسجيل نتيجتك وحفظها في النظام'}
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80">
-            <span className="text-[11px] text-slate-400 font-bold block">درجة الطالب الحالية</span>
+            <span className="text-[11px] text-slate-400 font-bold block">درجة الطالب</span>
             <span className="text-xl font-black text-slate-800">{score} / {totalPoints} درجة</span>
           </div>
 

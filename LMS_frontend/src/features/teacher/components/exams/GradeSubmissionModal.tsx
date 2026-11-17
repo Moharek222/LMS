@@ -10,11 +10,13 @@ import {
   Save,
   MessageSquare,
   HelpCircle,
+  Lock,
 } from 'lucide-react';
 import {
   useTeacherExamSubmissionDetails,
   useGradeEssayQuestions,
 } from '../../../exams/hooks/useTeacherExamSubmissions';
+import { useTeacherExam } from '../../hooks/useTeacherExam';
 import { useToast } from '../../../../context/ToastContext';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import type { GradeInputItem } from '../../../exams/types/examSubmission';
@@ -25,6 +27,7 @@ interface GradeSubmissionModalProps {
   courseId: string;
   examId: string;
   submissionId: string | null;
+  isResultsPublished?: boolean;
 }
 
 export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
@@ -33,6 +36,7 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
   courseId,
   examId,
   submissionId,
+  isResultsPublished: propIsResultsPublished,
 }) => {
   const toast = useToast();
 
@@ -40,6 +44,14 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
     courseId,
     examId,
     submissionId
+  );
+
+  const { data: examData } = useTeacherExam(courseId, examId);
+
+  const isPublished = Boolean(
+    propIsResultsPublished !== undefined
+      ? propIsResultsPublished
+      : examData?.isResultsPublished
   );
 
   const gradeEssayMutation = useGradeEssayQuestions();
@@ -76,8 +88,25 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
 
   const handleSubmitGrades = () => {
     if (!submission) return;
+    if (isPublished) {
+      toast.error('تم نشر نتائج هذا الامتحان رسمياً للطلاب، ولا يمكن تعديل درجات المقالي بعد النشر.');
+      return;
+    }
 
     const essayList = submission.answers?.filter((a) => a.type === 'ESSAY') || [];
+
+    // Validate that all essay questions have valid scores
+    for (const ans of essayList) {
+      const examQ = examData?.questions?.find((q) => String(q._id) === String(ans.questionID));
+      const maxPts = ans.maxScore ?? examQ?.points ?? 100;
+      const item = getEffectiveGrade(ans.questionID, ans.score || 0, ans.teacherFeedback || '');
+      
+      if (item.score < 0 || item.score > maxPts) {
+        toast.error(`درجة السؤال المقالي يجب أن تكون بين 0 و ${maxPts} نقطة.`);
+        return;
+      }
+    }
+
     const gradesPayload: GradeInputItem[] = essayList.map((ans) => {
       const item = getEffectiveGrade(ans.questionID, ans.score || 0, ans.teacherFeedback || '');
       return {
@@ -152,6 +181,13 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
             </div>
           ) : (
             <>
+              {isPublished && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2.5">
+                  <Lock size={18} className="text-amber-600 shrink-0" />
+                  <span>تم نشر وإعلان نتائج هذا الامتحان رسمياً للطلاب 📢 (الامتحان مغلق والدرجات معتمدة، ولا يمكن تعديل درجات المقالي).</span>
+                </div>
+              )}
+
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white text-[#0D8A82] flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
@@ -211,6 +247,10 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                 ) : (
                   <div className="space-y-4">
                     {essayAnswers.map((ans, idx) => {
+                      const examQ = examData?.questions?.find((q) => String(q._id) === String(ans.questionID));
+                      const maxPoints = ans.maxScore ?? examQ?.points ?? 10;
+                      const qText = ans.questionText || examQ?.question;
+
                       const currentGrade = getEffectiveGrade(
                         ans.questionID,
                         ans.score || 0,
@@ -224,16 +264,14 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                         >
                           <div className="flex items-center justify-between text-xs font-extrabold text-amber-900">
                             <span>السؤال المقالي #{idx + 1}</span>
-                            {ans.maxScore !== undefined && (
-                              <span className="text-xs font-bold text-amber-700">
-                                الدرجة العظمى: {ans.maxScore}
-                              </span>
-                            )}
+                            <span className="text-xs font-bold text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-lg border border-amber-200">
+                              الدرجة القصوى: {maxPoints} نقاط
+                            </span>
                           </div>
 
-                          {ans.questionText && (
+                          {qText && (
                             <p className="text-xs font-bold text-slate-800 bg-white p-3 rounded-xl border border-slate-200/80">
-                              {ans.questionText}
+                              {qText}
                             </p>
                           )}
 
@@ -247,27 +285,25 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                             <div>
                               <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                                رصد الدرجة المستحقة *
+                                رصد الدرجة المستحقة (من {maxPoints}) *
                               </label>
                               <input
                                 type="number"
                                 min={0}
-                                max={ans.maxScore || 100}
+                                max={maxPoints}
+                                disabled={isPublished || gradeEssayMutation.isPending}
                                 value={currentGrade.score}
                                 onChange={(e) => {
                                   const raw = Number(e.target.value);
                                   const safeVal = isNaN(raw) ? 0 : raw;
-                                  const clamped =
-                                    ans.maxScore !== undefined
-                                      ? Math.min(Math.max(0, safeVal), ans.maxScore)
-                                      : Math.max(0, safeVal);
+                                  const clamped = Math.min(Math.max(0, safeVal), maxPoints);
                                   handleScoreChange(
                                     ans.questionID,
                                     clamped,
                                     ans.teacherFeedback || ''
                                   );
                                 }}
-                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-none focus:border-[#0D8A82]"
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-none focus:border-[#0D8A82] disabled:bg-slate-100 disabled:text-slate-500"
                               />
                             </div>
 
@@ -278,11 +314,12 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
                               <input
                                 type="text"
                                 placeholder="اكتب ملاحظة أو توجيه للطالب..."
+                                disabled={isPublished || gradeEssayMutation.isPending}
                                 value={currentGrade.feedback}
                                 onChange={(e) =>
                                   handleFeedbackChange(ans.questionID, e.target.value, ans.score || 0)
                                 }
-                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:outline-none focus:border-[#0D8A82]"
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:outline-none focus:border-[#0D8A82] disabled:bg-slate-100 disabled:text-slate-500"
                               />
                             </div>
                           </div>
@@ -341,24 +378,31 @@ export const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({
           </button>
 
           {essayAnswers.length > 0 && (
-            <button
-              type="button"
-              onClick={handleSubmitGrades}
-              disabled={gradeEssayMutation.isPending || isLoading}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {gradeEssayMutation.isPending ? (
-                <>
-                  <Loader2 size={15} className="animate-spin" />
-                  <span>جاري حفظ الدرجات...</span>
-                </>
-              ) : (
-                <>
-                  <Save size={15} />
-                  <span>حفظ واعتماد تصحيح المقالي</span>
-                </>
-              )}
-            </button>
+            isPublished ? (
+              <span className="px-4 py-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold inline-flex items-center gap-1.5">
+                <Lock size={14} />
+                <span>النتائج منشورة ومعتمدة (لا يمكن التعديل)</span>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmitGrades}
+                disabled={gradeEssayMutation.isPending || isLoading}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {gradeEssayMutation.isPending ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" />
+                    <span>جاري حفظ الدرجات...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={15} />
+                    <span>حفظ واعتماد تصحيح المقالي</span>
+                  </>
+                )}
+              </button>
+            )
           )}
         </div>
       </div>

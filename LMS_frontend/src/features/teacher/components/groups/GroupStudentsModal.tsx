@@ -1,9 +1,10 @@
 import React from 'react';
-import { Users, User, UserX, UserCheck, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X, BarChart3, Search, GraduationCap } from 'lucide-react';
+import { Users, User, UserX, UserCheck, Phone, ArrowLeftRight, KeyRound, Loader2, AlertTriangle, RefreshCw, X, BarChart3, Search, GraduationCap, Trash2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useGroupStudents } from '../../hooks/useGroupStudents';
 import { useDeactivateStudent } from '../../hooks/useDeactivateStudent';
 import { useActivateStudent } from '../../hooks/useActivateStudent';
+import { useDeleteStudent } from '../../hooks/useDeleteStudent';
 import type { Group, GroupStudent } from '../../types/groupManagement';
 import { toArabicErrorMessage } from '../../../../utils/errorMessage';
 import { useToast } from '../../../../context/ToastContext';
@@ -94,8 +95,10 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
 
   const deactivateStudentMutation = useDeactivateStudent();
   const activateStudentMutation = useActivateStudent();
+  const deleteStudentMutation = useDeleteStudent();
 
   const [studentToDeactivate, setStudentToDeactivate] = React.useState<GroupStudent | null>(null);
+  const [studentToDelete, setStudentToDelete] = React.useState<GroupStudent | null>(null);
   const [selectedStudentForDetails, setSelectedStudentForDetails] = React.useState<GroupStudent | null>(null);
   const [searchQuery, setSearchQuery] = React.useState<string>('');
 
@@ -133,6 +136,17 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
       effectiveRefetch();
     } catch (err) {
       toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء إعادة تفعيل حساب الطالب'));
+    }
+  };
+
+  const handleConfirmDelete = async (student: GroupStudent) => {
+    try {
+      await deleteStudentMutation.mutateAsync(student._id);
+      toast.success(`تم حذف الطالب (${student.name}) نهائياً من المنصة بنجاح.`);
+      setStudentToDelete(null);
+      effectiveRefetch();
+    } catch (err) {
+      toast.error(toArabicErrorMessage(err, 'حدث خطأ أثناء حذف الطالب'));
     }
   };
 
@@ -317,6 +331,16 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                             <span>تعطيل</span>
                           </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => setStudentToDelete(student)}
+                          disabled={deleteStudentMutation.isPending}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 border border-red-200/80 text-xs font-bold transition cursor-pointer shrink-0"
+                          title="حذف حساب الطالب نهائياً من المنصة"
+                        >
+                          <Trash2 size={13} />
+                          <span>حذف نهائي</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -372,6 +396,45 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
               >
                 {deactivateStudentMutation.isPending && <Loader2 size={13} className="animate-spin" />}
                 <span>نعم، تعطيل الحساب</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {studentToDelete && (
+        <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center border border-red-100">
+                <Trash2 size={20} />
+              </div>
+              <h4 className="text-sm font-bold">تأكيد الحذف النهائي لحساب الطالب</h4>
+            </div>
+            <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+              هل أنت متأكد تماماً من رغبتك في حذف الطالب <span className="text-slate-900 font-extrabold font-mono">({studentToDelete.name})</span> نهائياً من المنصة؟
+              <br />
+              <span className="text-red-600 font-bold block mt-1">
+                ⚠️ تحذير: هذا الإجراء نهائي ولا يمكن التراجع عنه، وسيتم مسح بيانات حساب الطالب بالكامل من قاعدة البيانات.
+              </span>
+            </p>
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setStudentToDelete(null)}
+                disabled={deleteStudentMutation.isPending}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmDelete(studentToDelete)}
+                disabled={deleteStudentMutation.isPending}
+                className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                {deleteStudentMutation.isPending && <Loader2 size={13} className="animate-spin" />}
+                <span>نعم، حذف نهائي</span>
               </button>
             </div>
           </div>

@@ -24,7 +24,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
 
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState<number>(30);
-  const [startAt, setStartAt] = useState<string>('');
+  const [isPublished, setIsPublished] = useState<boolean>(true);
   const [questions, setQuestions] = useState<ExamQuestionDraft[]>([
     {
       id: 'q_1',
@@ -41,7 +41,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
   const resetForm = () => {
     setTitle('');
     setDuration(30);
-    setStartAt('');
+    setIsPublished(true);
     setQuestions([
       {
         id: `q_${Date.now()}`,
@@ -126,7 +126,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
     const payload = {
       title: title.trim(),
       duration: numDuration,
-      startAt: startAt ? new Date(startAt).toISOString() : undefined,
+      isPublished,
       questions: formattedQuestions,
     };
 
@@ -182,7 +182,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
             <div>
               <h3 className="text-lg font-extrabold text-slate-800">إضافة امتحان شامل جديد</h3>
               <p className="text-xs text-slate-500 font-semibold">
-                إضافة امتحان جديد وتحديد المدة والأسئلة وموعد البدء المجدول (اختياري)
+                إضافة امتحان جديد وتحديد المدة والأسئلة وحالة النشر للطلاب
               </p>
             </div>
           </div>
@@ -227,15 +227,17 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({
 
             <div>
               <label className="block text-xs font-extrabold text-slate-700 mb-1.5">
-                موعد البدء (اختياري / جدول للامتحان)
+                حالة النشر للطلاب *
               </label>
-              <input
-                type="datetime-local"
-                value={startAt}
-                onChange={(e) => setStartAt(e.target.value)}
+              <select
+                value={isPublished ? 'published' : 'draft'}
+                onChange={(e) => setIsPublished(e.target.value === 'published')}
                 disabled={createExamMutation.isPending}
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition"
-              />
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0D8A82] focus:ring-2 focus:ring-teal-500/10 transition cursor-pointer"
+              >
+                <option value="published">منشور ومتاح للطلاب فوراً 🟢</option>
+                <option value="draft">حفظ كمسودة (غير منشور) 🟡</option>
+              </select>
             </div>
           </div>
 
