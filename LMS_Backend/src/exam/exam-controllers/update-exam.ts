@@ -61,10 +61,10 @@ export const updateExamValidation =[
             }
             return true;
         }),
-    body("isAviable")
+    body("isAvailable")
         .optional()
         .isBoolean()
-        .withMessage("isAviable must be a boolean"),
+        .withMessage("isAvailable must be a boolean"),
 ];
 
 interface IQuestion {

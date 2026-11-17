@@ -17,7 +17,7 @@ export interface IExam extends mongoose.Document {
     questions: IQuestion[];
     isActive: boolean;
     isPublished: boolean;
-    isAviable: boolean;
+    isAvailable: boolean;
     isResultsPublished: boolean;
     createdAt?: Date;
     updatedAt?: Date;
@@ -108,7 +108,7 @@ const examSchema = new mongoose.Schema<IExam>({
         type: Boolean,
         default: true
     },
-    isAviable: {
+    isAvailable: {
         type: Boolean,
         default: true
     },
