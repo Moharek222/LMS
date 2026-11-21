@@ -21,12 +21,12 @@ router.use(isAuthenticated);
 router.use("/:examID/submissions", examSubmissionRouter);
 
 router.get("/",
-    isAuthorized(Role.Admin, Role.Teacher, Role.Student),
+    isAuthorized(Role.Admin, Role.Teacher),
     requireActiveSubscription,
     getCourseExams
 );
 
-router.post("/upload-image", 
+router.post("/upload-image",
     isAuthorized(Role.Admin, Role.Teacher),
     upload.single("image"), 
     uploadQuestionImage

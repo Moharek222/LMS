@@ -14,7 +14,7 @@ interface IResponse {
 export const getCourseExams: RequestHandler<{ courseID: string }, IResponse> = async (req, res, next) => {
     try {
         const { courseID } = req.params;
-        const id = req.user?.id;
+        // const id = req.user?.id;
 
         if (!mongoose.Types.ObjectId.isValid(courseID)) {
             return res.status(StatusCodes.BAD_REQUEST).json({
@@ -24,46 +24,45 @@ export const getCourseExams: RequestHandler<{ courseID: string }, IResponse> = a
         
         const courseExists = await Course.findOne({
             _id: courseID,
-            isActive: true,
-            isPublished: true
+            isActive: true
         }).lean().exec();
         if (!courseExists) {
             return res.status(StatusCodes.NOT_FOUND).json({
                 message: "course not found"
             });
         }
-        if (req.user?.role === Role.Student) {
-            const student = await Student.findById(id)
-                .select("grade academicTrack")
-                .lean()
-                .exec();
+        // if (req.user?.role === Role.Student) {
+        //     const student = await Student.findById(id)
+        //         .select("grade academicTrack")
+        //         .lean()
+        //         .exec();
 
-            if (!student) {
-                return res.status(StatusCodes.NOT_FOUND).json({
-                    message: "Student not found"
-                });
-            }
+        //     if (!student) {
+        //         return res.status(StatusCodes.NOT_FOUND).json({
+        //             message: "Student not found"
+        //         });
+        //     }
 
-            if (!student.grade || !courseExists.grade) {
-                return res.status(StatusCodes.CONFLICT).json({
-                    message: "Student or course grade is not configured"
-                });
-            }
+        //     if (!student.grade || !courseExists.grade) {
+        //         return res.status(StatusCodes.CONFLICT).json({
+        //             message: "Student or course grade is not configured"
+        //         });
+        //     }
 
-            if (student.grade !== courseExists.grade) {
-                return res.status(StatusCodes.FORBIDDEN).json({
-                    message: "You are not authorized to access this course"
-                });
-            }
+        //     if (student.grade !== courseExists.grade) {
+        //         return res.status(StatusCodes.FORBIDDEN).json({
+        //             message: "You are not authorized to access this course"
+        //         });
+        //     }
 
-            if (student.academicTrack !== courseExists.academicTrack) {
-                return res.status(StatusCodes.FORBIDDEN).json({
-                    message: "You are not authorized to access this course"
-                });
-            }
-        }
+        //     if (student.academicTrack !== courseExists.academicTrack) {
+        //         return res.status(StatusCodes.FORBIDDEN).json({
+        //             message: "You are not authorized to access this course"
+        //         });
+        //     }
+        // }
 
-        const examzes = await Exam.find({ courseID, isActive: true, isPublished: true })
+        const examzes = await Exam.find({ courseID, isActive: true })
             .select("-questions")
             .sort({ createdAt: 1 })
             .lean()
