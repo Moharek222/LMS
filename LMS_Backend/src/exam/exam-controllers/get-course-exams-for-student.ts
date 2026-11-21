@@ -1,44 +1,80 @@
-// import { RequestHandler } from "express";
-// import { StatusCodes } from "http-status-codes";
-// import mongoose from "mongoose";
-// import { Exam } from "../exam-model";
+import { RequestHandler } from "express";
+import mongoose from "mongoose";
+import { StatusCodes } from "http-status-codes";
+import { Exam } from "../exam-model";
+import { Course } from "../../course/course-model";
+import { Student } from "../../student/student-model";
+import { Role } from "../../user/user-model";
 
-// export const getExamForStudent: RequestHandler<{examID: string}> = async (req, res, next) => {
-//     try {
-//         const { examID } = req.params;
+interface IResponse {
+    message: string;
+    data?: unknown;
+}
 
-//         if (!mongoose.Types.ObjectId.isValid(examID)) {
-//             return res.status(StatusCodes.BAD_REQUEST).json({
-//                 message: "Invalid lesson ID format"
-//             });
-//         }
+export const getCourseExamsForStudent: RequestHandler<{ courseID: string }, IResponse> = async (req, res, next) => {
+    try {
+        const { courseID } = req.params;
+        const id = req.user?.id;
 
-//         const exam = await Exam.findOne({
-//             _id: examID,
-//             isActive: true,
-//             isPublished: true,
-//         })
-//             .select("-questions.answer")
-//             .lean()
-//             .exec();
-
-//         if (!exam) {
-//             return res.status(StatusCodes.NOT_FOUND).json({
-//                 message: "No exam found for this Course"
-//             });
-//         }
-//         if(exam.isAvailable === false){
-//             return res.status(StatusCodes.NOT_FOUND).json({
-//                 message: "exam is not aviable"
-//             });
-//         }
-
-//         res.status(StatusCodes.OK).json({
-//             message: "exam fetched successfully",
-//             data: exam
-//         });
+        if (!mongoose.Types.ObjectId.isValid(courseID)) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Invalid course ID format"
+            });
+        }
         
-//     } catch (err) {
-//         next(err);
-//     }
-// }
+        const courseExists = await Course.findOne({
+            _id: courseID,
+            isActive: true,
+            isPublished:true
+        }).lean().exec();
+        if (!courseExists) {
+            return res.status(StatusCodes.NOT_FOUND).json({
+                message: "course not found"
+            });
+        }
+        if (req.user?.role === Role.Student) {
+            const student = await Student.findById(id)
+                .select("grade academicTrack")
+                .lean()
+                .exec();
+
+            if (!student) {
+                return res.status(StatusCodes.NOT_FOUND).json({
+                    message: "Student not found"
+                });
+            }
+
+            if (!student.grade || !courseExists.grade) {
+                return res.status(StatusCodes.CONFLICT).json({
+                    message: "Student or course grade is not configured"
+                });
+            }
+
+            if (student.grade !== courseExists.grade) {
+                return res.status(StatusCodes.FORBIDDEN).json({
+                    message: "You are not authorized to access this course"
+                });
+            }
+
+            if (student.academicTrack !== courseExists.academicTrack) {
+                return res.status(StatusCodes.FORBIDDEN).json({
+                    message: "You are not authorized to access this course"
+                });
+            }
+        }
+
+        const examzes = await Exam.find({ courseID, isActive: true,isPublished:true })
+            .select("-questions")
+            .sort({ createdAt: 1 })
+            .lean()
+            .exec();
+
+        res.status(StatusCodes.OK).json({
+            message: "exams fetched successfully",
+            data: examzes
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
