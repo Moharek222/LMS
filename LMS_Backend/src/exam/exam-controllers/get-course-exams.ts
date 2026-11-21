@@ -24,7 +24,8 @@ export const getCourseExams: RequestHandler<{ courseID: string }, IResponse> = a
         
         const courseExists = await Course.findOne({
             _id: courseID,
-            isActive: true
+            isActive: true,
+            isPublished: true
         }).lean().exec();
         if (!courseExists) {
             return res.status(StatusCodes.NOT_FOUND).json({
