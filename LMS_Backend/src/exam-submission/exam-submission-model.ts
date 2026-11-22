@@ -1,9 +1,14 @@
 import mongoose from "mongoose";
 
-export interface IStudentAnswer{
+export interface IStudentAnswer {
     questionID: mongoose.Types.ObjectId;
-    type: "MCQ" | "ESSAY"; 
-    studentAnswer: string;  
+    type: "MCQ" | "ESSAY";
+    question: string;
+    questionImage?: string;
+    options?: string[];
+    correctAnswer?: string;
+    studentAnswer: string;
+    points: number;
     score: number;
     isCorrect?: boolean;
     teacherFeedback?: string;
@@ -16,8 +21,8 @@ export interface IExamSubmission extends mongoose.Document {
     mcqScore: number;
     essayScore: number;
     totalScore: number;
-    totalExamPoints: number
-    status: "PENDING" | "GRADED"; 
+    totalExamPoints: number;
+    status: "PENDING" | "GRADED";
     gradedBy?: mongoose.Types.ObjectId;
     createdAt?: Date;
     updatedAt?: Date;
@@ -33,14 +38,39 @@ const studentAnswerSchema = new mongoose.Schema<IStudentAnswer>({
         enum: ["MCQ", "ESSAY"],
         required: true
     },
+    question: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    questionImage: {
+        type: String,
+        trim: true,
+        default: undefined
+    },
+    options: {
+        type: [String],
+        default: undefined
+    },
+    correctAnswer: {
+        type: String,
+        trim: true,
+        default: undefined
+    },
     studentAnswer: {
         type: String,
         required: true,
         trim: true
     },
+    points: {
+        type: Number,
+        required: true,
+        min: 0
+    },
     score: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0
     },
     isCorrect: {
         type: Boolean,
@@ -49,7 +79,7 @@ const studentAnswerSchema = new mongoose.Schema<IStudentAnswer>({
     teacherFeedback: {
         type: String,
         trim: true,
-        default: null
+        default: ""
     }
 }, { _id: false });
 
@@ -91,7 +121,7 @@ const examSubmissionSchema = new mongoose.Schema<IExamSubmission>({
         type: String,
         enum: ["PENDING", "GRADED"],
         required: true,
-        default: "PENDING" 
+        default: "PENDING"
     },
     gradedBy: {
         type: mongoose.Schema.Types.ObjectId,

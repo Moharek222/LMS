@@ -26,7 +26,7 @@ export const getSubmissionResult: RequestHandler<{ submissionID: string }> = asy
         }
 
         const exam = await Exam.findById(submission.examID)
-            .select("title duration isResultsPublished")
+            .select("title duration isResultsPublished questions")
             .lean()
             .exec();
 
@@ -37,25 +37,62 @@ export const getSubmissionResult: RequestHandler<{ submissionID: string }> = asy
         if (exam.isResultsPublished !== true || submission.status !== "GRADED") {
             return res.status(StatusCodes.OK).json({
                 message: "Results are not available yet.",
-                data: {
-                    resultsPublished: false
-                }
+                data: { resultsPublished: false }
             });
         }
 
-        const responseData = {
-            ...submission,
-            examID: {
-                _id: exam._id,
-                title: exam.title,
-                duration: exam.duration
-            },
-            resultsPublished: true
-        };
+        const examQuestionsByID = new Map(
+            exam.questions.map((question) => [question._id.toString(), question])
+        );
+
+        const answers = submission.answers.map((answer: any) => {
+            const currentExamQuestion = examQuestionsByID.get(answer.questionID.toString());
+            const savedQuestionSnapshot = typeof answer.question === "string" && answer.question.length > 0;
+
+            const commonAnswerData = {
+                questionID: answer.questionID,
+                type: answer.type,
+                question: savedQuestionSnapshot ? answer.question : currentExamQuestion?.question,
+                questionImage: savedQuestionSnapshot ? answer.questionImage : currentExamQuestion?.questionImage,
+                studentAnswer: answer.studentAnswer,
+                points: typeof answer.points === "number" ? answer.points : currentExamQuestion?.points,
+                earnedScore: answer.score,
+                isCorrect: answer.isCorrect === true,
+                questionSnapshotAvailable: savedQuestionSnapshot
+            };
+
+            if (answer.type === "MCQ") {
+                return {
+                    ...commonAnswerData,
+                    options: savedQuestionSnapshot ? answer.options : currentExamQuestion?.options,
+                    correctAnswer: savedQuestionSnapshot ? answer.correctAnswer : undefined
+                };
+            }
+
+            return {
+                ...commonAnswerData,
+                teacherFeedback: answer.teacherFeedback || ""
+            };
+        });
 
         return res.status(StatusCodes.OK).json({
             message: "Submission result fetched successfully",
-            data: responseData
+            data: {
+                submissionID: submission._id,
+                examID: {
+                    _id: exam._id,
+                    title: exam.title,
+                    duration: exam.duration
+                },
+                status: submission.status,
+                mcqScore: submission.mcqScore,
+                essayScore: submission.essayScore,
+                totalScore: submission.totalScore,
+                totalExamPoints: submission.totalExamPoints,
+                resultsPublished: true,
+                createdAt: submission.createdAt,
+                answers
+            }
         });
     } catch (err) {
         next(err);

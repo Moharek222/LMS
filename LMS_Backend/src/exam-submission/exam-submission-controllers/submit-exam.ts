@@ -43,18 +43,30 @@ export const submitExam: RequestHandler<{ examID: string }, {}, IRequest> = asyn
             return res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid exam ID format" });
         }
 
+        if (!studentID || !mongoose.Types.ObjectId.isValid(studentID)) {
+            return res.status(StatusCodes.UNAUTHORIZED).json({ message: "Invalid student authentication" });
+        }
+
         const existingSubmission = await ExamSubmission.findOne({ examID, studentID }).lean().exec();
         if (existingSubmission) {
             return res.status(StatusCodes.CONFLICT).json({
                 message: "You have already submitted this exam"
             });
         }
+
         const exam = await Exam.findById(examID).lean().exec();
-        if (!exam || !exam.isActive) {
+        if (!exam || !exam.isActive || !exam.isPublished) {
             return res.status(StatusCodes.NOT_FOUND).json({
                 message: "Exam not found or inactive"
             });
         }
+
+        if (exam.isResultsPublished === true) {
+            return res.status(StatusCodes.CONFLICT).json({
+                message: "Results have already been published. This exam is closed for submissions."
+            });
+        }
+
         let mcqScore = 0;
         let totalExamPoints = 0;
         let hasEssay = false;
@@ -64,31 +76,37 @@ export const submitExam: RequestHandler<{ examID: string }, {}, IRequest> = asyn
             totalExamPoints += question.points;
 
             const studentAns = studentAnswers.find(
-                (a) => a.questionID.toString() === question._id?.toString()
+                (answer) => answer.questionID.toString() === question._id?.toString()
             );
             const providedAnswer = studentAns?.studentAnswer || "";
+
+            const questionSnapshot = {
+                questionID: question._id as mongoose.Types.ObjectId,
+                type: question.type,
+                question: question.question,
+                questionImage: typeof question.questionImage === "string" ? question.questionImage : undefined,
+                points: question.points,
+                studentAnswer: providedAnswer
+            };
 
             if (question.type === "MCQ") {
                 const isCorrect = providedAnswer === question.answer;
                 const earnedScore = isCorrect ? question.points : 0;
 
                 mcqScore += earnedScore;
-
                 processedAnswers.push({
-                    questionID: question._id as mongoose.Types.ObjectId,
+                    ...questionSnapshot,
                     type: "MCQ",
-                    studentAnswer: providedAnswer,
+                    options: question.options ? [...question.options] : [],
+                    correctAnswer: question.answer || "",
                     score: earnedScore,
-                    isCorrect: isCorrect
+                    isCorrect
                 });
-            }
-            else if (question.type === "ESSAY") {
+            } else if (question.type === "ESSAY") {
                 hasEssay = true;
-
                 processedAnswers.push({
-                    questionID: question._id as mongoose.Types.ObjectId,
+                    ...questionSnapshot,
                     type: "ESSAY",
-                    studentAnswer: providedAnswer,
                     score: 0,
                     isCorrect: false,
                     teacherFeedback: ""
@@ -97,26 +115,24 @@ export const submitExam: RequestHandler<{ examID: string }, {}, IRequest> = asyn
         }
 
         const status = hasEssay ? "PENDING" : "GRADED";
-        const totalScore = mcqScore;
         const submission = await ExamSubmission.create({
             examID,
             studentID,
             answers: processedAnswers,
             mcqScore,
             essayScore: 0,
-            totalScore,
+            totalScore: mcqScore,
             totalExamPoints,
             status
         });
 
-        res.status(StatusCodes.CREATED).json({
+        return res.status(StatusCodes.CREATED).json({
             message: "Exam submitted successfully. Results will be announced later.",
             data: {
                 submissionID: submission._id
             }
         });
-
     } catch (err) {
         next(err);
     }
-}; 
+};

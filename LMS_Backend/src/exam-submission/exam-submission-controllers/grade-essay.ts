@@ -7,6 +7,7 @@ import { ExamSubmission } from "../exam-submission-model";
 interface IGrade {
     questionID: string;
     score: number;
+    isCorrect: boolean;
     teacherFeedback?: string;
 }
 
@@ -29,9 +30,7 @@ export const gradeEssayQuestions: RequestHandler<{ submissionID: string }, any, 
         }
 
         if (!Array.isArray(grades) || grades.length === 0) {
-            return res.status(StatusCodes.BAD_REQUEST).json({
-                message: "Grades must be a non-empty array"
-            });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Grades must be a non-empty array" });
         }
 
         const submission = await ExamSubmission.findById(submissionID);
@@ -46,51 +45,60 @@ export const gradeEssayQuestions: RequestHandler<{ submissionID: string }, any, 
 
         if (exam.isResultsPublished === true) {
             return res.status(StatusCodes.CONFLICT).json({
-                message: "This exam's results have already been published. Unpublish the results before changing grades."
+                message: "Results have already been published. Grades cannot be changed."
             });
         }
 
         const essayAnswers = submission.answers.filter((answer) => answer.type === "ESSAY");
         if (essayAnswers.length === 0) {
-            return res.status(StatusCodes.BAD_REQUEST).json({
-                message: "This submission has no essay questions to grade"
-            });
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "This submission has no essay questions to grade" });
         }
 
         const essayQuestionIDs = new Set(essayAnswers.map((answer) => answer.questionID.toString()));
         const receivedQuestionIDs = new Set<string>();
 
         for (const gradeInput of grades) {
-            if (
-                !gradeInput ||
-                typeof gradeInput.questionID !== "string" ||
-                !mongoose.Types.ObjectId.isValid(gradeInput.questionID)
-            ) {
+            if (!gradeInput || typeof gradeInput.questionID !== "string" || !mongoose.Types.ObjectId.isValid(gradeInput.questionID)) {
                 return res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid question ID in grades" });
             }
 
             if (receivedQuestionIDs.has(gradeInput.questionID)) {
-                return res.status(StatusCodes.BAD_REQUEST).json({
-                    message: `Duplicate grade submitted for question ${gradeInput.questionID}`
-                });
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: `Duplicate grade for question ${gradeInput.questionID}` });
             }
             receivedQuestionIDs.add(gradeInput.questionID);
 
             if (!essayQuestionIDs.has(gradeInput.questionID)) {
-                return res.status(StatusCodes.BAD_REQUEST).json({
-                    message: `Question ${gradeInput.questionID} is not an essay question in this submission`
-                });
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: `Question ${gradeInput.questionID} is not an essay question in this submission` });
             }
 
             if (typeof gradeInput.score !== "number" || !Number.isFinite(gradeInput.score) || gradeInput.score < 0) {
-                return res.status(StatusCodes.BAD_REQUEST).json({
-                    message: `Invalid score for question ${gradeInput.questionID}`
-                });
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: `Invalid score for question ${gradeInput.questionID}` });
+            }
+
+            if (typeof gradeInput.isCorrect !== "boolean") {
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: `isCorrect must be true or false for question ${gradeInput.questionID}` });
             }
 
             if (gradeInput.teacherFeedback !== undefined && typeof gradeInput.teacherFeedback !== "string") {
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: `Invalid teacher feedback for question ${gradeInput.questionID}` });
+            }
+
+            const submissionAnswer = essayAnswers.find(
+                (answer) => answer.questionID.toString() === gradeInput.questionID
+            );
+            const examQuestion = exam.questions.find((question) => question._id?.toString() === gradeInput.questionID);
+
+            if (!examQuestion || examQuestion.type !== "ESSAY") {
+                return res.status(StatusCodes.BAD_REQUEST).json({ message: `Essay question ${gradeInput.questionID} was not found in the exam` });
+            }
+
+            const maxPoints = typeof submissionAnswer?.points === "number"
+                ? submissionAnswer.points
+                : examQuestion.points;
+
+            if (gradeInput.score > maxPoints) {
                 return res.status(StatusCodes.BAD_REQUEST).json({
-                    message: `Invalid teacher feedback for question ${gradeInput.questionID}`
+                    message: `Score for question ${gradeInput.questionID} cannot exceed ${maxPoints}`
                 });
             }
         }
@@ -98,45 +106,25 @@ export const gradeEssayQuestions: RequestHandler<{ submissionID: string }, any, 
         const missingQuestionIDs = [...essayQuestionIDs].filter((questionID) => !receivedQuestionIDs.has(questionID));
         if (missingQuestionIDs.length > 0) {
             return res.status(StatusCodes.BAD_REQUEST).json({
-                message: "All essay questions must be graded before finalizing the submission.",
+                message: "All essay questions must be graded in the same request.",
                 missingQuestionIDs
             });
-        }
-
-        for (const gradeInput of grades) {
-            const examQuestion = exam.questions.find(
-                (question) => question._id?.toString() === gradeInput.questionID
-            );
-
-            if (!examQuestion) {
-                return res.status(StatusCodes.BAD_REQUEST).json({
-                    message: `Question ${gradeInput.questionID} was not found in the exam`
-                });
-            }
-
-            if (gradeInput.score > examQuestion.points) {
-                return res.status(StatusCodes.BAD_REQUEST).json({
-                    message: `Score for question ${gradeInput.questionID} cannot exceed ${examQuestion.points}`
-                });
-            }
         }
 
         for (const gradeInput of grades) {
             const answer = submission.answers.find(
                 (item) => item.questionID.toString() === gradeInput.questionID && item.type === "ESSAY"
             );
-
             if (answer) {
                 answer.score = gradeInput.score;
+                answer.isCorrect = gradeInput.isCorrect;
                 if (gradeInput.teacherFeedback !== undefined) {
                     answer.teacherFeedback = gradeInput.teacherFeedback;
                 }
             }
         }
 
-        submission.essayScore = submission.answers
-            .filter((answer) => answer.type === "ESSAY")
-            .reduce((sum, answer) => sum + answer.score, 0);
+        submission.essayScore = essayAnswers.reduce((sum, answer) => sum + answer.score, 0);
         submission.totalScore = submission.mcqScore + submission.essayScore;
         submission.status = "GRADED";
         submission.gradedBy = new mongoose.Types.ObjectId(teacherID);
@@ -145,7 +133,7 @@ export const gradeEssayQuestions: RequestHandler<{ submissionID: string }, any, 
         await submission.save();
 
         return res.status(StatusCodes.OK).json({
-            message: "All essay questions graded and submission finalized successfully",
+            message: "Essay questions graded and submission finalized successfully",
             data: submission
         });
     } catch (err) {
