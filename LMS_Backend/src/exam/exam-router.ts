@@ -26,7 +26,7 @@ router.get("/",
     // requireActiveSubscription,
     getCourseExams
 );
-router.get("/",
+router.get("/student",
     isAuthorized(Role.Student),
     requireActiveSubscription,
     getCourseExamsForStudent
