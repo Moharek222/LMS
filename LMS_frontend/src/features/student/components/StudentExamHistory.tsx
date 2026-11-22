@@ -11,9 +11,12 @@ import {
   ChevronLeft,
   Award,
   Clock,
+  FileText,
 } from 'lucide-react';
 import { useStudentExamHistory } from '../hooks/useStudentExamHistory';
+import type { ExamHistoryItem } from '../types/studentHistory';
 import { toArabicErrorMessage } from '../../../utils/errorMessage';
+import StudentExamResultModal from '../../exams/components/StudentExamResultModal';
 
 const formatArabicDate = (dateStr: string): string => {
   if (!dateStr) return '—';
@@ -34,6 +37,7 @@ const formatArabicDate = (dateStr: string): string => {
 
 export const StudentExamHistory: React.FC = () => {
   const [page, setPage] = useState<number>(1);
+  const [selectedSubmissionForReview, setSelectedSubmissionForReview] = useState<ExamHistoryItem | null>(null);
   const limit = 10;
 
   const { data, isLoading, isError, error, refetch } = useStudentExamHistory({
@@ -179,10 +183,28 @@ export const StudentExamHistory: React.FC = () => {
                 </span>
                 <span>{formatArabicDate(item.createdAt)}</span>
               </div>
+
+              <button
+                onClick={() => setSelectedSubmissionForReview(item)}
+                className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#0D8A82] border border-teal-200 text-xs font-bold transition cursor-pointer"
+              >
+                <FileText size={14} />
+                <span>{isResultsUnpublished ? 'عرض حالة النتيجة' : 'عرض ورقة الإجابات والتصحيح'}</span>
+              </button>
             </div>
           );
         })}
       </div>
+
+      {selectedSubmissionForReview && (
+        <StudentExamResultModal
+          isOpen={Boolean(selectedSubmissionForReview)}
+          onClose={() => setSelectedSubmissionForReview(null)}
+          submissionId={selectedSubmissionForReview._id}
+          examId={selectedSubmissionForReview.examID?._id}
+          examTitle={selectedSubmissionForReview.examID?.title}
+        />
+      )}
 
 
       {totalPages > 1 && (

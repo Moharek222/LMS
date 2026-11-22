@@ -17,7 +17,7 @@ interface ExamQuestionCardProps {
   onOpenConfirmModal: () => void;
 }
 
-export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
+export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = React.memo(({
   currentQuestion,
   currentQuestionIndex,
   totalQuestions,
@@ -179,4 +179,6 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
       </div>
     </div>
   );
-};
+});
+
+export default ExamQuestionCard;

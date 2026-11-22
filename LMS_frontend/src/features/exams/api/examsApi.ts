@@ -22,6 +22,15 @@ export const getCourseExams = async (courseId: string): Promise<ExamListItem[]> 
   return response.data.data;
 };
 
+export const getTeacherCourseExams = getCourseExams;
+
+export const getStudentCourseExams = async (courseId: string): Promise<ExamListItem[]> => {
+  const response = await apiClient.get<GetCourseExamsResponse>(
+    `/api/courses/${courseId}/exams/student`
+  );
+  return response.data.data;
+};
+
 export const getStudentExam = async (
   courseId: string,
   examId: string

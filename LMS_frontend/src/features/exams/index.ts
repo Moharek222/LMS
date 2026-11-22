@@ -16,6 +16,7 @@ export * from './hooks/useCourseExams';
 export * from './hooks/useStudentExam';
 export * from './hooks/useSubmitExam';
 export * from './hooks/useExamRunnerState';
+export * from './hooks/useStudentExamResult';
 export * from './hooks/useTeacherExamSubmissions';
 export * from './hooks/useExamStatistics';
 
@@ -27,3 +28,4 @@ export * from './components/ExamQuestionCard';
 export * from './components/ExamRunner';
 export * from './components/ExamSubmitModal';
 export * from './components/ExamTimerHeader';
+export * from './components/StudentExamResultModal';

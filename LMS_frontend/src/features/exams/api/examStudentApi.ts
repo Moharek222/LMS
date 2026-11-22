@@ -1,9 +1,10 @@
-import { getStudentExam } from './examsApi';
+import { getStudentExam, getStudentCourseExams } from './examsApi';
 
-export { getStudentExam };
+export { getStudentExam, getStudentCourseExams };
 
 export const examStudentApi = {
   getStudentExam,
+  getStudentCourseExams,
 };
 
 export default examStudentApi;

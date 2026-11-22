@@ -12,7 +12,7 @@ interface ExamTimerHeaderProps {
   progressPercent: number;
 }
 
-export const ExamTimerHeader: React.FC<ExamTimerHeaderProps> = ({
+export const ExamTimerHeader: React.FC<ExamTimerHeaderProps> = React.memo(({
   title,
   currentQuestionIndex,
   totalQuestions,
@@ -88,4 +88,6 @@ export const ExamTimerHeader: React.FC<ExamTimerHeaderProps> = ({
       </div>
     </div>
   );
-};
+});
+
+export default ExamTimerHeader;

@@ -116,3 +116,41 @@ export interface GradeEssayResponse {
   data: DetailedExamSubmission;
 }
 
+export interface StudentExamAnswerBreakdown {
+  questionID: string;
+  type: 'MCQ' | 'ESSAY';
+  question?: string;
+  questionImage?: string;
+  options?: string[];
+  studentAnswer: string;
+  correctAnswer?: string;
+  points: number;
+  earnedScore: number;
+  isCorrect: boolean;
+  teacherFeedback?: string;
+  questionSnapshotAvailable?: boolean;
+}
+
+export interface StudentExamResultData {
+  submissionID: string;
+  examID: {
+    _id: string;
+    title: string;
+    duration?: number;
+  };
+  status: 'PENDING' | 'GRADED';
+  mcqScore: number;
+  essayScore: number;
+  totalScore: number;
+  totalExamPoints: number;
+  resultsPublished: boolean;
+  createdAt: string;
+  answers: StudentExamAnswerBreakdown[];
+}
+
+export interface StudentExamResultResponse {
+  message: string;
+  data: StudentExamResultData;
+}
+
+

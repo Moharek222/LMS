@@ -1,6 +1,8 @@
 export const examQueryKeys = {
   all: ['exams'] as const,
   courseExams: (courseId?: string) => ['course-exams', courseId] as const,
+  studentCourseExams: (courseId?: string) => ['course-exams', courseId, 'student'] as const,
+  teacherCourseExams: (courseId?: string) => ['course-exams', courseId, 'teacher'] as const,
   studentExam: (courseId?: string, examId?: string) =>
     ['student-exam', courseId, examId] as const,
   teacherExam: (courseId?: string, examId?: string) =>
@@ -21,6 +23,12 @@ export const examQueryKeys = {
     submissionId?: string | null
   ) =>
     ['teacher-exam-submission-details', courseId, examId, submissionId] as const,
+  studentSubmissionResult: (
+    courseId?: string,
+    examId?: string,
+    submissionId?: string | null
+  ) =>
+    ['student-exam-submission-result', courseId, examId, submissionId] as const,
   studentHistory: () => ['student-exam-history'] as const,
 };
 

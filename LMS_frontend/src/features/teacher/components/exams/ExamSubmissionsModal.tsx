@@ -67,21 +67,22 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
   const isResultsPublished = Boolean(examData?.isResultsPublished);
   const pendingSubmissionsCount = statistics?.pendingSubmissions ?? 0;
 
+  // جلب كافة تسليمات الامتحان دفعة واحدة (limit: 1000) للبحث الشامل في جميع الطلاب دون التقيد بصفحة واحدة
   const { data, isLoading, isError, error, refetch } = useTeacherExamSubmissions(
     courseId,
     examId,
-    page,
-    10,
+    1,
+    1000,
     statusFilter || undefined
   );
 
   if (!isOpen || !examId) return null;
 
+  const PAGE_SIZE = 10;
   const rawSubmissions = data?.data || [];
-  const totalPages = data?.totalPages || 1;
-  const totalSubmissions = data?.total || 0;
+  const totalSubmissions = data?.total || rawSubmissions.length;
 
-  const submissions = rawSubmissions.filter((sub) => {
+  const filteredSubmissions = rawSubmissions.filter((sub) => {
     if (!searchTerm.trim()) return true;
     const sName = normalizeArabic(sub.studentID?.name || '');
     const sPhone = (sub.studentID?.phone || '').trim().toLowerCase();
@@ -89,6 +90,11 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
     const rawQ = searchTerm.trim().toLowerCase();
     return sName.includes(q) || sPhone.includes(rawQ);
   });
+
+  const totalFiltered = filteredSubmissions.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const visibleSubmissions = filteredSubmissions.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '—';
@@ -252,7 +258,9 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
             </div>
 
             <span className="text-xs font-bold text-[#0D8A82] bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-100 shrink-0 self-end sm:self-auto">
-              إجمالي التسليمات: {totalSubmissions}
+              {searchTerm.trim()
+                ? `نتائج البحث: ${totalFiltered} من أصل ${totalSubmissions}`
+                : `إجمالي التسليمات: ${totalSubmissions}`}
             </span>
           </div>
 
@@ -278,16 +286,20 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
                   <span>إعادة المحاولة</span>
                 </button>
               </div>
-            ) : submissions.length === 0 ? (
+            ) : filteredSubmissions.length === 0 ? (
               <div className="py-14 text-center space-y-2">
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
                   <Users size={24} />
                 </div>
-                <h5 className="text-xs font-bold text-slate-700">لا توجد تسليمات لهذا الامتحان حتى الآن</h5>
+                <h5 className="text-xs font-bold text-slate-700">
+                  {searchTerm.trim()
+                    ? `لا توجد تسليمات مطابقة للبحث "${searchTerm}"`
+                    : 'لا توجد تسليمات لهذا الامتحان حتى الآن'}
+                </h5>
               </div>
             ) : (
               <div className="space-y-3">
-                {submissions.map((sub: TeacherExamSubmissionItem) => {
+                {visibleSubmissions.map((sub: TeacherExamSubmissionItem) => {
                   const studentName = sub.studentID?.name || 'طالب في المنصة';
 
                   return (
@@ -359,7 +371,7 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              disabled={page <= 1}
+              disabled={safePage <= 1}
               className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40"
             >
               <ChevronRight size={15} />
@@ -367,13 +379,13 @@ export const ExamSubmissionsModal: React.FC<ExamSubmissionsModalProps> = ({
             </button>
 
             <span>
-              صفحة {page} من {totalPages}
+              صفحة {safePage} من {totalPages}
             </span>
 
             <button
               type="button"
               onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              disabled={page >= totalPages}
+              disabled={safePage >= totalPages}
               className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40"
             >
               <span>التالي</span>

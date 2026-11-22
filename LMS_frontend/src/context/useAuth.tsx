@@ -6,6 +6,7 @@ import type { UserProfile, TeacherLoginCredentials, StudentLoginCredentials } fr
 import { loginTeacherApi, loginStudentApi, logoutApi, getMeApi } from '../services/authService';
 import {
   isStudentVerified,
+  setStudentVerified,
   startNewLoginSession,
   clearAllStudentVerifications,
 } from '../utils/subscriptionUtils';
@@ -113,11 +114,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const profile = await loginStudentApi(credentials);
       const studentId = profile.id;
+      let isVerified = false;
+
       if (studentId) {
         startNewLoginSession(studentId);
+        // التحقق مما إذا كان الطالب ما زال ضمن مهلة الـ 10 أيام المعتمدة
+        isVerified = isStudentVerified(studentId);
+
+        // إذا كان الباك إند يؤكد وجود اشتراك ساري نشط للطالب
+        if (!isVerified && profile.hasActiveSubscription) {
+          setStudentVerified(studentId);
+          isVerified = true;
+        }
       }
-      // نلزم الطالب بكتابة كود التفعيل في كل مرة يسجل فيها الدخول
-      const fullProfile: UserProfile = { ...profile, hasActiveSubscription: false };
+
+      // صلاحية التفعيل تظل سارية لمدة 10 أيام ولا يطلب الكود إلا بعد انتهائها
+      const fullProfile: UserProfile = { ...profile, hasActiveSubscription: isVerified };
       setUser(fullProfile);
       localStorage.setItem('lms_user', JSON.stringify(fullProfile));
     } finally {

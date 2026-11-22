@@ -72,26 +72,86 @@ export const useExamRunnerState = (courseId: string, examId: string, studentId?:
   }, [examHistoryData, examId]);
 
   const submissionResult = React.useMemo<ExamSubmissionResult | null>(() => {
-    if (submissionResultState) return submissionResultState;
-    if (existingSubmission) {
-      const ext = existingSubmission as unknown as ExtendedExamHistoryItem;
-      const scoreVal = ext.totalScore ?? existingSubmission.score ?? 0;
-      const totalPointsVal = ext.totalExamPoints ?? ext.totalQuestions ?? scoreVal;
-      return {
-        submissionID: existingSubmission._id,
-        status: ext.status || 'GRADED',
-        totalScore: scoreVal,
-        score: scoreVal,
-        totalExamPoints: totalPointsVal,
-        totalQuestions: totalPointsVal,
-      };
-    }
-    return null;
+    const subId =
+      submissionResultState?.submissionID ||
+      submissionResultState?.submissionId ||
+      existingSubmission?._id;
+
+    if (!subId && !submissionResultState && !existingSubmission) return null;
+
+    const ext = existingSubmission as unknown as ExtendedExamHistoryItem | undefined;
+    const scoreVal =
+      submissionResultState?.totalScore ??
+      submissionResultState?.score ??
+      ext?.totalScore ??
+      ext?.score;
+
+    const totalPointsVal =
+      submissionResultState?.totalExamPoints ??
+      submissionResultState?.totalQuestions ??
+      ext?.totalExamPoints ??
+      ext?.totalQuestions ??
+      scoreVal;
+
+    const statusVal =
+      submissionResultState?.status ||
+      ext?.status ||
+      (scoreVal !== undefined ? 'GRADED' : 'PENDING');
+
+    return {
+      submissionID: subId,
+      submissionId: subId,
+      status: statusVal,
+      totalScore: scoreVal,
+      score: scoreVal,
+      totalExamPoints: totalPointsVal,
+      totalQuestions: totalPointsVal,
+    };
   }, [submissionResultState, existingSubmission]);
 
+  const sanitizedUserAnswers = React.useMemo(() => {
+    if (!exam?.questions || exam.questions.length === 0) return userAnswers;
+    const validQuestionIds = new Set(exam.questions.map((q) => q._id));
+    const clean: Record<string, string> = {};
+    for (const [key, val] of Object.entries(userAnswers)) {
+      if (validQuestionIds.has(key)) {
+        clean[key] = val;
+      }
+    }
+    return clean;
+  }, [exam, userAnswers]);
+
   useEffect(() => {
-    userAnswersRef.current = userAnswers;
-  }, [userAnswers]);
+    userAnswersRef.current = sanitizedUserAnswers;
+  }, [sanitizedUserAnswers]);
+
+  // Clean stale orphan keys in localStorage when questions change
+  useEffect(() => {
+    if (!exam?.questions || exam.questions.length === 0) return;
+    const validQuestionIds = new Set(exam.questions.map((q) => q._id));
+    try {
+      const savedDraft = localStorage.getItem(draftAnswersKey);
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && typeof parsed === 'object') {
+          let hasOrphans = false;
+          const clean: Record<string, string> = {};
+          for (const [k, v] of Object.entries(parsed)) {
+            if (validQuestionIds.has(k)) {
+              clean[k] = v as string;
+            } else {
+              hasOrphans = true;
+            }
+          }
+          if (hasOrphans) {
+            localStorage.setItem(draftAnswersKey, JSON.stringify(clean));
+          }
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [exam, draftAnswersKey]);
 
   const untilStartLeft = React.useMemo<number | null>(() => {
     if (!exam || !exam.startAt) return null;
@@ -191,6 +251,7 @@ export const useExamRunnerState = (courseId: string, examId: string, studentId?:
         onSuccess: (result) => {
           setSubmissionResult(result);
           cleanupLocalStorage();
+          void refetchHistory();
         },
         onError: (err) => {
           isSubmittingRef.current = false;
@@ -279,7 +340,7 @@ export const useExamRunnerState = (courseId: string, examId: string, studentId?:
     submitExamMutation,
     currentQuestionIndex,
     setCurrentQuestionIndex,
-    userAnswers,
+    userAnswers: sanitizedUserAnswers,
     timeLeft,
     untilStartLeft,
     showConfirmModal,

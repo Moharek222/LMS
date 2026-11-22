@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Clock,
   CheckCircle2,
@@ -11,17 +11,66 @@ import {
   Award,
   HelpCircle,
   Calendar,
+  FileText,
 } from 'lucide-react';
 import { useExamRunnerState } from '../hooks/useExamRunnerState';
 import { useAuth } from '../../../context/useAuth';
 import { ExamTimerHeader } from './ExamTimerHeader';
 import { ExamQuestionCard } from './ExamQuestionCard';
 import { ExamSubmitModal } from './ExamSubmitModal';
+import StudentExamResultModal from './StudentExamResultModal';
 
 interface ExamRunnerProps {
   courseId: string;
   examId: string;
   onClose: () => void;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ExamErrorBoundary extends React.Component<
+  { children: React.ReactNode; onClose: () => void },
+  ErrorBoundaryState
+> {
+  state: ErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('Exam Error Boundary caught an error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center space-y-5 max-w-lg mx-auto my-6" dir="rtl">
+          <div className="w-16 h-16 rounded-2xl bg-teal-50 text-[#0D8A82] flex items-center justify-center mx-auto border border-teal-100 shadow-xs">
+            <CheckCircle2 size={36} />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-lg font-black text-slate-800">تم تسجيل وتأكيد تسليم الامتحان بنجاح 📋</h3>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+              إجاباتك محفوظة في النظام وتم تأكيد التسليم. يمكنك العودة لصفحة الكورس أو تحديث الصفحة لعرض نتيجتك.
+            </p>
+          </div>
+          <div className="pt-2">
+            <button
+              onClick={this.props.onClose}
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
+            >
+              <span>العودة لصفحة الكورس</span>
+              <ArrowLeft size={16} />
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 export const ExamRunner: React.FC<ExamRunnerProps> = ({
@@ -32,13 +81,15 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
   const { user } = useAuth();
   const instanceKey = `${user?.id || 'guest'}-${examId}`;
   return (
-    <ExamRunnerContent
-      key={instanceKey}
-      courseId={courseId}
-      examId={examId}
-      studentId={user?.id}
-      onClose={onClose}
-    />
+    <ExamErrorBoundary onClose={onClose}>
+      <ExamRunnerContent
+        key={instanceKey}
+        courseId={courseId}
+        examId={examId}
+        studentId={user?.id}
+        onClose={onClose}
+      />
+    </ExamErrorBoundary>
   );
 };
 
@@ -76,6 +127,8 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
     handleDoSubmit,
     formatTime,
   } = useExamRunnerState(courseId, examId, studentId);
+
+  const [showResultDetails, setShowResultDetails] = useState<boolean>(false);
 
   if (isLoading) {
     return (
@@ -178,7 +231,7 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
             <Clock size={16} />
             <span>امتحان مجدول</span>
           </span>
-          <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
+          <h2 className="text-2xl font-black text-slate-800 pt-1">{exam?.title || 'امتحان شامل'}</h2>
           <p className="text-xs text-slate-500 font-semibold max-w-md mx-auto">
             لم يحل موعد بدء الامتحان بعد. سينفتح الامتحان تلقائياً عند حلول موعده.
           </p>
@@ -226,13 +279,23 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
               <Clock size={16} />
               <span>النتيجة قيد المراجعة والاعتماد ⏳</span>
             </span>
-            <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
+            <h2 className="text-2xl font-black text-slate-800 pt-1">{exam?.title || 'امتحان شامل'}</h2>
             <p className="text-xs text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
               تم تسليم إجاباتك وحفظها بنجاح في النظام. نتيجتك قيد المراجعة والاعتماد من قبل المعلم، وسيتم إعلان درجاتك فور نشر النتائج رسمياً.
             </p>
           </div>
 
-          <div className="pt-4 border-t border-slate-100">
+          <div className="pt-4 border-t border-slate-100 space-y-3">
+            {submissionResult.submissionID && (
+              <button
+                onClick={() => setShowResultDetails(true)}
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-teal-50 text-[#0D8A82] border border-teal-200 text-xs font-bold hover:bg-teal-100 transition cursor-pointer shadow-xs"
+              >
+                <FileText size={16} />
+                <span>عرض ورقة الإجابة والتصحيح</span>
+              </button>
+            )}
+
             <button
               onClick={onClose}
               className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
@@ -240,6 +303,17 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
               <span>العودة لصفحة الكورس</span>
               <ArrowLeft size={16} />
             </button>
+
+            {showResultDetails && submissionResult.submissionID && (
+              <StudentExamResultModal
+                isOpen={showResultDetails}
+                onClose={() => setShowResultDetails(false)}
+                courseId={courseId}
+                examId={examId}
+                submissionId={submissionResult.submissionID}
+                examTitle={exam?.title || 'امتحان شامل'}
+              />
+            )}
           </div>
         </div>
       );
@@ -276,7 +350,7 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
               {isPassed ? 'تم اجتياز الامتحان بنجاح 🏆' : 'لم يتم اجتياز الامتحان'}
             </span>
           </span>
-          <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
+          <h2 className="text-2xl font-black text-slate-800 pt-1">{exam?.title || 'امتحان شامل'}</h2>
           <p className="text-xs text-slate-500 font-semibold">
             {isAutoSubmitted
               ? 'انتهى الوقت المحدد للامتحان وتم حفظ وتأكيد إجاباتك المسجلة تلقائياً في النظام.'
@@ -301,7 +375,17 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
           </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-100">
+        <div className="pt-4 border-t border-slate-100 space-y-3">
+          {submissionResult.submissionID && (
+            <button
+              onClick={() => setShowResultDetails(true)}
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-teal-50 text-[#0D8A82] border border-teal-200 text-xs font-bold hover:bg-teal-100 transition cursor-pointer shadow-xs"
+            >
+              <FileText size={16} />
+              <span>عرض ورقة الإجابة والتصحيح بالتفصيل</span>
+            </button>
+          )}
+
           <button
             onClick={onClose}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#0D8A82] text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
@@ -309,6 +393,17 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
             <span>العودة لصفحة الكورس</span>
             <ArrowLeft size={16} />
           </button>
+
+          {showResultDetails && submissionResult.submissionID && (
+            <StudentExamResultModal
+              isOpen={showResultDetails}
+              onClose={() => setShowResultDetails(false)}
+              courseId={courseId}
+              examId={examId}
+              submissionId={submissionResult.submissionID}
+              examTitle={exam?.title || 'امتحان شامل'}
+            />
+          )}
         </div>
       </div>
     );
@@ -327,7 +422,7 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
             <AlertTriangle size={16} />
             <span>انتهى الوقت المحدد للامتحان</span>
           </span>
-          <h2 className="text-2xl font-black text-slate-800 pt-1">{exam.title}</h2>
+          <h2 className="text-2xl font-black text-slate-800 pt-1">{exam?.title || 'امتحان شامل'}</h2>
           <p className="text-xs text-slate-600 font-semibold max-w-md mx-auto leading-relaxed">
             انتهت المدة الزمنية المحددة للامتحان دون اختيار أية إجابات، ولذلك لم يتم تسجيل إجابات بالنظام.
           </p>
@@ -349,8 +444,11 @@ const ExamRunnerContent: React.FC<ExamRunnerContentProps> = ({
   const questions = exam.questions;
   const currentQuestion = questions[currentQuestionIndex];
   const totalQuestions = questions.length;
-  const answeredCount = Object.keys(userAnswers).filter((k) => Boolean(userAnswers[k] && userAnswers[k].trim())).length;
-  const progressPercent = Math.round((answeredCount / Math.max(1, totalQuestions)) * 100);
+  const validQuestionIds = useMemo(() => new Set(questions.map((q) => q._id)), [questions]);
+  const answeredCount = Object.keys(userAnswers).filter(
+    (k) => validQuestionIds.has(k) && Boolean(userAnswers[k] && userAnswers[k].trim())
+  ).length;
+  const progressPercent = Math.min(100, Math.round((answeredCount / Math.max(1, totalQuestions)) * 100));
   const currentAnswer = userAnswers[currentQuestion._id] || '';
 
   return (
