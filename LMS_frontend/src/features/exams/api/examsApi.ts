@@ -35,8 +35,9 @@ export const getStudentExam = async (
   courseId: string,
   examId: string
 ): Promise<StudentExam> => {
+  const safeCourseId = courseId || 'course';
   const response = await apiClient.get<GetStudentExamResponse>(
-    `/api/courses/${courseId}/exams/${examId}/student`
+    `/api/courses/${safeCourseId}/exams/${examId}/student`
   );
   return response.data.data;
 };
@@ -46,9 +47,10 @@ export const submitExam = async (
   examId: string,
   payload: SubmitExamPayload
 ): Promise<ExamSubmissionResult> => {
+  const safeCourseId = courseId || 'course';
   try {
     const response = await apiClient.post<SubmitExamResponse>(
-      `/api/courses/${courseId}/exams/${examId}/submissions`,
+      `/api/courses/${safeCourseId}/exams/${examId}/submissions`,
       payload
     );
     return response.data.data;

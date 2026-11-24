@@ -32,6 +32,11 @@ export const ExamCard: React.FC<ExamCardProps> = ({ exam, isSubmitted, onStart }
       })
     : '';
 
+  const isClosed =
+    exam.isResultsPublished === true ||
+    exam.isAvailable === false ||
+    exam.isAviable === false;
+
   const isUnpublished = exam.isPublished === false || exam.isActive === false;
 
   return (
@@ -51,6 +56,11 @@ export const ExamCard: React.FC<ExamCardProps> = ({ exam, isSubmitted, onStart }
               <span className="px-3 py-1 rounded-xl text-xs font-bold bg-teal-50 text-[#0D8A82] border border-teal-200 flex items-center gap-1">
                 <CheckCircle2 size={14} />
                 <span>تم التسليم ✓</span>
+              </span>
+            ) : isClosed ? (
+              <span className="px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
+                <Lock size={14} />
+                <span>مغلق / أُعلنت نتائجه 🔒</span>
               </span>
             ) : isUnpublished ? (
               <span className="px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
@@ -103,7 +113,7 @@ export const ExamCard: React.FC<ExamCardProps> = ({ exam, isSubmitted, onStart }
       <div className="pt-2 border-t border-slate-100">
         <button
           onClick={() => onStart?.(exam)}
-          disabled={isUnpublished || isScheduledInFuture || isSubmitted}
+          disabled={isClosed || isUnpublished || isScheduledInFuture || isSubmitted}
           className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs disabled:opacity-80 disabled:cursor-not-allowed ${
             isSubmitted
               ? 'bg-teal-50 text-[#0D8A82] border border-teal-200 disabled:opacity-100'
@@ -113,13 +123,15 @@ export const ExamCard: React.FC<ExamCardProps> = ({ exam, isSubmitted, onStart }
           <span>
             {isSubmitted
               ? 'تم تسليم هذا الامتحان سابقاً ✓'
+              : isClosed
+              ? 'الامتحان مغلق (أُعلنت نتائجه) 🔒'
               : isUnpublished
               ? 'غير منشور (غير متاح حالياً) 🔒'
               : isScheduledInFuture
               ? `مجدول (يبدأ ${formattedStartTime})`
               : 'ابدأ الامتحان'}
           </span>
-          {!isSubmitted && <ArrowLeft size={16} />}
+          {!isSubmitted && !isClosed && <ArrowLeft size={16} />}
         </button>
       </div>
     </div>

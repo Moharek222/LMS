@@ -6,9 +6,8 @@ import type { UserProfile, TeacherLoginCredentials, StudentLoginCredentials } fr
 import { loginTeacherApi, loginStudentApi, logoutApi, getMeApi } from '../services/authService';
 import {
   isStudentVerified,
-  setStudentVerified,
   startNewLoginSession,
-  clearAllStudentVerifications,
+  clearStudentLoginSessions,
 } from '../utils/subscriptionUtils';
 
 interface AuthContextType {
@@ -78,7 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error: unknown) {
       // لو التوكن خلص أو اليوزر اتمسح
       if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
-        clearAllStudentVerifications();
+        clearStudentLoginSessions();
         setUser(null);
         localStorage.removeItem('lms_user');
         if (window.location.pathname !== '/login') {
@@ -118,17 +117,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (studentId) {
         startNewLoginSession(studentId);
-        // التحقق مما إذا كان الطالب ما زال ضمن مهلة الـ 10 أيام المعتمدة
+        // التحقق مما إذا كان الطالب قد قام بتفعيل الكود بنفسه على هذا المتصفح وما زال ضمن مهلة الـ 10 أيام المعتمدة
         isVerified = isStudentVerified(studentId);
-
-        // إذا كان الباك إند يؤكد وجود اشتراك ساري نشط للطالب
-        if (!isVerified && profile.hasActiveSubscription) {
-          setStudentVerified(studentId);
-          isVerified = true;
-        }
       }
 
-      // صلاحية التفعيل تظل سارية لمدة 10 أيام ولا يطلب الكود إلا بعد انتهائها
+      // يلزم الطالب بكتابة كود التفعيل بيده أول مرة، وبعدها يُحفظ التفعيل لمدة 10 أيام
       const fullProfile: UserProfile = { ...profile, hasActiveSubscription: isVerified };
       setUser(fullProfile);
       localStorage.setItem('lms_user', JSON.stringify(fullProfile));
@@ -151,7 +144,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       await logoutApi().catch(() => {});
     } finally {
-      clearAllStudentVerifications();
+      clearStudentLoginSessions();
       queryClient.clear();
       setUser(null);
       localStorage.removeItem('lms_user');

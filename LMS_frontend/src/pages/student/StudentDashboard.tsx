@@ -276,6 +276,12 @@ export const StudentDashboard: React.FC = () => {
     return isStudentVerified(user?.id);
   });
 
+  React.useEffect(() => {
+    if (user?.id) {
+      setVerifiedState(isStudentVerified(user.id));
+    }
+  }, [user?.id]);
+
   const selectedLesson = effectiveLessons.find((l) => l._id === selectedLessonId);
   const isSubscriptionActive =
     user?.role === 'student'

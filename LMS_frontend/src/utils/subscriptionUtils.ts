@@ -19,6 +19,23 @@ export const clearStudentVerified = (userId: string | undefined | null) => {
   }
 };
 
+export const clearStudentLoginSessions = () => {
+  try {
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('lms_login_session_')) {
+        localStorage.removeItem(key);
+      }
+    });
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith('lms_login_session_')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  } catch {
+    // Ignore storage errors
+  }
+};
+
 export const clearAllStudentVerifications = () => {
   try {
     Object.keys(localStorage).forEach((key) => {

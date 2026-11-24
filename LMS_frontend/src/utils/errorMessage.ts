@@ -173,6 +173,9 @@ const translateEnglishText = (text: string): string | null => {
   if (lower.includes('exam not found') || lower.includes('no exam found')) {
     return 'الامتحان المطلوب غير موجود أو تم حذفه.';
   }
+  if (lower.includes('exam is not aviable') || lower.includes('not aviable') || lower.includes('not available')) {
+    return 'هذا الامتحان غير متاح للحل حالياً (تم إغلاقه أو إعلان درجاته).';
+  }
   if (lower.includes('invalid exam id format')) {
     return 'معرف الامتحان غير صحيح.';
   }

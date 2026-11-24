@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { clearAllStudentVerifications } from '../utils/subscriptionUtils';
+import { clearStudentLoginSessions } from '../utils/subscriptionUtils';
 
 const getBaseURL = (): string => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
@@ -123,7 +123,7 @@ apiClient.interceptors.response.use(
       }
 
       if (!skipRedirect) {
-        clearAllStudentVerifications();
+        clearStudentLoginSessions();
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('lms_token');
